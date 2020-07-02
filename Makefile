@@ -1,19 +1,29 @@
 RM = rm -f
 CXX = g++
-CXXFLAGS = -std=c++0x -Wall -pedantic-errors -g -I /usr/local/include/SDL2
+CXXFLAGS = -std=c++14 -Wall -pedantic-errors -g -I /usr/local/include/SDL2
 LDFLAGS = -L /usr/local/lib -l SDL2
-SRCS = $(wildcard *.cpp)
-OBJS = ${SRCS:.cpp=.o}
+SRCS = $(filter-out %.test.cpp, $(wildcard *.cpp))
+OBJS = $(filter-out *.test.o, ${SRCS:.cpp=.o})
 DEPS := ${SRCS:.cpp=.d}
+
+
+TEST_SRCS = $(wildcard *.test.cpp)
+TEST_OBJS = ${TEST_SRCS:.cpp=.o}
+DEPS += ${TEST_SRCS:.cpp=.d}
 
 # .PHONY means these rules get executed even if
 # files of those names exist.
 .PHONY: clean
 
-MAIN = full
+MAIN = minity
+TEST = minitest
 
-all: ${MAIN}
-	@echo   Run ./${MAIN} to start full3D
+all: ${TEST} ${MAIN}
+	@echo   Run ./${MAIN} to start minity
+
+${TEST}: ${TEST_OBJS}
+	${CXX} ${CXXFLAGS} ${TEST_OBJS} -o ${TEST} ${LDFLAGS} \
+	&& ./${TEST} --reporter compact --success
 
 ${MAIN}: ${OBJS}
 	${CXX} ${CXXFLAGS} ${OBJS} -o ${MAIN} ${LDFLAGS}
@@ -22,7 +32,7 @@ ${MAIN}: ${OBJS}
 	${CXX} ${CXXFLAGS} -MMD -MP -c $< -o $@
 
 clean:
-	${RM} ${MAIN} ${OBJS} *.o *~.
+	${RM} ${MAIN} ${OBJS} test *.o *.d *~.
 
 -include $(DEPS)
 

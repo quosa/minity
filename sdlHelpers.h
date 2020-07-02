@@ -31,6 +31,7 @@ void SDLStart(int windowWidth, int windowHeight)
         // only hints???
 
 	// pick the format - for me rgba8888 makes most sense
+    // from https://wiki.libsdl.org/SDL_PixelFormatEnum
     // g_SDLTexture = SDL_CreateTexture(g_SDLRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, windowWidth, windowHeight);
 	// g_SDLTexture = SDL_CreateTexture(g_SDLRenderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STATIC, windowWidth, windowHeight);
 
@@ -129,4 +130,3 @@ void SDLFPSUpdate(uint fps)
     std::string fpsText = "f u l l 3 D   FPS: " + std::to_string(avg);
 	SDL_SetWindowTitle(g_SDLWindow, fpsText.c_str());
 }
-
