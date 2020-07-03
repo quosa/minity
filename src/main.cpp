@@ -20,7 +20,7 @@ int main() {
 
 	camera.fovDegrees = 90.0f;
 	camera.rotation = vec3{DEG(0), DEG(0), DEG(0)};
-	camera.translation = vec3{0.0f, 0.0f, 5.0f};
+	camera.translation = vec3{0.0f, 0.0f, -5.0f};
 
 	// object.tris = {
 	// 	{ { {0.0f, 0.0f, 0.0f},  {0.0f, 1.0f, 0.0f},  {1.0f, 0.0f, 0.0f} } },
@@ -32,42 +32,52 @@ int main() {
 	// };
 	// object.translation = vec3{0.0f, -0.0f, -50.0f};
 
-	loadMeshFromObj("models/box.obj", &object);
+	// loadMeshFromObj("models/box.obj", &object);
 	// loadMeshFromObj("models/octahedron.obj", &object);
 	// object.translation.z = -4.0f;
+	// object.scale = vec3{0.5f, 0.5f, 0.5f};
+	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
+	// object.translation = vec3{0.0f, 0.0f, 0.0f};
+
+	loadMeshFromObj("models/teapot.obj", &object);
+	// object.translation = vec3{0.0f, -1.5f, -15.0f};
 	object.scale = vec3{0.5f, 0.5f, 0.5f};
 	object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
-	object.translation = vec3{0.0f, 0.0f, -1.0f};
-
-	// loadMeshFromObj("models/teapot.obj", &object);
-	// object.translation = vec3{0.0f, -1.5f, -15.0f};
+	object.translation = vec3{0.0f, -1.5f, 0.0f};
 
 	// printMesh(&object);
 	drawMesh(&object, &camera);
 	SDLSwapBuffers();
 
 	auto ft = new jku::frametimer();
-	vec3 input{};
-	while(isRunning(&input))
+	vec3 inputTranslation{};
+	vec3 inputRotation{};
+	while(isRunning(&inputTranslation, &inputRotation))
     {
 		SDL_Delay(20); // some computation budget...
 		clearBuffer();
 
-		// object.translation = v3Add(object.translation, input);
+		// object.translation = v3Add(object.translation, inputTranslation);
 		// printVec3(object.translation);
+		object.rotation.y += DEG(0.5);
 
 		// camera.rotation.y += DEG(0.5); // will overflow eventually
 		// printVec3(camera.translation);
 
 		// for camera zoom in/out are opposite
-		input.z *= -1.0f;
-		camera.translation = v3Add(camera.translation, input);
+		inputTranslation.z *= -1.0f;
+		camera.translation = v3Add(camera.translation, inputTranslation);
+		camera.rotation = v3Add(camera.rotation, inputRotation);
+		std::cout << "----- trans & rot -----" << std::endl;
+		printVec3(camera.translation);
+		printVec3(camera.rotation);
 
 		drawMesh(&object, &camera);
 
 	    SDLSwapBuffers();
 		SDLFPSUpdate(ft->delta());
-		input = vec3{};
+		inputTranslation = vec3{};
+		inputRotation = vec3{};
     }
 
     SDLEnd();

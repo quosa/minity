@@ -55,6 +55,9 @@ void printMat4(const mat4 &mat);
 void printVec3(const vec3 &v);
 void printTri(const tri &t, std::string label);
 
+#define DEG(degree) (degree * 3.14159f / 180)
+#define RAD(radians) (radians * 180 / 3.14159f)
+
 
 vec3 v3Add(const vec3 &v1, const vec3 &v2)
 {
@@ -273,10 +276,10 @@ mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0
 mat4 fpsLookAtMatrixRH( vec3 eye, float pitch, float yaw )
 {
     // I assume the values are already converted to radians.
-    float cosPitch = cos(pitch);
-    float sinPitch = sin(pitch);
-    float cosYaw = cos(yaw);
-    float sinYaw = sin(yaw);
+    float cosPitch = cosf(pitch);
+    float sinPitch = sinf(pitch);
+    float cosYaw = cosf(yaw);
+    float sinYaw = sinf(yaw);
 
     vec3 xaxis = { cosYaw, 0, -sinYaw };
     vec3 yaxis = { sinYaw * sinPitch, cosPitch, cosYaw * sinPitch };

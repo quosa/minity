@@ -7,9 +7,6 @@
 
 #include "simpleMath.h"
 
-#define DEG(degree) (degree * 3.14159f / 180)
-#define RAD(radians) (radians * 180 / 3.14159f)
-
 struct cam
 {
     float fovDegrees = 90.0f;
@@ -162,15 +159,18 @@ void drawMesh(mesh *m, cam *c)
         // mat4 cameraMatrix = multiplyMat4(cameraTranslator, cameraYRotator);
 
     vec3 cameraPos{c->translation.x, c->translation.y, c->translation.z};
-    vec3 lookAt{0.0f, 0.0f, 0.0f};
-    vec3 up{0.0f, 1.0f, 0.0f};
+    // vec3 lookAt{0.0f, 0.0f, 0.0f};
+    // vec3 up{0.0f, 1.0f, 0.0f};
     // vec3 lookDir = multiplyVec3(lookAt, cameraYRotator);
     // lookAt = v3Add(cameraPos, lookDir);
 
     // std::cout << "LOOK AT:"  << std::endl;
     // mat4 cameraMatrix = lookAtMatrixRH(vec3{10.0f, 0.0f, 10.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
     // mat4 cameraMatrix = lookAtMatrixRH(vec3{c->translation.x, c->translation.y, c->translation.z}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
-    mat4 cameraMatrix = lookAtMatrixRH(cameraPos, lookAt, up);
+    // mat4 cameraMatrix = lookAtMatrixRH(cameraPos, lookAt, up);
+
+    // pitch -90 .. 90, yaw 0 ... 360, (both in rad)
+    mat4 cameraMatrix = fpsLookAtMatrixRH(cameraPos, c->rotation.x, c->rotation.y);
 
     // std::cout << "CAMERA MATRIX:"  << std::endl;
     // printMat4(cameraMatrix);

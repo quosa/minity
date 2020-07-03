@@ -1,7 +1,7 @@
 #include <SDL.h>
 #include <list>
 
-// for vec3 :-/
+// for vec3 and DEG :-/
 #include "simpleMath.h"
 
 SDL_Window * g_SDLWindow;
@@ -59,7 +59,7 @@ void SDLSwapBuffers(/*color_t * backbuffer*/)
 	SDL_RenderPresent(g_SDLRenderer);
 }
 
-bool isRunning(vec3 *input)
+bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
 {
 	SDL_Event sEvent;
 
@@ -77,27 +77,43 @@ bool isRunning(vec3 *input)
         {
             case SDLK_LEFT:
                 std::cerr << " LEFT";
-                input->x -= 1;
+                inputTranslation->x -= 1;
                 break;
             case SDLK_RIGHT:
                 std::cerr << " RIGHT";
-                input->x += 1;
+                inputTranslation->x += 1;
                 break;
             case SDLK_UP:
                 std::cerr << " UP";
-                input->y += 1;
+                inputTranslation->y += 1;
                 break;
             case SDLK_DOWN:
                 std::cerr << " DOWN";
-                input->y -= 1;
+                inputTranslation->y -= 1;
                 break;
             case SDLK_PLUS:
                 std::cerr << " IN";
-                input->z += 1;
+                inputTranslation->z += 1;
                 break;
             case SDLK_MINUS:
                 std::cerr << " OUT";
-                input->z -= 1;
+                inputTranslation->z -= 1;
+                break;
+            case SDLK_a:
+                std::cerr << " LookLeft";
+                inputRotation->y -= DEG(5);
+                break;
+            case SDLK_d:
+                std::cerr << " LookRight";
+                inputRotation->y += DEG(5);
+                break;
+            case SDLK_w:
+                std::cerr << " LookUp";
+                inputRotation->x += DEG(5);
+                break;
+            case SDLK_s:
+                std::cerr << " LookDown";
+                inputRotation->x -= DEG(5);
                 break;
             default:
                 break;
