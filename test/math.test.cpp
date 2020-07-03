@@ -23,6 +23,15 @@ const mat4 m2{
         {4.0f, 4.0f, 4.0f, 4.0f}
     }
 };
+const mat4 identity{
+    {
+        {1.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f},
+        {0.0f, 0.0f, 0.0f, 1.0f}
+    }
+};
+
 
 TEST_CASE( "zero-vec * 1 = zero-vec" )
 {
@@ -103,6 +112,7 @@ TEST_CASE( "1000-matrix * 0001-matrix both ways" )
 
 TEST_CASE( "matrix inverse" )
 {
+    // M * M^-1 = I
     const mat4 mt{
         {
             { 1.0f,  1.0f, 1.0f, 10.0f},
@@ -111,9 +121,57 @@ TEST_CASE( "matrix inverse" )
             { 0.0f,  0.0f, 0.0f, 1.0f}
         }
     };
-    printMat4(inverseMatrixSimple(mt));
-    printMat4(multiplyMat4(inverseMatrixSimple(mt), mt));
-    printMat4(multiplyMat4(mt, inverseMatrixSimple(mt)));
-    REQUIRE( multiplyMat4(inverseMatrixSimple(mt), mt) == mt);
+    // printMat4(inverseMatrixSimple(mt));
+
+    mat4 result;
+    invertRowMajor((float *)mt.m, (float *)result.m);
+    printMat4(result);
+    std::cout << "---" << std::endl;
+    printMat4(multiplyMat4(result, mt));
+
+    REQUIRE( multiplyMat4(result, mt) == identity);
+    // printMat4(multiplyMat4(inverseMatrixSimple(mt), mt));
+    // printMat4(multiplyMat4(mt, inverseMatrixSimple(mt)));
+    // REQUIRE( multiplyMat4(inverseMatrixSimple(mt), mt) == mt);
 }
 
+TEST_CASE( "matrix inverse 2" )
+{
+    // M * M^-1 = I
+    const mat4 mt2{
+        {
+            { 1.0f,   2.0f,  3.0f, 4.0f},
+            { 5.0f,   6.0f,  7.0f, 8.0f},
+            { 9.0f,  10.0f, 11.0f, 12.0f},
+            { 13.0f, 14.0f, 15.0f, 16.0f}
+        }
+    };
+
+    mat4 result;
+    invertRowMajor((float *)mt2.m, (float *)result.m);
+    printMat4(result);
+    std::cout << "---" << std::endl;
+    printMat4(multiplyMat4(result, mt2));
+
+    REQUIRE( multiplyMat4(result, mt2) == identity);
+}
+
+
+
+TEST_CASE( "matrix inverse 3" )
+{
+    // M * M^-1 = I
+    mat4 cameraMatrix = lookAtMatrix(vec3{4.0f, 3.0f, 3.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
+    std::cout << "CAMERA MATRIX:"  << std::endl;
+    printMat4(cameraMatrix);
+
+    mat4 viewMatrix;
+    invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
+    std::cout << "VIEW MATRIX:"  << std::endl;
+    printMat4(viewMatrix);
+
+    std::cout << "---" << std::endl;
+    printMat4(multiplyMat4(viewMatrix, cameraMatrix));
+    // CLOSE ENOUGH...
+    REQUIRE( multiplyMat4(viewMatrix, cameraMatrix) == identity);
+}

@@ -74,6 +74,15 @@ float v3DotProduct(const vec3 &v1, const vec3 &v2)
     return v1.x*v2.x + v1.y*v2.y + v1.z * v2.z;
 }
 
+vec3 v3CrossProduct(const vec3 &v1, const vec3 &v2)
+{
+    vec3 out;
+    out.x = v1.y * v2.z - v1.z * v2.y;
+    out.y = v1.z * v2.x - v1.x * v2.z;
+    out.z = v1.x * v2.y - v1.y * v2.x;
+    return out;
+}
+
 float v3Length(const vec3 &v)
 {
     return sqrtf(v3DotProduct(v, v));
@@ -217,6 +226,72 @@ mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrice
     out.m[3][3] = 1.0f;
     return  out;
 }
+
+// https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function
+mat4 lookAtMatrix(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
+{
+    vec3 forward = v3Normalize(v3Sub(from, to));// normalize(from - to);
+    vec3 right = v3CrossProduct(v3Normalize(tmp), forward); // crossProduct(normalize(tmp), forward);
+    vec3 up = v3CrossProduct(forward, right); //crossProduct(forward, right);
+
+    mat4 camToWorld;
+
+    camToWorld.m[0][0] = right.x;
+    camToWorld.m[0][1] = right.y;
+    camToWorld.m[0][2] = right.z;
+    camToWorld.m[1][0] = up.x;
+    camToWorld.m[1][1] = up.y;
+    camToWorld.m[1][2] = up.z;
+    camToWorld.m[2][0] = forward.x;
+    camToWorld.m[2][1] = forward.y;
+    camToWorld.m[2][2] = forward.z;
+
+    camToWorld.m[3][0] = from.x;
+    camToWorld.m[3][1] = from.y;
+    camToWorld.m[3][2] = from.z;
+
+    camToWorld.m[3][3] = 1.0f; // GUESS!!!
+
+    return camToWorld;
+}
+
+float MINOR(float m[16], int r0, int r1, int r2, int c0, int c1, int c2)
+{
+    return m[4*r0+c0] * (m[4*r1+c1] * m[4*r2+c2] - m[4*r2+c1] * m[4*r1+c2]) -
+           m[4*r0+c1] * (m[4*r1+c0] * m[4*r2+c2] - m[4*r2+c0] * m[4*r1+c2]) +
+           m[4*r0+c2] * (m[4*r1+c0] * m[4*r2+c1] - m[4*r2+c0] * m[4*r1+c1]);
+}
+
+
+void adjoint(float m[16], float adjOut[16])
+{
+    adjOut[ 0] =  MINOR(m,1,2,3,1,2,3); adjOut[ 1] = -MINOR(m,0,2,3,1,2,3); adjOut[ 2] =  MINOR(m,0,1,3,1,2,3); adjOut[ 3] = -MINOR(m,0,1,2,1,2,3);
+    adjOut[ 4] = -MINOR(m,1,2,3,0,2,3); adjOut[ 5] =  MINOR(m,0,2,3,0,2,3); adjOut[ 6] = -MINOR(m,0,1,3,0,2,3); adjOut[ 7] =  MINOR(m,0,1,2,0,2,3);
+    adjOut[ 8] =  MINOR(m,1,2,3,0,1,3); adjOut[ 9] = -MINOR(m,0,2,3,0,1,3); adjOut[10] =  MINOR(m,0,1,3,0,1,3); adjOut[11] = -MINOR(m,0,1,2,0,1,3);
+    adjOut[12] = -MINOR(m,1,2,3,0,1,2); adjOut[13] =  MINOR(m,0,2,3,0,1,2); adjOut[14] = -MINOR(m,0,1,3,0,1,2); adjOut[15] =  MINOR(m,0,1,2,0,1,2);
+}
+
+float det(float m[16])
+{
+    float out = m[0] * MINOR(m, 1, 2, 3, 1, 2, 3) -
+                m[1] * MINOR(m, 1, 2, 3, 0, 2, 3) +
+                m[2] * MINOR(m, 1, 2, 3, 0, 1, 3) -
+                m[3] * MINOR(m, 1, 2, 3, 0, 1, 2);
+    if (out == 0)
+        std::cerr << "DET 0!!!" << std::endl;
+    return out;
+}
+
+
+void invertRowMajor(float m[16], float invOut[16])
+{
+    adjoint(m, invOut);
+
+    float inv_det = 1.0f / det(m);
+    for(int i = 0; i < 16; ++i)
+        invOut[i] = invOut[i] * inv_det;
+}
+
 
 void printMat4(const mat4 &mat)
 {
