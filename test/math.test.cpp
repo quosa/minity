@@ -110,7 +110,7 @@ TEST_CASE( "1000-matrix * 0001-matrix both ways" )
     REQUIRE( multiplyMat4(m0001, m1000) == expected2);
 }
 
-TEST_CASE( "matrix inverse" )
+TEST_CASE( "matrix inverse - simple" )
 {
     // M * M^-1 = I
     const mat4 mt{
@@ -121,8 +121,6 @@ TEST_CASE( "matrix inverse" )
             { 0.0f,  0.0f, 0.0f, 1.0f}
         }
     };
-    // printMat4(inverseMatrixSimple(mt));
-
     mat4 result;
     invertRowMajor((float *)mt.m, (float *)result.m);
     printMat4(result);
@@ -130,35 +128,9 @@ TEST_CASE( "matrix inverse" )
     printMat4(multiplyMat4(result, mt));
 
     REQUIRE( multiplyMat4(result, mt) == identity);
-    // printMat4(multiplyMat4(inverseMatrixSimple(mt), mt));
-    // printMat4(multiplyMat4(mt, inverseMatrixSimple(mt)));
-    // REQUIRE( multiplyMat4(inverseMatrixSimple(mt), mt) == mt);
 }
 
-TEST_CASE( "matrix inverse 2" )
-{
-    // M * M^-1 = I
-    const mat4 mt2{
-        {
-            { 1.0f,   2.0f,  3.0f, 4.0f},
-            { 5.0f,   6.0f,  7.0f, 8.0f},
-            { 9.0f,  10.0f, 11.0f, 12.0f},
-            { 13.0f, 14.0f, 15.0f, 16.0f}
-        }
-    };
-
-    mat4 result;
-    invertRowMajor((float *)mt2.m, (float *)result.m);
-    printMat4(result);
-    std::cout << "---" << std::endl;
-    printMat4(multiplyMat4(result, mt2));
-
-    REQUIRE( multiplyMat4(result, mt2) == identity);
-}
-
-
-
-TEST_CASE( "matrix inverse 3" )
+TEST_CASE( "matrix inverse for look-at camera" )
 {
     // M * M^-1 = I
     mat4 cameraMatrix = lookAtMatrixRH(vec3{4.0f, 3.0f, 3.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
@@ -171,7 +143,35 @@ TEST_CASE( "matrix inverse 3" )
     printMat4(viewMatrix);
 
     std::cout << "---" << std::endl;
-    printMat4(multiplyMat4(viewMatrix, cameraMatrix));
+    mat4 lookAtResult = multiplyMat4(viewMatrix, cameraMatrix);
+    printMat4(lookAtResult);
     // CLOSE ENOUGH...
-    REQUIRE( multiplyMat4(viewMatrix, cameraMatrix) == identity);
+    for (int row=0; row<4; row++)
+        for (int col=0; col<4; col++)
+            lookAtResult.m[row][col] = round(1000*lookAtResult.m[row][col])/1000.0;
+
+    REQUIRE( lookAtResult == identity);
+}
+
+TEST_CASE( "matrix inverse for fps camera" )
+{
+    // M * M^-1 = I
+    mat4 fpsCameraMatrix = fpsLookAtMatrixRH( vec3{4.0f, 3.0f, 3.0f}, 0.1f, -0.2f);
+    std::cout << "CAMERA MATRIX:"  << std::endl;
+    printMat4(fpsCameraMatrix);
+
+    mat4 fpsViewMatrix;
+    invertRowMajor((float *)fpsCameraMatrix.m, (float *)fpsViewMatrix.m);
+    std::cout << "VIEW MATRIX:"  << std::endl;
+    printMat4(fpsViewMatrix);
+
+    std::cout << "---" << std::endl;
+    mat4 fpsResult = multiplyMat4(fpsViewMatrix, fpsCameraMatrix);
+    printMat4(fpsResult);
+    for (int row=0; row<4; row++)
+        for (int col=0; col<4; col++)
+            fpsResult.m[row][col] = round(1000*fpsResult.m[row][col])/1000.0;
+
+    printMat4(fpsResult);
+    REQUIRE( fpsResult == identity);
 }
