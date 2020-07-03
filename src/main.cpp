@@ -20,7 +20,7 @@ int main() {
 
 	camera.fovDegrees = 90.0f;
 	camera.rotation = vec3{DEG(0), DEG(0), DEG(0)};
-	camera.translation = vec3{0.0f, 0.0f, 10.0f};
+	camera.translation = vec3{0.0f, 0.0f, 2.0f};
 
 	// object.tris = {
 	// 	{ { {0.0f, 0.0f, 0.0f},  {0.0f, 1.0f, 0.0f},  {1.0f, 0.0f, 0.0f} } },
@@ -32,8 +32,8 @@ int main() {
 	// loadMeshFromObj("models/octahedron.obj", &object);
 	// object.translation.z = -4.0f;
 	object.scale = vec3{1.0f, 1.0f, 1.0f};
-	object.rotation = vec3{DEG(180), DEG(180), DEG(180)};
-	object.translation = vec3{0.0f, 0.0f, 10.0f};
+	object.rotation = vec3{DEG(0), DEG(0), DEG(10)};
+	object.translation = vec3{0.0f, 0.0f, -1.0f};
 
 	// loadMeshFromObj("models/teapot.obj", &object);
 	// object.translation = vec3{0.0f, -1.5f, -15.0f};
@@ -49,20 +49,17 @@ int main() {
 		SDL_Delay(20); // some computation budget...
 		clearBuffer();
 
-		object.translation = v3Add(object.translation, input);
+		// object.translation = v3Add(object.translation, input);
 		// printVec3(object.translation);
 
-		// camera.rotation.y += DEG(0.1); // will overflow eventually
-		// camera.translation.x -= 0.01;
+		// camera.rotation.y += DEG(0.5); // will overflow eventually
+		// printVec3(camera.translation);
+
+		// for camera zoom in/out are opposite
+		input.z *= -1.0f;
+		camera.translation = v3Add(camera.translation, input);
 
 		drawMesh(&object, &camera);
-
-		// screen coordinate test
-		// drawLine(vec3{-1.0f, -1.0f, 0.0f}, vec3{1.0f, 1.0f, 0.0f});
-		// drawLine(vec3{-1.0f, 0.0f, 0.0f}, vec3{0.0f, -1.0f, 0.0f});
-		// drawLine(vec3{0.0f, 1.0f, 0.0f}, vec3{0.0f, -1.0f, 0.0f});
-		// drawLine(vec3{0.0f, 0.0f, 0.0f}, vec3{1.0f, -1.0f, 0.0f});
-		// drawLine(vec3{-1.0f, 0.5f, 0.0f}, vec3{1.1f, 0.5f, 0.0f}); // is clipped!
 
 	    SDLSwapBuffers();
 		SDLFPSUpdate(ft->delta());
