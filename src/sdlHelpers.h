@@ -1,6 +1,9 @@
 #include <SDL.h>
 #include <list>
 
+// for vec3 :-/
+#include "simpleMath.h"
+
 SDL_Window * g_SDLWindow;
 SDL_Renderer * g_SDLRenderer;
 SDL_Texture * g_SDLTexture;
@@ -56,7 +59,7 @@ void SDLSwapBuffers(/*color_t * backbuffer*/)
 	SDL_RenderPresent(g_SDLRenderer);
 }
 
-bool isRunning()
+bool isRunning(vec3 *input)
 {
 	SDL_Event sEvent;
 
@@ -69,8 +72,38 @@ bool isRunning()
 		return false;
 
 		break;
+    case SDL_KEYDOWN:
+        switch( sEvent.key.keysym.sym )
+        {
+            case SDLK_LEFT:
+                std::cerr << " LEFT";
+                input->x -= 1;
+                break;
+            case SDLK_RIGHT:
+                std::cerr << " RIGHT";
+                input->x += 1;
+                break;
+            case SDLK_UP:
+                std::cerr << " UP";
+                input->y += 1;
+                break;
+            case SDLK_DOWN:
+                std::cerr << " DOWN";
+                input->y -= 1;
+                break;
+            case SDLK_PLUS:
+                std::cerr << " IN";
+                input->z += 1;
+                break;
+            case SDLK_MINUS:
+                std::cerr << " OUT";
+                input->z -= 1;
+                break;
+            default:
+                break;
+        }
+        break;
 	}
-
 	return true;
 }
 
