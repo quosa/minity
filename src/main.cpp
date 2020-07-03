@@ -65,7 +65,7 @@ int main() {
 		// printVec3(camera.translation);
 
 		// for camera zoom in/out are opposite
-		inputTranslation.z *= -1.0f;
+		inputTranslation.z *= 1.0f; // todo: camera is now inverted to positive z-axis (was: -1.0f;)
 		camera.translation = v3Add(camera.translation, inputTranslation);
 		camera.rotation = v3Add(camera.rotation, inputRotation);
 		std::cout << "----- trans & rot -----" << std::endl;
