@@ -141,8 +141,7 @@ void drawMesh(mesh *m, cam *c)
     mat4 zRotator = rotateZMatrix(m->rotation.z);
     mat4 translator = translateMatrix(m->translation.x, m->translation.y, m->translation.z);
 
-    // order matters: first scale, then translate
-    // mat4 worldTransformations = multiplyMat4(translator, scaler);
+    // order matters: scale > rotate > move (=translate)
     mat4 worldTransformations = multiplyMat4(xRotator, scaler);
     worldTransformations = multiplyMat4(yRotator, worldTransformations);
     worldTransformations = multiplyMat4(zRotator, worldTransformations);
@@ -150,48 +149,21 @@ void drawMesh(mesh *m, cam *c)
 
     // perspective
     float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
+    // TODO: near and far field to camera
     mat4 projector = projectionMatrix(c->fovDegrees, aspectRatio, -0.1f, -400.0f);
 
-    // mat4 cameraYRotator = rotateYMatrix(c->rotation.y);
-        // mat4 cameraXRotator = rotateXMatrix(DEG(0)); // 0.4 .. -0.4 (plus is "looking down")
-        // TODO: Z feels off???
-        // mat4 cameraTranslator = translateMatrix(c->translation.x, c->translation.y, c->translation.z);
-        // mat4 cameraMatrix = multiplyMat4(cameraTranslator, cameraYRotator);
-
     vec3 cameraPos{c->translation.x, c->translation.y, c->translation.z};
+
+    // for basic look-at camera
     // vec3 lookAt{0.0f, 0.0f, 0.0f};
     // vec3 up{0.0f, 1.0f, 0.0f};
-    // vec3 lookDir = multiplyVec3(lookAt, cameraYRotator);
-    // lookAt = v3Add(cameraPos, lookDir);
-
-    // std::cout << "LOOK AT:"  << std::endl;
-    // mat4 cameraMatrix = lookAtMatrixRH(vec3{10.0f, 0.0f, 10.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
-    // mat4 cameraMatrix = lookAtMatrixRH(vec3{c->translation.x, c->translation.y, c->translation.z}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
     // mat4 cameraMatrix = lookAtMatrixRH(cameraPos, lookAt, up);
 
     // pitch -90 .. 90, yaw 0 ... 360, (both in rad)
     mat4 cameraMatrix = fpsLookAtMatrixRH(cameraPos, c->rotation.x, c->rotation.y);
 
-    // std::cout << "CAMERA MATRIX:"  << std::endl;
-    // printMat4(cameraMatrix);
-
-        // mat4 cameraMatrix = multiplyMat4(cameraYRotator, cameraTranslator); // unlikely?
-        // mat4 cameraMatrix = multiplyMat4(cameraYRotator, cameraXRotator);
-        // cameraMatrix = multiplyMat4(cameraTranslator, cameraMatrix);
-        // std::cout << "=======================" << std::endl;
-        // printMat4(cameraMatrix);
-        // std::cout << "-----------------------" << std::endl;
-        // mat4 viewMatrix = inverseMatrixSimple(cameraMatrix);
-
     mat4 viewMatrix;
     invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
-    // std::cout << "VIEW MATRIX:"  << std::endl;
-    // printMat4(viewMatrix);
-
-        // printMat4(viewMatrix);
-        // mat4 viewProjection = multiplyMat4(viewMatrix, projector);
-        // mat4 viewProjection = multiplyMat4(projector, viewMatrix); // unlikely?
-        // mat4 viewProjection = projector; // debug
 
     // We loop each Triangle we need to draw
 	for(auto triangle : m->tris)
@@ -216,18 +188,12 @@ void drawMesh(mesh *m, cam *c)
         // printTri(view, " view");
 
         projected = view;
-
         // only projection, no camera
         projected.vertices[0] = multiplyVec3(view.vertices[0], projector);
         projected.vertices[1] = multiplyVec3(view.vertices[1], projector);
         projected.vertices[2] = multiplyVec3(view.vertices[2], projector);
 
         // printTri(projected, " proj");
-
-        // both projection and camera
-        // view.vertices[0] = multiplyVec3(world.vertices[0], viewProjection);
-        // view.vertices[1] = multiplyVec3(world.vertices[1], viewProjection);
-        // view.vertices[2] = multiplyVec3(world.vertices[2], viewProjection);
 
         // normalise into cartesian space
         projected.vertices[0] = v3Div(projected.vertices[0], projected.vertices[0].w);
@@ -242,11 +208,6 @@ void drawMesh(mesh *m, cam *c)
         projected.vertices[0].y *= -1.0f;
         projected.vertices[1].y *= -1.0f;
         projected.vertices[2].y *= -1.0f;
-        // view.vertices[0].z *= -1.0f;
-        // view.vertices[1].z *= -1.0f;
-        // view.vertices[2].z *= -1.0f;
-
-        // printVec3(view.vertices[1]);
 
         // printTri(projected, "final");
 
