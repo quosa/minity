@@ -101,3 +101,19 @@ TEST_CASE( "1000-matrix * 0001-matrix both ways" )
     REQUIRE( multiplyMat4(m0001, m1000) == expected2);
 }
 
+TEST_CASE( "matrix inverse" )
+{
+    const mat4 mt{
+        {
+            { 1.0f,  1.0f, 1.0f, 10.0f},
+            {-1.0f,  1.0f, 1.0f, 20.0f},
+            {-1.0f, -1.0f, 1.0f, 30.0f},
+            { 0.0f,  0.0f, 0.0f, 1.0f}
+        }
+    };
+    printMat4(inverseMatrixSimple(mt));
+    printMat4(multiplyMat4(inverseMatrixSimple(mt), mt));
+    printMat4(multiplyMat4(mt, inverseMatrixSimple(mt)));
+    REQUIRE( multiplyMat4(inverseMatrixSimple(mt), mt) == mt);
+}
+

@@ -1,3 +1,6 @@
+#pragma once
+
+#include <cmath>
 #include <vector>
 
 struct vec3
@@ -45,6 +48,42 @@ struct mat4
         return true;
     };
 };
+
+vec3 v3Add(const vec3 &v1, const vec3 &v2)
+{
+    return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
+}
+
+vec3 v3Sub(const vec3 &v1, const vec3 &v2)
+{
+    return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z };
+}
+
+vec3 v3Mul(const vec3 &v1, const float k)
+{
+    return { v1.x * k, v1.y * k, v1.z * k };
+}
+
+vec3 v3Div(const vec3 &v1, const float k)
+{
+    return { v1.x / k, v1.y / k, v1.z / k };
+}
+
+float v3DotProduct(const vec3 &v1, const vec3 &v2)
+{
+    return v1.x*v2.x + v1.y*v2.y + v1.z * v2.z;
+}
+
+float v3Length(const vec3 &v)
+{
+    return sqrtf(v3DotProduct(v, v));
+}
+
+vec3 v3Normalize(const vec3 &v)
+{
+    float l = v3Length(v);
+    return { v.x / l, v.y / l, v.z / l };
+}
 
 mat4 scaleMatrix(const float x, const float y, const float z)
 {
@@ -112,16 +151,15 @@ mat4 translateMatrix(const float x, const float y, const float z)
 // perspective projection:
 mat4 projectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
 {
-    float fFovRad = 1.0f / tanf(fFovDegrees * 0.5f / 180.0f * 3.14159f);
+    float fFovRad = tanf(fFovDegrees * 0.5f * 3.14159f / 180.0f );
 
     mat4 out;
     // row order: matrix[row][col]
-    out.m[0][0] = (1 / fAspectRatio) * fFovRad;
-    out.m[1][1] = fFovRad;
-    out.m[2][2] = (-1 * (fFar + fNear)) / (fFar - fNear);
-    out.m[3][2] = (-2 * fFar * fNear) / (fFar - fNear);
-    out.m[2][3] = -1.0f;
-    out.m[3][3] = 0.0f;
+    out.m[0][0] = 1 / (fAspectRatio * fFovRad);
+    out.m[1][1] = 1 / fFovRad;
+    out.m[2][2] = (-fNear - fFar) / (fNear - fFar);
+    out.m[2][3] = (2 * fFar * fNear) / (fNear - fFar);
+    out.m[3][2] = 1.0f;
     return out;
 };
 
@@ -138,15 +176,10 @@ vec3 multiplyVec3(const vec3 &i, const mat4 &m)
 {
     // row order: matrix[row][col]
     vec3 o;
-    o.x = i.x * m.m[0][0] + i.y * m.m[0][1] + i.z * m.m[0][2] + m.m[0][3];
-    o.y = i.x * m.m[1][0] + i.y * m.m[1][1] + i.z * m.m[1][2] + m.m[1][3];
-    o.z = i.x * m.m[2][0] + i.y * m.m[2][1] + i.z * m.m[2][2] + m.m[2][3];
-    float w = i.x * m.m[3][0] + i.y * m.m[3][1] + i.z * m.m[3][2] + m.m[3][3];
-
-    if (w != 0.0f)
-    {
-        o.x /= w; o.y /= w; o.z /= w;
-    }
+    o.x = i.x * m.m[0][0] + i.y * m.m[0][1] + i.z * m.m[0][2] + i.w * m.m[0][3];
+    o.y = i.x * m.m[1][0] + i.y * m.m[1][1] + i.z * m.m[1][2] + i.w * m.m[1][3];
+    o.z = i.x * m.m[2][0] + i.y * m.m[2][1] + i.z * m.m[2][2] + i.w * m.m[2][3];
+    o.w = i.x * m.m[3][0] + i.y * m.m[3][1] + i.z * m.m[3][2] + i.w * m.m[3][3];
     return o;
 }
 
@@ -160,6 +193,29 @@ mat4 multiplyMat4(const mat4 &m1, const mat4 &m2)
                         + m1.m[r][2] * m2.m[2][c]
                         + m1.m[r][3] * m2.m[3][c];
     return out;
+}
+
+// http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html
+mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrices
+{
+    mat4  out;
+    // row order: matrix[row][col]
+    // The basic idea is that the scaling/rotation combination of the transformation matrix
+    // (first 3x3 sub-matrix) is an orthonormal matrix
+    // and inverse of on orthonormal matrix is equal to the the transpose.
+    out.m[0][0] = m.m[0][0];  out.m[0][1] = m.m[1][0];  out.m[0][2] = m.m[2][0];
+    out.m[1][0] = m.m[0][1];  out.m[1][1] = m.m[1][1];  out.m[1][2] = m.m[2][1];
+    out.m[2][0] = m.m[0][2];  out.m[2][1] = m.m[1][2];  out.m[2][2] = m.m[2][2];
+    out.m[3][0] = 0.0f;       out.m[3][1] = 0.0f;       out.m[3][2] = 0.0f;
+
+    float tx = m.m[0][3];
+    float ty = m.m[1][3];
+    float tz = m.m[2][3];
+    out.m[0][3] = -(m.m[0][0]*tx + m.m[0][1]*ty + m.m[0][2]*tz);
+    out.m[1][3] = -(m.m[1][0]*tx + m.m[1][1]*ty + m.m[1][2]*tz);
+    out.m[2][3] = -(m.m[2][0]*tx + m.m[2][1]*ty + m.m[2][2]*tz);
+    out.m[3][3] = 1.0f;
+    return  out;
 }
 
 void printMat4(const mat4 &mat)
