@@ -155,13 +155,23 @@ void drawMesh(mesh *m, cam *c)
     float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
     mat4 projector = projectionMatrix(c->fovDegrees, aspectRatio, -0.1f, -400.0f);
 
-        mat4 cameraYRotator = rotateYMatrix(c->rotation.y);
+    // mat4 cameraYRotator = rotateYMatrix(c->rotation.y);
         // mat4 cameraXRotator = rotateXMatrix(DEG(0)); // 0.4 .. -0.4 (plus is "looking down")
         // TODO: Z feels off???
-        mat4 cameraTranslator = translateMatrix(c->translation.x, c->translation.y, c->translation.z);
-        mat4 cameraMatrix = multiplyMat4(cameraTranslator, cameraYRotator);
+        // mat4 cameraTranslator = translateMatrix(c->translation.x, c->translation.y, c->translation.z);
+        // mat4 cameraMatrix = multiplyMat4(cameraTranslator, cameraYRotator);
 
-    // mat4 cameraMatrix = lookAtMatrix(vec3{4.0f, 3.0f, 3.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
+    vec3 cameraPos{c->translation.x, c->translation.y, c->translation.z};
+    vec3 lookAt{0.0f, 0.0f, 0.0f};
+    vec3 up{0.0f, 1.0f, 0.0f};
+    // vec3 lookDir = multiplyVec3(lookAt, cameraYRotator);
+    // lookAt = v3Add(cameraPos, lookDir);
+
+    // std::cout << "LOOK AT:"  << std::endl;
+    // mat4 cameraMatrix = lookAtMatrixRH(vec3{10.0f, 0.0f, 10.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
+    // mat4 cameraMatrix = lookAtMatrixRH(vec3{c->translation.x, c->translation.y, c->translation.z}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
+    mat4 cameraMatrix = lookAtMatrixRH(cameraPos, lookAt, up);
+
     // std::cout << "CAMERA MATRIX:"  << std::endl;
     // printMat4(cameraMatrix);
 
@@ -175,8 +185,8 @@ void drawMesh(mesh *m, cam *c)
 
     mat4 viewMatrix;
     invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
-    std::cout << "VIEW MATRIX:"  << std::endl;
-    printMat4(viewMatrix);
+    // std::cout << "VIEW MATRIX:"  << std::endl;
+    // printMat4(viewMatrix);
 
         // printMat4(viewMatrix);
         // mat4 viewProjection = multiplyMat4(viewMatrix, projector);
@@ -188,21 +198,22 @@ void drawMesh(mesh *m, cam *c)
 	{
         tri *out, world, view, projected;
 
-        world = triangle;
+        // printTri(triangle, " raw ");
 
+        world = triangle;
         world.vertices[0] = multiplyVec3(triangle.vertices[0], worldTransformations);
         world.vertices[1] = multiplyVec3(triangle.vertices[1], worldTransformations);
         world.vertices[2] = multiplyVec3(triangle.vertices[2], worldTransformations);
 
-        // printVec3(world.vertices[1]);
-        // out = &world;
+        // printTri(world, "world");
 
         view = world;
-
         // only camera, no projection
         view.vertices[0] = multiplyVec3(world.vertices[0], viewMatrix);
         view.vertices[1] = multiplyVec3(world.vertices[1], viewMatrix);
         view.vertices[2] = multiplyVec3(world.vertices[2], viewMatrix);
+
+        // printTri(view, " view");
 
         projected = view;
 
@@ -210,6 +221,8 @@ void drawMesh(mesh *m, cam *c)
         projected.vertices[0] = multiplyVec3(view.vertices[0], projector);
         projected.vertices[1] = multiplyVec3(view.vertices[1], projector);
         projected.vertices[2] = multiplyVec3(view.vertices[2], projector);
+
+        // printTri(projected, " proj");
 
         // both projection and camera
         // view.vertices[0] = multiplyVec3(world.vertices[0], viewProjection);
@@ -234,6 +247,8 @@ void drawMesh(mesh *m, cam *c)
         // view.vertices[2].z *= -1.0f;
 
         // printVec3(view.vertices[1]);
+
+        // printTri(projected, "final");
 
         out = &projected;
 

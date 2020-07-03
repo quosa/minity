@@ -161,7 +161,7 @@ TEST_CASE( "matrix inverse 2" )
 TEST_CASE( "matrix inverse 3" )
 {
     // M * M^-1 = I
-    mat4 cameraMatrix = lookAtMatrix(vec3{4.0f, 3.0f, 3.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
+    mat4 cameraMatrix = lookAtMatrixRH(vec3{4.0f, 3.0f, 3.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
     std::cout << "CAMERA MATRIX:"  << std::endl;
     printMat4(cameraMatrix);
 

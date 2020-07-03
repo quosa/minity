@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <string>
 #include <vector>
 
 struct vec3
@@ -48,6 +49,12 @@ struct mat4
         return true;
     };
 };
+
+// forward declarations:
+void printMat4(const mat4 &mat);
+void printVec3(const vec3 &v);
+void printTri(const tri &t, std::string label);
+
 
 vec3 v3Add(const vec3 &v1, const vec3 &v2)
 {
@@ -227,12 +234,17 @@ mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrice
     return  out;
 }
 
-// https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function
-mat4 lookAtMatrix(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
-{
-    vec3 forward = v3Normalize(v3Sub(from, to));// normalize(from - to);
-    vec3 right = v3CrossProduct(v3Normalize(tmp), forward); // crossProduct(normalize(tmp), forward);
-    vec3 up = v3CrossProduct(forward, right); //crossProduct(forward, right);
+// https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function (looks flaky)
+// https://github.com/g-truc/glm/blob/master/glm/ext/matrix_transform.inl#L99 (lookAtRH)
+// and finally https://www.3dgep.com/understanding-the-view-matrix/
+mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
+{   // NOTE RIGHT-HANDED!!!
+    vec3 forward = v3Normalize(v3Sub(to, from));// !!! switched !!! normalize(from - to);
+    // printVec3(forward);
+    vec3 right = v3Normalize(v3CrossProduct(forward, tmp)); // !!! switched !!! crossProduct(normalize(tmp), forward);
+    // printVec3(right);
+    vec3 up = v3CrossProduct(right, forward); // !!! switched !!! crossProduct(forward, right);
+    // printVec3(up);
 
     mat4 camToWorld;
 
@@ -242,17 +254,45 @@ mat4 lookAtMatrix(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f,
     camToWorld.m[1][0] = up.x;
     camToWorld.m[1][1] = up.y;
     camToWorld.m[1][2] = up.z;
-    camToWorld.m[2][0] = forward.x;
-    camToWorld.m[2][1] = forward.y;
-    camToWorld.m[2][2] = forward.z;
+    camToWorld.m[2][0] = -forward.x; // !!! negate !!!
+    camToWorld.m[2][1] = -forward.y; // !!! negate !!!
+    camToWorld.m[2][2] = -forward.z; // !!! negate !!!
 
-    camToWorld.m[3][0] = from.x;
-    camToWorld.m[3][1] = from.y;
-    camToWorld.m[3][2] = from.z;
+    camToWorld.m[0][3] = -v3DotProduct(right, from); // !!! from.x;
+    camToWorld.m[1][3] = -v3DotProduct(up, from); // !!! from.y;
+    camToWorld.m[2][3] = -v3DotProduct(forward, from); // !!! from.z;
 
     camToWorld.m[3][3] = 1.0f; // GUESS!!!
 
     return camToWorld;
+}
+
+// Pitch must be in the range of [-90 ... 90] degrees and
+// yaw must be in the range of [0 ... 360] degrees.
+// Pitch and yaw variables must be expressed in radians.
+mat4 fpsLookAtMatrixRH( vec3 eye, float pitch, float yaw )
+{
+    // I assume the values are already converted to radians.
+    float cosPitch = cos(pitch);
+    float sinPitch = sin(pitch);
+    float cosYaw = cos(yaw);
+    float sinYaw = sin(yaw);
+
+    vec3 xaxis = { cosYaw, 0, -sinYaw };
+    vec3 yaxis = { sinYaw * sinPitch, cosPitch, cosYaw * sinPitch };
+    vec3 zaxis = { sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw };
+
+    mat4 fpsViewMatrix {
+        {
+            { xaxis.x,   xaxis.y,  xaxis.z, -v3DotProduct( xaxis, eye )},
+            { yaxis.x,   yaxis.y,  yaxis.z, -v3DotProduct( yaxis, eye )},
+            { zaxis.x,   zaxis.y,  zaxis.z, -v3DotProduct( zaxis, eye )},
+            {    0.0f,      0.0f,     0.0f,                        1.0f}
+        }
+    };
+
+
+    return fpsViewMatrix;
 }
 
 float MINOR(float m[16], int r0, int r1, int r2, int c0, int c1, int c2)
@@ -282,7 +322,7 @@ float det(float m[16])
     return out;
 }
 
-
+// http://rodolphe-vaillant.fr/?e=7
 void invertRowMajor(float m[16], float invOut[16])
 {
     adjoint(m, invOut);
@@ -307,4 +347,12 @@ void printMat4(const mat4 &mat)
 void printVec3(const vec3 &v)
 {
     std::cout << "( " << v.x << " " << v.y << " " << v.z << " " << v.w << " )" << std::endl;
+}
+
+void printTri(const tri &t, std::string label = "")
+{
+    std::cout << "TRI (" << label << "):";
+    for (int i = 0; i < 3; i++)
+        std::cout <<  " (" << t.vertices[i].x << " " << t.vertices[i].y << " " << t.vertices[i].z << " " << t.vertices[i].w << ")";
+    std::cout << std::endl;
 }
