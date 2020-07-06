@@ -187,6 +187,25 @@ void drawMesh(mesh *m, cam *c)
 
         // printTri(view, " view");
 
+        // back-face culling - we do it in view space (=camera coordinates)
+        // cannot do it in world space as we have to anyway adjust for camera rotation
+        auto faceNormal = v3Normalize(v3CrossProduct(
+            v3Sub(view.vertices[1], view.vertices[0]),
+            v3Sub(view.vertices[2], view.vertices[0])
+        ));
+        auto vCameraRay = v3Normalize(view.vertices[0]); // camera is now at origin
+        auto camDot = v3DotProduct(faceNormal, vCameraRay);
+
+        // drawLine(vec3(), faceNormal); // faceNormal sticking out from the face
+        // drawLine(vec3(), vCameraRay); // ray from camera to face
+
+        if ( camDot < 0.0f)
+        {
+            // std::cout << "CULLING face normal: " << faceNormal.str() << " camera:" << vCameraRay.str() << " dot: " << std::to_string(camDot) << std::endl;
+            // std::cout << "            face[0]: " << view.vertices[0].str() << " [1]: " << view.vertices[1].str() << " [2]: " << view.vertices[2].str() << std::endl;
+            continue;
+        }
+
         projected = view;
         // only projection, no camera
         projected.vertices[0] = multiplyVec3(view.vertices[0], projector);

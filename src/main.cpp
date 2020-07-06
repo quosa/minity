@@ -39,8 +39,7 @@ int main() {
 	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
 	// object.translation = vec3{0.0f, 0.0f, 0.0f};
 
-	loadMeshFromObj("models/teapot.obj", &object);
-	// object.translation = vec3{0.0f, -1.5f, -15.0f};
+	loadMeshFromObj("models/teapot.obj", &object); // check if clockwise???
 	object.scale = vec3{0.5f, 0.5f, 0.5f};
 	object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
 	object.translation = vec3{0.0f, -1.5f, 0.0f};
@@ -68,9 +67,8 @@ int main() {
 		inputTranslation.z *= 1.0f; // todo: camera is now inverted to positive z-axis (was: -1.0f;)
 		camera.translation = v3Add(camera.translation, inputTranslation);
 		camera.rotation = v3Add(camera.rotation, inputRotation);
-		std::cout << "----- trans & rot -----" << std::endl;
-		printVec3(camera.translation);
-		printVec3(camera.rotation);
+		std::cout << "cam: position " << camera.translation.str()
+				<< " rotation " << camera.rotation.str() << std::endl;
 
 		drawMesh(&object, &camera);
 

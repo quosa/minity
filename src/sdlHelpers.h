@@ -77,19 +77,19 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
         {
             case SDLK_LEFT:
                 std::cerr << " LEFT";
-                inputTranslation->x += 1; // todo: camera is now inverted
+                inputTranslation->x += 0.5; // todo: camera is now inverted
                 break;
             case SDLK_RIGHT:
                 std::cerr << " RIGHT";
-                inputTranslation->x -= 1; // todo: camera is now inverted
+                inputTranslation->x -= 0.5; // todo: camera is now inverted
                 break;
             case SDLK_UP:
                 std::cerr << " UP";
-                inputTranslation->y -= 1; // todo: camera is now inverted
+                inputTranslation->y -= 0.5; // todo: camera is now inverted
                 break;
             case SDLK_DOWN:
                 std::cerr << " DOWN";
-                inputTranslation->y += 1; // todo: camera is now inverted
+                inputTranslation->y += 0.5; // todo: camera is now inverted
                 break;
             case SDLK_PLUS:
                 std::cerr << " IN";

@@ -18,6 +18,14 @@ struct vec3
             && this->z == other.z
             && this->w == other.w;
     };
+    std::string str()
+    {
+        return "("
+            + std::to_string(this->x)
+            + ", " + std::to_string(this->y)
+            + ", " + std::to_string(this->z)
+            + ")";
+    }
 };
 
 struct tri
