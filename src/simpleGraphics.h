@@ -1,4 +1,4 @@
-
+#include <algorithm>
 #include <fstream>
 #include <strstream>
 #include <iostream>
@@ -95,6 +95,7 @@ void fillBottomFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
     }
 };
 
+// http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
 void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
 {
     point v1 = screenXY(vertices[0]);
@@ -236,6 +237,8 @@ void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
 
 void drawMesh(mesh *m, cam *c)
 {
+    std::vector<tri> trianglesToSortAndDraw;
+
     // mat4 scaler = scaleMatrix(0.25f, 0.25f, 0.25f);
     // mat4 scaler = scaleMatrix(1.0f, 1.0f, 1.0f);
     mat4 scaler = scaleMatrix(m->scale.x, m->scale.y, m->scale.z);
@@ -335,14 +338,27 @@ void drawMesh(mesh *m, cam *c)
 
         out = &projected;
 
+        trianglesToSortAndDraw.push_back(*out);
+
+    }
+    // sort all to-be-drawn triangles from bact to front
+    std::sort(trianglesToSortAndDraw.begin(), trianglesToSortAndDraw.end(), [](tri &t1, tri &t2)
+    {
+        float z1 = (t1.vertices[0].z + t1.vertices[1].z + t1.vertices[2].z) / 3.0f;
+        float z2 = (t2.vertices[0].z + t2.vertices[1].z + t2.vertices[2].z) / 3.0f;
+        return z1 > z2;
+    });
+
+    // draw all triangles
+    for (auto triangle : trianglesToSortAndDraw)
+    {
         // order is face first and then wireframe on top
-        fillTriangle(out->vertices, (u_int32_t)0xccccccff);
-        drawLine(out->vertices[0], out->vertices[1], (u_int32_t)0xeeeeeeff);
-        drawLine(out->vertices[1], out->vertices[2], (u_int32_t)0xeeeeeeff);
-        drawLine(out->vertices[2], out->vertices[0], (u_int32_t)0xeeeeeeff);
+        fillTriangle(triangle.vertices, (u_int32_t)0xccccccff);
+        drawLine(triangle.vertices[0], triangle.vertices[1], (u_int32_t)0xeeeeeeff);
+        drawLine(triangle.vertices[1], triangle.vertices[2], (u_int32_t)0xeeeeeeff);
+        drawLine(triangle.vertices[2], triangle.vertices[0], (u_int32_t)0xeeeeeeff);
     }
 }
-
 
 void printMesh(mesh *m)
 {

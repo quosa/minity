@@ -18,12 +18,15 @@ Working:
  * camera rotation and move (TODO: better key mapping for exploration)
  * [orthoraphic](https://en.wikipedia.org/wiki/Orthographic_projection) perspective correction with fixed [FoV, field-of-view](https://en.wikipedia.org/wiki/Angle_of_view)
  * rudimentary clipping (TODO: proper clipping)
+ * face normal check to discard hidden triangles (model needs to be in clockwise winding order!)
+ * wireframe and global face color
  * basic math tests with [Catch2](https://github.com/catchorg/Catch2)
 
 TODO:
- * z-buffer check or face normal check to discard hidden triangles
+ * z-buffer check (is it now needed?)
  * scene concept
- * wire-frame line color > painting > texturing > anti-aliasing
+ * wire-frame line color (done) > painting (done) > texturing > anti-aliasing
+ * vertex/face color from model
  * jump from classic make to CMake
  * consider `clang-format`
  * add address/thread/memory sanitizer

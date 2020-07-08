@@ -23,6 +23,10 @@ int main() {
 	camera.translation = vec3{0.0f, 0.0f, -2.0f};
 
 	// object.tris = {
+	// 	{ { {-0.5f, -0.5f, 0.0f},  {0.0f, 0.5f, 0.0f},  {0.5f, -0.5f, 0.0f} } },
+	// };
+
+	// object.tris = {
 	// 	{ { {0.0f, 0.0f, 0.0f},  {0.0f, 1.0f, 0.0f},  {1.0f, 0.0f, 0.0f} } },
 	// };
 
