@@ -20,10 +20,17 @@ int main() {
 
 	camera.fovDegrees = 90.0f;
 	camera.rotation = vec3{DEG(0), DEG(0), DEG(0)};
-	camera.translation = vec3{0.0f, 0.0f, -5.0f};
+	camera.translation = vec3{0.0f, 0.0f, -2.0f};
 
 	// object.tris = {
 	// 	{ { {0.0f, 0.0f, 0.0f},  {0.0f, 1.0f, 0.0f},  {1.0f, 0.0f, 0.0f} } },
+	// };
+
+	// object.tris = {
+	// 	// bottom-flat triangle
+	// 	{ { {0.0f, 0.0f, 0.0f},  {0.0f, 1.0f, 0.0f},  {1.0f, 0.0f, 0.0f} } },
+	// 	// top-flat triangle
+	// 	{ { {0.0f, 0.0f, 0.0f},  {1.0f, 0.0f, 0.0f},  {0.0f, -1.0f, 0.0f} } },
 	// };
 
 	// object.tris = {
@@ -32,17 +39,17 @@ int main() {
 	// };
 	// object.translation = vec3{0.0f, -0.0f, -50.0f};
 
-	// loadMeshFromObj("models/box.obj", &object);
+	loadMeshFromObj("models/box.obj", &object);
 	// loadMeshFromObj("models/octahedron.obj", &object);
 	// object.translation.z = -4.0f;
 	// object.scale = vec3{0.5f, 0.5f, 0.5f};
 	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
 	// object.translation = vec3{0.0f, 0.0f, 0.0f};
 
-	loadMeshFromObj("models/teapot.obj", &object); // check if clockwise???
-	object.scale = vec3{0.5f, 0.5f, 0.5f};
-	object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
-	object.translation = vec3{0.0f, -1.5f, 0.0f};
+	// loadMeshFromObj("models/teapot.obj", &object); // check if clockwise???
+	// object.scale = vec3{0.5f, 0.5f, 0.5f};
+	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
+	// object.translation = vec3{0.0f, -1.5f, 0.0f};
 
 	// printMesh(&object);
 	drawMesh(&object, &camera);

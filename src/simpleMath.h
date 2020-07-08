@@ -4,6 +4,19 @@
 #include <string>
 #include <vector>
 
+struct point
+{
+    int x = 0; // top
+    int y = 0; // left
+    std::string str()
+    {
+        return "("
+            + std::to_string(this->x)
+            + ", "
+            + std::to_string(this->y)
+            + ")";
+    };
+};
 struct vec3
 {
 	float x = 0;
@@ -25,7 +38,7 @@ struct vec3
             + ", " + std::to_string(this->y)
             + ", " + std::to_string(this->z)
             + ")";
-    }
+    };
 };
 
 struct tri
@@ -66,6 +79,13 @@ void printTri(const tri &t, std::string label);
 #define DEG(degree) (degree * 3.14159f / 180)
 #define RAD(radians) (radians * 180 / 3.14159f)
 
+// TODO: use template
+void pSwap(point *a, point *b)
+{
+    point tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
 
 vec3 v3Add(const vec3 &v1, const vec3 &v2)
 {

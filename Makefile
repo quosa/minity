@@ -40,7 +40,6 @@ all: ${TEST} ${MAIN}
 
 ${MAIN}: ${OBJS}
 	@echo building in $(mode) mode
-	$(info $(shell ls))
 	${CXX} ${LDFLAGS} ${OBJS} ${LDLIBS} -o ${BIN_DIR}/${MAIN}
 
 -include $(DEPS)

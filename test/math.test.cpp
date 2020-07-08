@@ -43,6 +43,17 @@ TEST_CASE( "1-vec * 2 = 2-vec" )
     REQUIRE( multiplyVec3(v1, 2.0f) == vec3{2.0f, 2.0f, 2.0f} );
 }
 
+TEST_CASE( "swap points (for sorting)" )
+{
+    point a {1, 2};
+    point b {3, 4};
+    REQUIRE( a.x == 1 );
+    REQUIRE( b.y == 4 );
+    pSwap(&a, &b);
+    REQUIRE( b.x == 1 );
+    REQUIRE( a.y == 4 );
+}
+
 TEST_CASE( "0-matrix * 0-matrix = 0-matrix" )
 {
     REQUIRE( multiplyMat4(m0, m0) == m0 );

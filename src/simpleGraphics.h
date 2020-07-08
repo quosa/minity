@@ -14,21 +14,122 @@ struct cam
     vec3 translation{};
 };
 
-void setPixel(int x, int y)
-{
-	// TODO: add z and depth check
+// forward declaration
+void plotLine(int x0, int y0, int x1, int y1, u_int32_t rgba_color);
 
-	// We check if we are actually setting the Pixel inside the Backbuffer
-	if (x >= 0 && x < g_SDLWidth)
-	{
-		if (y >= 0 && y < g_SDLHeight)
-		{
-			g_SDLBackBuffer[y * g_SDLWidth + x] = 0xffff00ff;
-		}
-	}
+void setPixel(int x, int y, u_int32_t rgba_color)
+{
+    // TODO: add z and depth check
+
+    // We check if we are actually setting the Pixel inside the Backbuffer
+    if (x >= 0 && x < g_SDLWidth)
+    {
+        if (y >= 0 && y < g_SDLHeight)
+        {
+            g_SDLBackBuffer[y * g_SDLWidth + x] = rgba_color; // 0xffff00ff;
+        }
+    }
 }
 
-void plotLineLow(int x0, int y0, int x1, int y1)
+point screenXY(vec3 vertice)
+{
+    float xx = vertice.x;
+    float yy = vertice.y;
+    xx = std::max(-1.0f, xx);
+    xx = std::min(1.0f, xx);
+    yy = std::max(-1.0f, yy);
+    yy = std::min(1.0f, yy);
+
+    // Assumes -1 .. +1 box
+    // Screen coordinates: (0,0) is top-left!
+    // (x=-1, y=1) -> (0, 0)
+    // (x=-1, y=-1) -> (0, sHeight)
+    // (x=1, y=1) -> (sWidth, 0)
+    // (x=1, y=-1) -> (sWidth, sHeight)
+    return point {
+        (int)(((xx + 1.0f) / 2.0f) * (float)g_SDLWidth),
+        (int)((1.0f - ((yy + 1.0f) / 2.0f)) * (float)g_SDLHeight)
+    };
+};
+
+void fillTopFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
+{
+    assert(v1.y <= v2.y && v2.y <= v3.y);
+
+    // std::cout << "fillTopFlatTriangle: v1" << v1.str() << " v2" << v2.str() << " v3" << v3.str() << std::endl;
+
+    float dx31 = 1.0 * (v3.x - v1.x) / (v3.y - v1.y);
+    float dx32 = 1.0 * (v3.x - v2.x) / (v3.y - v2.y);
+    float sx = 1.0 * v3.x;
+    float ex = 1.0 * v3.x;
+
+    // std::cout << "fTFT: dx31 " << std::to_string(dx31) << ", dx32 " << std::to_string(dx32) << std::endl;
+
+    for (int y = v3.y; y > v2.y; y--)
+    {
+        plotLine((uint)sx, y, (uint)ex, y, rgba_color);
+        sx -= dx31;
+        ex -= dx32;
+    }
+};
+
+void fillBottomFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
+{
+
+    assert(v1.y <= v2.y && v2.y <= v3.y);
+
+    // std::cout << "fillBottomFlatTriangle: v1" << v1.str() << " v2" << v2.str() << " v3" << v3.str() << std::endl;
+
+    float dx21 = 1.0 * (v2.x - v1.x) / (v2.y - v1.y);
+    float dx31 = 1.0 * (v3.x - v1.x) / (v3.y - v1.y);
+    float sx = 1.0 * v1.x;
+    float ex = 1.0 * v1.x;
+
+    // std::cout << "fBFT: dx21 " << std::to_string(dx21) << ", dx31 " << std::to_string(dx31) << std::endl;
+
+    for (int y = v1.y; y <= v2.y; y++)
+    {
+        plotLine((uint)sx, y, (uint)ex, y, rgba_color);
+        sx += dx21;
+        ex += dx31;
+    }
+};
+
+void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
+{
+    point v1 = screenXY(vertices[0]);
+    point v2 = screenXY(vertices[1]);
+    point v3 = screenXY(vertices[2]);
+
+    if (v1.y > v3.y) pSwap(&v1, &v3);
+    if (v1.y > v2.y) pSwap(&v1, &v2);
+    if (v2.y > v3.y) pSwap(&v2, &v3);
+
+    assert(v1.y <= v2.y && v2.y <= v3.y);
+
+    // std::cout << "fillTriangle: v1" << v1.str() << " v2" << v2.str() << " v3" << v3.str() << std::endl;
+
+    if (v2.y == v3.y)
+    {
+        fillBottomFlatTriangle(v1, v2, v3, rgba_color);
+    }
+    else if (v1.y == v2.y)
+    {
+        fillTopFlatTriangle(v1, v2, v3, rgba_color);
+    }
+    else
+    {
+        // general case
+        point v4 {
+            (int)(v1.x + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.x - v1.x)),
+            v2.y
+        };
+        fillBottomFlatTriangle(v1, v2, v4, rgba_color);
+        fillTopFlatTriangle(v2, v4, v3, rgba_color);
+    }
+}
+
+void plotLineLow(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
 {
     int dx = x1 - x0;
     int dy = y1 - y0;
@@ -43,7 +144,7 @@ void plotLineLow(int x0, int y0, int x1, int y1)
 
     for (int x = x0; x <= x1; x++)
     {
-        setPixel(x, y);
+        setPixel(x, y, rgba_color);
         if (D > 0)
         {
             y += yi;
@@ -51,10 +152,9 @@ void plotLineLow(int x0, int y0, int x1, int y1)
         }
         D += 2*dy;
     }
-
 }
 
-void plotLineHigh(int x0, int y0, int x1, int y1)
+void plotLineHigh(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
 {
     int dx = x1 - x0;
     int dy = y1 - y0;
@@ -69,7 +169,7 @@ void plotLineHigh(int x0, int y0, int x1, int y1)
 
     for (int y = y0; y <= y1; y++)
     {
-        setPixel(x, y);
+        setPixel(x, y, rgba_color);
         if (D > 0)
         {
             x += xi;
@@ -77,31 +177,34 @@ void plotLineHigh(int x0, int y0, int x1, int y1)
         }
         D += 2*dx;
     }
-
 }
 
-void plotLine(int x0, int y0, int x1, int y1)
+// https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+void plotLine(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
 {
-    // std::cout << x0 << y0 << ">" << x1 << y1 << std::endl;
-	if (abs(y1 - y0) < abs(x1 - x0))
+    // std::cout << "plotline: from (" << std::to_string(x0) << ", "
+    //     << std::to_string(y0) << ") to ("
+    //     << std::to_string(x1) << ", "
+    //     << std::to_string(y1) << ")" << std::endl;
+    if (abs(y1 - y0) < abs(x1 - x0))
     {
         if (x0 > x1)
-            plotLineLow(x1, y1, x0, y0);
+            plotLineLow(x1, y1, x0, y0, rgba_color);
         else
-            plotLineLow(x0, y0, x1, y1);
+            plotLineLow(x0, y0, x1, y1, rgba_color);
     }
     else
     {
         if (y0 > y1)
-            plotLineHigh(x1, y1, x0, y0);
+            plotLineHigh(x1, y1, x0, y0, rgba_color);
         else
-            plotLineHigh(x0, y0, x1, y1);
+            plotLineHigh(x0, y0, x1, y1, rgba_color);
     }
 }
 
-void drawLine(vec3 from, vec3 to)
+void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
 {
-	int ax, ay, bx, by;
+    int ax, ay, bx, by;
 
     // if (from.z > 0 || to.z > 0)
     // {
@@ -125,15 +228,15 @@ void drawLine(vec3 from, vec3 to)
     // (x=1, y=1) -> (sWidth, 0)
     // (x=1, y=-1) -> (sWidth, sHeight)
     ax = (int)(((from.x + 1.0f) / 2.0f) * (float)g_SDLWidth); //from.x + 10;
-	ay = (int)((1.0f - ((from.y + 1.0f) / 2.0f)) * (float)g_SDLHeight); // from.y + 10;
-	bx = (int)(((to.x + 1.0f) / 2.0f) * (float)g_SDLWidth); //to.x + 10;
-	by = (int)((1.0f - ((to.y + 1.0f) / 2.0f)) * (float)g_SDLHeight); // to.x + 10;
-    plotLine(ax, ay, bx, by);
+    ay = (int)((1.0f - ((from.y + 1.0f) / 2.0f)) * (float)g_SDLHeight); // from.y + 10;
+    bx = (int)(((to.x + 1.0f) / 2.0f) * (float)g_SDLWidth); //to.x + 10;
+    by = (int)((1.0f - ((to.y + 1.0f) / 2.0f)) * (float)g_SDLHeight); // to.x + 10;
+    plotLine(ax, ay, bx, by, rgba_color);
 }
 
 void drawMesh(mesh *m, cam *c)
 {
-	// mat4 scaler = scaleMatrix(0.25f, 0.25f, 0.25f);
+    // mat4 scaler = scaleMatrix(0.25f, 0.25f, 0.25f);
     // mat4 scaler = scaleMatrix(1.0f, 1.0f, 1.0f);
     mat4 scaler = scaleMatrix(m->scale.x, m->scale.y, m->scale.z);
     mat4 xRotator = rotateXMatrix(m->rotation.x);
@@ -166,8 +269,8 @@ void drawMesh(mesh *m, cam *c)
     invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
 
     // We loop each Triangle we need to draw
-	for(auto triangle : m->tris)
-	{
+    for(auto triangle : m->tris)
+    {
         tri *out, world, view, projected;
 
         // printTri(triangle, " raw ");
@@ -232,24 +335,27 @@ void drawMesh(mesh *m, cam *c)
 
         out = &projected;
 
-        drawLine(out->vertices[0], out->vertices[1]);
-		drawLine(out->vertices[1], out->vertices[2]);
-		drawLine(out->vertices[2], out->vertices[0]);
+        // order is face first and then wireframe on top
+        fillTriangle(out->vertices, (u_int32_t)0xccccccff);
+        drawLine(out->vertices[0], out->vertices[1], (u_int32_t)0xeeeeeeff);
+        drawLine(out->vertices[1], out->vertices[2], (u_int32_t)0xeeeeeeff);
+        drawLine(out->vertices[2], out->vertices[0], (u_int32_t)0xeeeeeeff);
     }
 }
 
+
 void printMesh(mesh *m)
 {
-	for(auto triangle : m->tris)
-	{
-		std::cout << "v";
-		for(int i=0; i < 3; i++)
-		{
-			vec3 vertice = triangle.vertices[i];
-			std::cout << " (" << vertice.x << " " << vertice.y << " "<< vertice.z << ")";
-		}
-		std::cout << std::endl;
-	};
+    for(auto triangle : m->tris)
+    {
+        std::cout << "v";
+        for(int i=0; i < 3; i++)
+        {
+            vec3 vertice = triangle.vertices[i];
+            std::cout << " (" << vertice.x << " " << vertice.y << " "<< vertice.z << ")";
+        }
+        std::cout << std::endl;
+    };
 }
 
 // adapted from: https://github.com/OneLoneCoder/videos/blob/master/OneLoneCoder_olcEngine3D_Part3.cpp
@@ -292,10 +398,10 @@ bool loadMeshFromObj(std::string sFilename, mesh *m)
 void clearBuffer()
 {
     for (int i = 0; i < g_SDLHeight; ++i)
-	{
-		for (int j = 0; j < g_SDLWidth; ++j)
-		{
-			g_SDLBackBuffer[i * g_SDLWidth + j] = 0x000000ff;
+    {
+        for (int j = 0; j < g_SDLWidth; ++j)
+        {
+            g_SDLBackBuffer[i * g_SDLWidth + j] = 0x000000ff;
         }
     }
 }
