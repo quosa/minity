@@ -9,9 +9,22 @@ ifeq ($(mode),release)
 	CXXFLAGS += -O2
 else
 	mode = debug
+
 	CXXFLAGS += -g -O0
+
+	# profiling with clang/llvm
+	# CXXFLAGS += -g -O0 -fprofile-instr-generate -fcoverage-mapping
+	# LDFLAGS += -fprofile-instr-generate
+
+	# what takes so long?
+	# CXXFLAGS += -g -O0 -v -ftime-report
+
+	# clang does not support -pg profiling :-(
+	# CXXFLAGS += -g -pg -O0
+
 	# https://stackoverflow.com/questions/7408692/g-compiler-option-s-is-obsolete-and-being-ignored-c
 	# obsolete? : LDFLAGS += -s
+	# LDFLAGS += -pg
 endif
 
 BIN_DIR = bin
