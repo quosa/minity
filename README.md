@@ -21,9 +21,9 @@ Working:
  * face normal check to discard hidden triangles (model needs to be in clockwise winding order!)
  * wireframe and global face color
  * basic math tests with [Catch2](https://github.com/catchorg/Catch2)
+ * z-buffer check (instead of z-sorting the vertices before rendering)
 
 TODO:
- * z-buffer check (is it now needed?)
  * scene concept
  * wire-frame line color (done) > painting (done) > texturing > anti-aliasing
  * vertex/face color from model

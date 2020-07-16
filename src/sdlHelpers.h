@@ -8,6 +8,8 @@ SDL_Window * g_SDLWindow;
 SDL_Renderer * g_SDLRenderer;
 SDL_Texture * g_SDLTexture;
 Uint32 * g_SDLBackBuffer;
+float * g_DepthBuffer;
+bool g_enableDepthBuffer;
 int g_SDLWidth;
 int g_SDLHeight;
 std::list<uint> g_fpsSamples(100,0);
@@ -49,6 +51,8 @@ void SDLStart(int windowWidth, int windowHeight)
         // otherwise SDL_TEXTUREACCESS_STATIC
 
 	g_SDLBackBuffer = new Uint32[windowWidth * windowHeight];
+    g_DepthBuffer = new float[windowWidth * windowHeight];
+    g_enableDepthBuffer = true; // TODO: does not work ATM
 }
 
 void SDLSwapBuffers(/*color_t * backbuffer*/)
@@ -126,6 +130,7 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
 void SDLEnd()
 {
 	delete[] g_SDLBackBuffer;
+    delete[] g_DepthBuffer;
 
 	SDL_DestroyTexture(g_SDLTexture);
 	SDL_DestroyRenderer(g_SDLRenderer);

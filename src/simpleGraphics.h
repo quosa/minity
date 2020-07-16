@@ -15,19 +15,60 @@ struct cam
 };
 
 // forward declaration
-void plotLine(int x0, int y0, int x1, int y1, u_int32_t rgba_color);
+void plotLine(int x0, int y0, int x1, int y1, float depth, u_int32_t  rgba_color);
 
-void setPixel(int x, int y, u_int32_t rgba_color)
+void plotHorizontalLine(int y, int sx,int ex, u_int32_t rgba_color)
 {
+    if (y < 0 || y >= g_SDLHeight)
+        return;
+
+    // Another small performance optimization:
+    // fill the horizontal line directly to buffer
+    // fillTriangle went from 880ms/7.3%
+    // down to 80ms/0.7% with memset_pattern4
+    auto ssx = sx > ex ? ex : sx;
+    auto eex = sx > ex ? sx : ex;
+    auto len = int(eex) - int(ssx);
+
+    ssx = std::max(0, ssx);
+    ssx = std::min(ssx, g_SDLWidth);
+    eex = std::max(0, eex);
+    eex = std::min(eex, g_SDLWidth);
+
+    // std::cout << std::to_string(y)
+    //     << " sx " << std::to_string(int(ssx))
+    //     << " ex " << std::to_string(int(eex))
+    //     << " = " << std::to_string(len)
+    //     << std::endl;
+
+    void *p = &g_SDLBackBuffer[y * g_SDLWidth + int(ssx)];
+    memset_pattern4(p, &rgba_color, (len + 1) * sizeof(Uint32));
+    // TODO: set also g_DepthBuffer
+}
+
+void setPixel(int x, int y, float depth, u_int32_t rgba_color)
+{
+    if (x < 0 || x >= g_SDLWidth || y < 0 || y >= g_SDLHeight)
+        return;
+
     // TODO: add z and depth check
 
     // We check if we are actually setting the Pixel inside the Backbuffer
-    if (x >= 0 && x < g_SDLWidth)
+    // if (!g_enableDepthBuffer || depth <= g_DepthBuffer[y * g_SDLWidth + x] )
+    if ( std::fabsf(g_DepthBuffer[y * g_SDLWidth + x] - depth) <  0.00001f ||  depth < g_DepthBuffer[y * g_SDLWidth + x])
     {
-        if (y >= 0 && y < g_SDLHeight)
-        {
-            g_SDLBackBuffer[y * g_SDLWidth + x] = rgba_color; // 0xffff00ff;
-        }
+        g_SDLBackBuffer[y * g_SDLWidth + x] = rgba_color; // 0xffff00ff;
+        g_DepthBuffer[y * g_SDLWidth + x] = depth;
+    }
+    else
+    {
+        // std::cout << "depth clip: depth "
+        //     << std::to_string(depth)
+        //     << " vs depth buffer"
+        //     << std::to_string(g_DepthBuffer[y * g_SDLWidth + x])
+        //     << " diff "
+        //     << std::to_string(g_DepthBuffer[y * g_SDLWidth + x] - depth)
+        //     << std::endl;
     }
 }
 
@@ -52,7 +93,7 @@ point screenXY(vec3 vertice)
     };
 };
 
-void fillTopFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
+void fillTopFlatTriangle(point v1, point v2, point v3, float depth, u_int32_t rgba_color)
 {
     assert(v1.y <= v2.y && v2.y <= v3.y);
 
@@ -67,13 +108,15 @@ void fillTopFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
 
     for (int y = v3.y; y > v2.y; y--)
     {
-        plotLine((uint)sx, y, (uint)ex, y, rgba_color);
+        plotLine((uint)sx, y, (uint)ex, y, depth, rgba_color);
+        // plotHorizontalLine(y, int(sx), int(ex), depth, rgba_color);
+
         sx -= dx31;
         ex -= dx32;
     }
 };
 
-void fillBottomFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
+void fillBottomFlatTriangle(point v1, point v2, point v3, float depth, u_int32_t rgba_color)
 {
 
     assert(v1.y <= v2.y && v2.y <= v3.y);
@@ -89,7 +132,8 @@ void fillBottomFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
 
     for (int y = v1.y; y <= v2.y; y++)
     {
-        plotLine((uint)sx, y, (uint)ex, y, rgba_color);
+        plotLine((uint)sx, y, (uint)ex, y, depth, rgba_color);
+        // plotHorizontalLine(y, int(sx), int(ex), depth, rgba_color);
         sx += dx21;
         ex += dx31;
     }
@@ -98,6 +142,8 @@ void fillBottomFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
 // http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
 void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
 {
+    float depth = (vertices[0].z + vertices[1].z + vertices[2].z) / 3.0f;
+    // std::cout << "triangle depth is " << std::to_string(depth) << std::endl;
     point v1 = screenXY(vertices[0]);
     point v2 = screenXY(vertices[1]);
     point v3 = screenXY(vertices[2]);
@@ -112,11 +158,11 @@ void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
 
     if (v2.y == v3.y)
     {
-        fillBottomFlatTriangle(v1, v2, v3, rgba_color);
+        fillBottomFlatTriangle(v1, v2, v3, depth, rgba_color);
     }
     else if (v1.y == v2.y)
     {
-        fillTopFlatTriangle(v1, v2, v3, rgba_color);
+        fillTopFlatTriangle(v1, v2, v3, depth, rgba_color);
     }
     else
     {
@@ -125,12 +171,12 @@ void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
             (int)(v1.x + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.x - v1.x)),
             v2.y
         };
-        fillBottomFlatTriangle(v1, v2, v4, rgba_color);
-        fillTopFlatTriangle(v2, v4, v3, rgba_color);
+        fillBottomFlatTriangle(v1, v2, v4, depth, rgba_color);
+        fillTopFlatTriangle(v2, v4, v3, depth, rgba_color);
     }
 }
 
-void plotLineLow(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
+void plotLineLow(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_color)
 {
     int dx = x1 - x0;
     int dy = y1 - y0;
@@ -145,7 +191,7 @@ void plotLineLow(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
 
     for (int x = x0; x <= x1; x++)
     {
-        setPixel(x, y, rgba_color);
+        setPixel(x, y, depth, rgba_color);
         if (D > 0)
         {
             y += yi;
@@ -155,7 +201,7 @@ void plotLineLow(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
     }
 }
 
-void plotLineHigh(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
+void plotLineHigh(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_color)
 {
     int dx = x1 - x0;
     int dy = y1 - y0;
@@ -170,7 +216,7 @@ void plotLineHigh(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
 
     for (int y = y0; y <= y1; y++)
     {
-        setPixel(x, y, rgba_color);
+        setPixel(x, y, depth, rgba_color);
         if (D > 0)
         {
             x += xi;
@@ -181,7 +227,7 @@ void plotLineHigh(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
 }
 
 // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-void plotLine(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
+void plotLine(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_color)
 {
     // std::cout << "plotline: from (" << std::to_string(x0) << ", "
     //     << std::to_string(y0) << ") to ("
@@ -190,16 +236,16 @@ void plotLine(int x0, int y0, int x1, int y1, u_int32_t rgba_color)
     if (abs(y1 - y0) < abs(x1 - x0))
     {
         if (x0 > x1)
-            plotLineLow(x1, y1, x0, y0, rgba_color);
+            plotLineLow(x1, y1, x0, y0, depth, rgba_color);
         else
-            plotLineLow(x0, y0, x1, y1, rgba_color);
+            plotLineLow(x0, y0, x1, y1, depth, rgba_color);
     }
     else
     {
         if (y0 > y1)
-            plotLineHigh(x1, y1, x0, y0, rgba_color);
+            plotLineHigh(x1, y1, x0, y0, depth, rgba_color);
         else
-            plotLineHigh(x0, y0, x1, y1, rgba_color);
+            plotLineHigh(x0, y0, x1, y1, depth, rgba_color);
     }
 }
 
@@ -222,6 +268,9 @@ void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
         return;
     }
 
+    float depth = (from.z + to.z) / 2.0f;
+    // std::cout << "line depth is " << std::to_string(depth) << std::endl;
+
     // Assumes -1 .. +1 box
     // Screen coordinates: (0,0) is top-left!
     // (x=-1, y=1) -> (0, 0)
@@ -232,7 +281,7 @@ void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
     ay = (int)((1.0f - ((from.y + 1.0f) / 2.0f)) * (float)g_SDLHeight); // from.y + 10;
     bx = (int)(((to.x + 1.0f) / 2.0f) * (float)g_SDLWidth); //to.x + 10;
     by = (int)((1.0f - ((to.y + 1.0f) / 2.0f)) * (float)g_SDLHeight); // to.x + 10;
-    plotLine(ax, ay, bx, by, rgba_color);
+    plotLine(ax, ay, bx, by, depth, rgba_color);
 }
 
 void drawMesh(mesh *m, cam *c)
@@ -338,25 +387,10 @@ void drawMesh(mesh *m, cam *c)
 
         out = &projected;
 
-        trianglesToSortAndDraw.push_back(*out);
-
-    }
-    // sort all to-be-drawn triangles from bact to front
-    std::sort(trianglesToSortAndDraw.begin(), trianglesToSortAndDraw.end(), [](tri &t1, tri &t2)
-    {
-        float z1 = (t1.vertices[0].z + t1.vertices[1].z + t1.vertices[2].z) / 3.0f;
-        float z2 = (t2.vertices[0].z + t2.vertices[1].z + t2.vertices[2].z) / 3.0f;
-        return z1 > z2;
-    });
-
-    // draw all triangles
-    for (auto triangle : trianglesToSortAndDraw)
-    {
-        // order is face first and then wireframe on top
-        fillTriangle(triangle.vertices, (u_int32_t)0xccccccff);
-        drawLine(triangle.vertices[0], triangle.vertices[1], (u_int32_t)0xeeeeeeff);
-        drawLine(triangle.vertices[1], triangle.vertices[2], (u_int32_t)0xeeeeeeff);
-        drawLine(triangle.vertices[2], triangle.vertices[0], (u_int32_t)0xeeeeeeff);
+        fillTriangle(out->vertices, out->color);
+        // drawLine(out->vertices[0], out->vertices[1], (u_int32_t)0xeeeeeeff);
+        // drawLine(out->vertices[1], out->vertices[2], (u_int32_t)0xeeeeeeff);
+        // drawLine(out->vertices[2], out->vertices[0], (u_int32_t)0xeeeeeeff);
     }
 }
 
@@ -375,7 +409,7 @@ void printMesh(mesh *m)
 }
 
 // adapted from: https://github.com/OneLoneCoder/videos/blob/master/OneLoneCoder_olcEngine3D_Part3.cpp
-bool loadMeshFromObj(std::string sFilename, mesh *m)
+bool loadMeshFromObj(std::string sFilename, mesh *m, u_int32_t color = 0xccccccff)
 {
     std::ifstream f(sFilename);
     if (!f.is_open())
@@ -405,7 +439,7 @@ bool loadMeshFromObj(std::string sFilename, mesh *m)
         {
             int f[3];
             s >> junk >> f[0] >> f[1] >> f[2];
-            m->tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
+            m->tris.push_back({ {verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1]}, color });
         }
     }
     return true;
@@ -413,11 +447,31 @@ bool loadMeshFromObj(std::string sFilename, mesh *m)
 
 void clearBuffer()
 {
+    // first small performance optimization
+    // before with -O0 this loop took 1.59s/31.1%
+    // after with memset and -O0 this took only 2ms/0%
+
+    // float min_float = std::numeric_limits<float>::lowest();
+    // float min_float = 10000.0f;
+
+    // definition: g_SDLBackBuffer = new Uint32[windowWidth * windowHeight];
+    memset(g_SDLBackBuffer, 0x00, g_SDLWidth * g_SDLHeight * sizeof(Uint32));
+    // memset(g_DepthBuffer, 0xff, g_SDLWidth * g_SDLHeight * sizeof(float));
+    // memset_pattern4(g_DepthBuffer, &min_float, g_SDLWidth * g_SDLHeight * sizeof(float));
+
+    // for (int i = 0; i < g_SDLHeight; ++i)
+    // {
+    //     for (int j = 0; j < g_SDLWidth; ++j)
+    //     {
+    //         g_SDLBackBuffer[i * g_SDLWidth + j] = 0x000000ff;
+    //     }
+    // }
     for (int i = 0; i < g_SDLHeight; ++i)
     {
         for (int j = 0; j < g_SDLWidth; ++j)
         {
-            g_SDLBackBuffer[i * g_SDLWidth + j] = 0x000000ff;
+            g_DepthBuffer[i * g_SDLWidth + j] = 10000.0f;
         }
     }
+
 }

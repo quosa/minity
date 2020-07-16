@@ -44,6 +44,7 @@ struct vec3
 struct tri
 {
 	vec3 vertices[3];
+    u_int32_t color = 0xffffffff;
 };
 
 struct mesh
@@ -268,6 +269,13 @@ mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrice
 // https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function (looks flaky)
 // https://github.com/g-truc/glm/blob/master/glm/ext/matrix_transform.inl#L99 (lookAtRH)
 // and finally https://www.3dgep.com/understanding-the-view-matrix/
+//
+// NOTE: https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function
+// When the camera is vertical looking straight down or straight up, the forward axis gets very close
+// to the arbitrary axis used to compute the right axis. The extreme case is of course when the froward
+// axis and this arbitrary axis are perfectly parallel e.g. when the forward vector is either (0,1,0)
+// or (0,-1,0). Unfortunately in this particular case, the cross product fails producing a result for
+// the right vector.
 mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
 {   // NOTE RIGHT-HANDED!!!
     vec3 forward = v3Normalize(v3Sub(to, from));// !!! switched !!! normalize(from - to);
@@ -386,4 +394,18 @@ void printTri(const tri &t, std::string label = "")
     for (int i = 0; i < 3; i++)
         std::cout <<  " (" << t.vertices[i].x << " " << t.vertices[i].y << " " << t.vertices[i].z << " " << t.vertices[i].w << ")";
     std::cout << std::endl;
+}
+
+u_int32_t adjustColor(u_int32_t color, float multiplier)
+{
+    u_int8_t r = (u_int8_t)(color >> 24);
+    u_int8_t g = (u_int8_t)(color >> 16);
+    u_int8_t b = (u_int8_t)(color >> 8);
+    u_int8_t a = (u_int8_t)(color >> 0);
+
+    r *= multiplier;
+    g *= multiplier;
+    b *= multiplier;
+
+    return (r << 24) | (g << 16) | (b << 8) | a;
 }
