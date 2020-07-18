@@ -4,6 +4,13 @@
 // for vec3 and DEG :-/
 #include "simpleMath.h"
 
+struct config
+{
+    bool drawNormals = false;
+    bool drawWireframe = false;
+};
+config * g_config = new config();
+
 SDL_Window * g_SDLWindow;
 SDL_Renderer * g_SDLRenderer;
 SDL_Texture * g_SDLTexture;
@@ -118,6 +125,14 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
             case SDLK_s:
                 std::cerr << " LookDown";
                 inputRotation->x -= DEG(5);
+                break;
+            case SDLK_n:
+                std::cerr << " swap (n)ormals";
+                g_config->drawNormals = g_config->drawNormals ? false : true;
+                break;
+            case SDLK_l:
+                std::cerr << " swap wireframe (l)ines";
+                g_config->drawWireframe = g_config->drawWireframe ? false : true;
                 break;
             default:
                 break;

@@ -408,26 +408,35 @@ void drawMesh(mesh *m, cam *c, light *l)
 
         // printTri(projected, "final");
 
-        // // draw face normals for debugging
-        // auto projectedFaceNormal = v3Div(v3Normalize(v3CrossProduct(
-        //     v3Sub(projected.vertices[1], projected.vertices[0]),
-        //     v3Sub(projected.vertices[2], projected.vertices[0])
-        // )), 10.0f);
+        if (g_config->drawNormals)
+        {
+            // draw face normals for debugging
+            auto projectedFaceNormal = v3Div(v3Normalize(v3CrossProduct(
+                v3Sub(projected.vertices[1], projected.vertices[0]),
+                v3Sub(projected.vertices[2], projected.vertices[0])
+            )), 10.0f);
 
-        // auto middle = v3Div(
-        //     v3Add(projected.vertices[2],v3Add(projected.vertices[1], projected.vertices[0])),
-        //     3
-        // );
-        // // drawLine(vec3(), projectedFaceNormal, 0xffffffff); // faceNormal sticking out from the face
-        // drawLine(middle, v3Add(middle, projectedFaceNormal), 0xffffffff); // faceNormal sticking out from the face
+            auto middle = v3Div(
+                v3Add(projected.vertices[2],v3Add(projected.vertices[1], projected.vertices[0])),
+                3
+            );
+            drawLine(middle, v3Add(middle, projectedFaceNormal), 0xffffffff); // faceNormal sticking out from the face
+        }
 
 
         out = &projected;
 
         fillTriangle(out->vertices, out->color);
-        // drawLine(out->vertices[0], out->vertices[1], (u_int32_t)0xeeeeeeff);
-        // drawLine(out->vertices[1], out->vertices[2], (u_int32_t)0xeeeeeeff);
-        // drawLine(out->vertices[2], out->vertices[0], (u_int32_t)0xeeeeeeff);
+        if (g_config->drawWireframe)
+        {
+            // cheat the z-buffer to actually draw the line
+            out->vertices[0].z -= 0.01;
+            out->vertices[1].z -= 0.01;
+            out->vertices[2].z -= 0.01;
+            drawLine(out->vertices[0], out->vertices[1], (u_int32_t)0xeeeeeeff);
+            drawLine(out->vertices[1], out->vertices[2], (u_int32_t)0xeeeeeeff);
+            drawLine(out->vertices[2], out->vertices[0], (u_int32_t)0xeeeeeeff);
+        }
     }
 }
 
