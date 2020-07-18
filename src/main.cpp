@@ -13,6 +13,7 @@
 int main() {
 	mesh object;
 	cam camera;
+	light light;
 
     std::cout << "minity" << std::endl;
 
@@ -20,7 +21,10 @@ int main() {
 
 	camera.fovDegrees = 90.0f;
 	camera.rotation = vec3{DEG(0), DEG(0), DEG(0)};
-	camera.translation = vec3{0.0f, 0.0f, -2.0f};
+	camera.translation = vec3{0.0f, 0.0f, -2.5f};
+
+	light.rotation = vec3{DEG(45), DEG(-45), DEG(0)};
+	light.translation = vec3{10.0f, 10.0f, 10.0f};
 
 	// object.tris = {
 	// 	{ { {-0.5f, -0.5f, 0.0f},  {0.0f, 0.5f, 0.0f},  {0.5f, -0.5f, 0.0f} } },
@@ -43,20 +47,29 @@ int main() {
 	// };
 	// object.translation = vec3{0.0f, -0.0f, -50.0f};
 
-	loadMeshFromObj("models/box.obj", &object);
+	// loadMeshFromObj("models/box.obj", &object, 0xffff00ff);
 	// loadMeshFromObj("models/octahedron.obj", &object);
 	// object.translation.z = -4.0f;
 	// object.scale = vec3{0.5f, 0.5f, 0.5f};
 	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
 	// object.translation = vec3{0.0f, 0.0f, 0.0f};
 
-	// loadMeshFromObj("models/teapot.obj", &object); // check if clockwise???
-	// object.scale = vec3{0.5f, 0.5f, 0.5f};
-	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
-	// object.translation = vec3{0.0f, -1.5f, 0.0f};
+	loadMeshFromObj("models/teapot.obj", &object, 0xbbbbbbff);
+	// the teapot model is not defined in clockwise order so swap
+	// all face vertices
+	for(size_t i = 0; i < object.tris.size(); i++)
+	{
+		auto tmp = object.tris[i].vertices[1];
+		object.tris[i].vertices[1] = object.tris[i].vertices[2];
+		object.tris[i].vertices[2] = tmp;
+	}
+	object.scale = vec3{0.5f, 0.5f, 0.5f};
+	object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
+	object.translation = vec3{0.0f, -1.0f, 0.0f};
 
 	// printMesh(&object);
-	drawMesh(&object, &camera);
+	clearBuffer();
+	drawMesh(&object, &camera, &light);
 	SDLSwapBuffers();
 
 	auto ft = new jku::frametimer();
@@ -81,7 +94,7 @@ int main() {
 		std::cout << "cam: position " << camera.translation.str()
 				<< " rotation " << camera.rotation.str() << std::endl;
 
-		drawMesh(&object, &camera);
+		drawMesh(&object, &camera, &light);
 
 	    SDLSwapBuffers();
 		SDLFPSUpdate(ft->delta());

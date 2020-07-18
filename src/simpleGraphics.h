@@ -14,6 +14,12 @@ struct cam
     vec3 translation{};
 };
 
+struct light
+{
+    vec3 rotation{};
+    vec3 translation{};
+};
+
 // forward declaration
 void plotLine(int x0, int y0, int x1, int y1, float depth, u_int32_t  rgba_color);
 
@@ -284,7 +290,7 @@ void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
     plotLine(ax, ay, bx, by, depth, rgba_color);
 }
 
-void drawMesh(mesh *m, cam *c)
+void drawMesh(mesh *m, cam *c, light *l)
 {
     std::vector<tri> trianglesToSortAndDraw;
 
@@ -320,6 +326,19 @@ void drawMesh(mesh *m, cam *c)
     mat4 viewMatrix;
     invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
 
+    // light transformations
+    mat4 lightXRotator = rotateXMatrix(l->rotation.x);
+    mat4 lightYRotator = rotateYMatrix(l->rotation.y);
+    mat4 lightZRotator = rotateZMatrix(l->rotation.z);
+    mat4 lightTranslator = translateMatrix(l->translation.x, l->translation.y, l->translation.z);
+
+    // order matters: scale > rotate > move (=translate)
+    mat4 lightTransformations = multiplyMat4(lightYRotator, lightXRotator);
+    lightTransformations = multiplyMat4(lightZRotator, lightTransformations);
+    lightTransformations = multiplyMat4(lightTranslator, lightTransformations);
+    vec3 lightRay = v3Normalize(multiplyVec3(vec3{0.0f, -1.0f, 0.0f}, lightTransformations));
+    lightRay.z = 1; // todo: use the light entity for real
+
     // We loop each Triangle we need to draw
     for(auto triangle : m->tris)
     {
@@ -351,15 +370,19 @@ void drawMesh(mesh *m, cam *c)
         auto vCameraRay = v3Normalize(view.vertices[0]); // camera is now at origin
         auto camDot = v3DotProduct(faceNormal, vCameraRay);
 
-        // drawLine(vec3(), faceNormal); // faceNormal sticking out from the face
-        // drawLine(vec3(), vCameraRay); // ray from camera to face
-
         if ( camDot < 0.0f)
         {
             // std::cout << "CULLING face normal: " << faceNormal.str() << " camera:" << vCameraRay.str() << " dot: " << std::to_string(camDot) << std::endl;
             // std::cout << "            face[0]: " << view.vertices[0].str() << " [1]: " << view.vertices[1].str() << " [2]: " << view.vertices[2].str() << std::endl;
             continue;
         }
+
+
+        // super-simple global Illumination
+        vec3 light_direction = v3Normalize(vec3{ 0.0f, -1.0f, -1.0f });
+        // How "aligned" are light direction and triangle surface normal?
+        float dp = std::max(0.1f, v3DotProduct(light_direction, faceNormal));
+        view.color = adjustColor(view.color, dp);
 
         projected = view;
         // only projection, no camera
@@ -384,6 +407,20 @@ void drawMesh(mesh *m, cam *c)
         projected.vertices[2].y *= -1.0f;
 
         // printTri(projected, "final");
+
+        // // draw face normals for debugging
+        // auto projectedFaceNormal = v3Div(v3Normalize(v3CrossProduct(
+        //     v3Sub(projected.vertices[1], projected.vertices[0]),
+        //     v3Sub(projected.vertices[2], projected.vertices[0])
+        // )), 10.0f);
+
+        // auto middle = v3Div(
+        //     v3Add(projected.vertices[2],v3Add(projected.vertices[1], projected.vertices[0])),
+        //     3
+        // );
+        // // drawLine(vec3(), projectedFaceNormal, 0xffffffff); // faceNormal sticking out from the face
+        // drawLine(middle, v3Add(middle, projectedFaceNormal), 0xffffffff); // faceNormal sticking out from the face
+
 
         out = &projected;
 
