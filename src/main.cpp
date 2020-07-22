@@ -14,6 +14,7 @@ int main() {
 	mesh object;
 	cam camera;
 	light light;
+	float deltaTime = 0.0f;
 
     std::cout << "minity" << std::endl;
 
@@ -82,7 +83,7 @@ int main() {
 
 		// object.translation = v3Add(object.translation, inputTranslation);
 		// printVec3(object.translation);
-		object.rotation.y += DEG(0.5);
+		object.rotation.y += DEG(deltaTime * 10.0f);
 
 		// camera.rotation.y += DEG(0.5); // will overflow eventually
 		// printVec3(camera.translation);
@@ -98,6 +99,7 @@ int main() {
 
 	    SDLSwapBuffers();
 		SDLFPSUpdate(ft->delta());
+		deltaTime = ft->deltaTime();
 		inputTranslation = vec3{};
 		inputRotation = vec3{};
     }
