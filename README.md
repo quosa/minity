@@ -24,6 +24,7 @@ Working:
  * wireframe and global face color
  * basic math tests with [Catch2](https://github.com/catchorg/Catch2)
  * z-buffer check (instead of z-sorting the vertices before rendering)
+ * simple util for generating a sphere
 
 TODO:
  * scene concept
@@ -37,3 +38,7 @@ Main influences:
  * [OneLoneCoder/Javidx9](https://github.com/OneLoneCoder): console game engine and 3d videos
  * [Michael Kissner/Kayzaks](https://github.com/Kayzaks): StupidGL [gamasutra article](https://gamasutra.com/blogs/MichaelKissner/20160112/263097/Writing_a_Game_Engine_from_Scratch__Part_4_Graphics_Library.php)
 
+# Gallery
+
+Tilted yellow sphere with 50 meridians and parallels in basic global illumination:
+![Minity showing a yellow sphere](./doc/img/minity-50-50-yellow-sphere.png "Minity showing a yellow sphere")
