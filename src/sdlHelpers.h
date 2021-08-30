@@ -8,6 +8,7 @@ struct config
 {
     bool drawNormals = false;
     bool drawWireframe = false;
+    bool fillTriangles = true;
 };
 config * g_config = new config();
 
@@ -16,7 +17,6 @@ SDL_Renderer * g_SDLRenderer;
 SDL_Texture * g_SDLTexture;
 Uint32 * g_SDLBackBuffer;
 float * g_DepthBuffer;
-bool g_enableDepthBuffer;
 int g_SDLWidth;
 int g_SDLHeight;
 std::list<uint> g_fpsSamples(100,0);
@@ -57,9 +57,9 @@ void SDLStart(int windowWidth, int windowHeight)
         // SDL_TEXTUREACCESS_TARGET if we are "copying into the texture" (the bitmap case),
         // otherwise SDL_TEXTUREACCESS_STATIC
 
-	g_SDLBackBuffer = new Uint32[windowWidth * windowHeight];
+	// todo: could use smart pointers instead of globals...
+    g_SDLBackBuffer = new Uint32[windowWidth * windowHeight];
     g_DepthBuffer = new float[windowWidth * windowHeight];
-    g_enableDepthBuffer = true; // TODO: does not work ATM
 }
 
 void SDLSwapBuffers(/*color_t * backbuffer*/)
@@ -133,6 +133,10 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
             case SDLK_l:
                 std::cerr << " swap wireframe (l)ines";
                 g_config->drawWireframe = g_config->drawWireframe ? false : true;
+                break;
+            case SDLK_f:
+                std::cerr << " swap triangle (f)illing";
+                g_config->fillTriangles = g_config->fillTriangles ? false : true;
                 break;
             default:
                 break;

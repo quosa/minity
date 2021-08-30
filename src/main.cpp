@@ -11,6 +11,13 @@
 #include "simpleGraphics.h"
 #include "utils.h"
 
+const std::string usage = R"(minity key bindings:
+	wasd keys  - look up/left/down/right
+	arrow keys - move camera
+	f key      - flat shade triangles
+	l key      - draw wireframe
+	n key      - draw normals)";
+
 int main() {
 	mesh object;
 	mesh object2;
@@ -18,7 +25,7 @@ int main() {
 	light light;
 	float deltaTime = 0.0f;
 
-    std::cout << "minity" << std::endl;
+	std::cout << usage << std::endl;
 
     SDLStart(640, 480);
 
@@ -27,7 +34,8 @@ int main() {
 	camera.translation = vec3{0.0f, 0.0f, -2.5f};
 
 	light.rotation = vec3{DEG(45), DEG(-45), DEG(0)};
-	light.translation = vec3{10.0f, 10.0f, 10.0f};
+	// directional light only cares about rotation...
+	// light.translation = vec3{10.0f, 10.0f, 10.0f};
 
 	// object.tris = {
 	// 	{ { {-0.5f, -0.5f, 0.0f},  {0.0f, 0.5f, 0.0f},  {0.5f, -0.5f, 0.0f} } },
@@ -70,13 +78,14 @@ int main() {
 	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
 	// object.translation = vec3{0.0f, -1.0f, 0.0f};
 
-	sphere(50, 50, 0xffff00ff, object);
+	sphere(50, 50, 0xffff00ff, object); // 0xffff00ff = blue is rendered first
 	object.scale = vec3{1.0f, 1.0f, 1.0f};
 	object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
 	object.translation = vec3{-1.0f, 0.0f, 0.0f};
 
+	// TODO BUG: yellow box and blue sphere: the sphere appears in a jagged way
 
-	sphere(50, 50, 0x0000ffff, object2);
+	sphere(50, 50, 0x0000ffff, object2); // 0x0000ffff = yellow is rendered later
 	object2.scale = vec3{1.5f, 1.5f, 1.5f};
 	object2.rotation = vec3{DEG(0), DEG(0), DEG(0)};
 	object2.translation = vec3{1.0f, 0.0f, 0.0f};
@@ -90,6 +99,7 @@ int main() {
 	auto ft = new jku::frametimer();
 	vec3 inputTranslation{};
 	vec3 inputRotation{};
+	vec3 zeroVector{};
 	while(isRunning(&inputTranslation, &inputRotation))
     {
 		SDL_Delay(20); // some computation budget...
@@ -103,12 +113,14 @@ int main() {
 		// camera.rotation.y += DEG(0.5); // will overflow eventually
 		// printVec3(camera.translation);
 
-		// for camera zoom in/out are opposite
-		inputTranslation.z *= 1.0f; // todo: camera is now inverted to positive z-axis (was: -1.0f;)
 		camera.translation = v3Add(camera.translation, inputTranslation);
 		camera.rotation = v3Add(camera.rotation, inputRotation);
-		std::cout << "cam: position " << camera.translation.str()
-				<< " rotation " << camera.rotation.str() << std::endl;
+
+		if (inputTranslation != zeroVector || inputRotation != zeroVector)
+		{
+			std::cout << "cam: position " << camera.translation.str()
+					<< " rotation " << camera.rotation.str() << std::endl;
+		}
 
 		drawMesh(&object, &camera, &light);
 		drawMesh(&object2, &camera, &light);

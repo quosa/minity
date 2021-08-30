@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <limits>
 
 #include "simpleMath.h"
 
@@ -22,64 +23,67 @@ struct light
 
 // forward declaration
 void plotLine(int x0, int y0, int x1, int y1, float depth, u_int32_t  rgba_color);
+void setPixel(int x, int y, float depth, u_int32_t rgba_color);
 
-void plotHorizontalLine(int y, int sx,int ex, u_int32_t rgba_color)
+void plotHorizontalLine(point start, point end, u_int32_t rgba_color)
 {
-    if (y < 0 || y >= g_SDLHeight)
-        return;
+    assert(start.y == end.y); // line needs to be horizontal
 
-    // Another small performance optimization:
-    // fill the horizontal line directly to buffer
-    // fillTriangle went from 880ms/7.3%
-    // down to 80ms/0.7% with memset_pattern4
-    auto ssx = sx > ex ? ex : sx;
-    auto eex = sx > ex ? sx : ex;
-    auto len = int(eex) - int(ssx);
+    // clipping #1 to viewport/projection space
+    if (start.y < 0 || start.y >= g_SDLHeight)
+        return; // out of screen bounds
 
-    ssx = std::max(0, ssx);
-    ssx = std::min(ssx, g_SDLWidth);
-    eex = std::max(0, eex);
-    eex = std::min(eex, g_SDLWidth);
+    auto y = start.y;
+    auto sx = start.x > end.x ? end.x : start.x;
+    auto ex = start.x > end.x ? start.x : end.x;
+    auto sz = start.x > end.x ? end.z : start.z;
+    auto ez = start.x > end.x ? start.z : end.z;
+    auto dz = (ez - sz) / (ex - sx);
 
-    // std::cout << std::to_string(y)
-    //     << " sx " << std::to_string(int(ssx))
-    //     << " ex " << std::to_string(int(eex))
-    //     << " = " << std::to_string(len)
-    //     << std::endl;
+    assert(ex >= sx);
 
-    void *p = &g_SDLBackBuffer[y * g_SDLWidth + int(ssx)];
-    memset_pattern4(p, &rgba_color, (len + 1) * sizeof(Uint32));
-    // TODO: set also g_DepthBuffer
+    // clipping #2 to viewport/projection space
+    sx = std::max(0, sx);
+    sx = std::min(sx, g_SDLWidth);
+    ex = std::max(0, ex);
+    ex = std::min(ex, g_SDLWidth);
+
+    // draw horizontal line and use the currect z value for each pixel
+    float z = sz;
+    for (int x = sx; x <= ex; x++)
+    {
+        setPixel(x, y, z, rgba_color);
+        z += dz;
+    }
 }
 
 void setPixel(int x, int y, float depth, u_int32_t rgba_color)
 {
+    // clipping #3 to viewport/projection space
     if (x < 0 || x >= g_SDLWidth || y < 0 || y >= g_SDLHeight)
         return;
 
-    // TODO: add z and depth check
+    // clipping #4 don't draw pixes that are behind the camera
+    // (in view space, the camera is at origin looking towards Z+)
+    if (depth < 0.0f)
+        return;
 
-    // We check if we are actually setting the Pixel inside the Backbuffer
-    // if (!g_enableDepthBuffer || depth <= g_DepthBuffer[y * g_SDLWidth + x] )
-    if ( std::fabsf(g_DepthBuffer[y * g_SDLWidth + x] - depth) <  0.00001f ||  depth < g_DepthBuffer[y * g_SDLWidth + x])
+    if (depth > 100.0f)
     {
-        g_SDLBackBuffer[y * g_SDLWidth + x] = rgba_color; // 0xffff00ff;
-        g_DepthBuffer[y * g_SDLWidth + x] = depth;
+        std::cout << "Pixel far away? (" << x << "," << y << "," << std::to_string(depth) << ")" << std::endl;
     }
-    else
+
+    // Z-buffer check: discard deeper pixels (further away from the camera)
+    if (depth < g_DepthBuffer[y * g_SDLWidth + x])
     {
-        // std::cout << "depth clip: depth "
-        //     << std::to_string(depth)
-        //     << " vs depth buffer"
-        //     << std::to_string(g_DepthBuffer[y * g_SDLWidth + x])
-        //     << " diff "
-        //     << std::to_string(g_DepthBuffer[y * g_SDLWidth + x] - depth)
-        //     << std::endl;
+        g_SDLBackBuffer[y * g_SDLWidth + x] = rgba_color;
+        g_DepthBuffer[y * g_SDLWidth + x] = depth;
     }
 }
 
 point screenXY(vec3 vertice)
 {
+    // todo: use clamp
     float xx = vertice.x;
     float yy = vertice.y;
     xx = std::max(-1.0f, xx);
@@ -93,13 +97,15 @@ point screenXY(vec3 vertice)
     // (x=-1, y=-1) -> (0, sHeight)
     // (x=1, y=1) -> (sWidth, 0)
     // (x=1, y=-1) -> (sWidth, sHeight)
+    // todo: should z be boxed as well?
     return point {
         (int)(((xx + 1.0f) / 2.0f) * (float)g_SDLWidth),
-        (int)((1.0f - ((yy + 1.0f) / 2.0f)) * (float)g_SDLHeight)
+        (int)((1.0f - ((yy + 1.0f) / 2.0f)) * (float)g_SDLHeight),
+        vertice.z
     };
 };
 
-void fillTopFlatTriangle(point v1, point v2, point v3, float depth, u_int32_t rgba_color)
+void fillTopFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
 {
     assert(v1.y <= v2.y && v2.y <= v3.y);
 
@@ -110,19 +116,28 @@ void fillTopFlatTriangle(point v1, point v2, point v3, float depth, u_int32_t rg
     float sx = 1.0 * v3.x;
     float ex = 1.0 * v3.x;
 
-    // std::cout << "fTFT: dx31 " << std::to_string(dx31) << ", dx32 " << std::to_string(dx32) << std::endl;
+    float dz31 = 1.0 * (v3.z - v1.z) / (v3.y - v1.y);
+    float dz32 = 1.0 * (v3.z - v2.z) / (v3.y - v2.y);
+    float sz = v3.z;
+    float ez = v3.z;
 
+    // std::cout << "fTFT: dx31 " << std::to_string(dx31) << ", dx32 " << std::to_string(dx32) << std::endl;
     for (int y = v3.y; y > v2.y; y--)
     {
-        plotLine((uint)sx, y, (uint)ex, y, depth, rgba_color);
-        // plotHorizontalLine(y, int(sx), int(ex), depth, rgba_color);
+        plotHorizontalLine(
+            point{(int)sx, y, sz},
+            point{(int)ex, y, ez},
+            rgba_color
+        );
 
         sx -= dx31;
         ex -= dx32;
+        sz -= dz31;
+        ez -= dz32;
     }
 };
 
-void fillBottomFlatTriangle(point v1, point v2, point v3, float depth, u_int32_t rgba_color)
+void fillBottomFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
 {
 
     assert(v1.y <= v2.y && v2.y <= v3.y);
@@ -134,22 +149,31 @@ void fillBottomFlatTriangle(point v1, point v2, point v3, float depth, u_int32_t
     float sx = 1.0 * v1.x;
     float ex = 1.0 * v1.x;
 
+    float dz21 = 1.0 * (v2.z - v1.z) / (v2.y - v1.y);
+    float dz31 = 1.0 * (v3.z - v1.z) / (v3.y - v1.y);
+    float sz = 1.0 * v1.z;
+    float ez = 1.0 * v1.z;
+
+
     // std::cout << "fBFT: dx21 " << std::to_string(dx21) << ", dx31 " << std::to_string(dx31) << std::endl;
 
     for (int y = v1.y; y <= v2.y; y++)
     {
-        plotLine((uint)sx, y, (uint)ex, y, depth, rgba_color);
-        // plotHorizontalLine(y, int(sx), int(ex), depth, rgba_color);
+        plotHorizontalLine(
+            point{(int)sx, y, sz},
+            point{(int)ex, y, ez},
+            rgba_color
+        );
         sx += dx21;
         ex += dx31;
+        sz += dz21;
+        ez += dz31;
     }
 };
 
 // http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
 void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
 {
-    float depth = (vertices[0].z + vertices[1].z + vertices[2].z) / 3.0f;
-    // std::cout << "triangle depth is " << std::to_string(depth) << std::endl;
     point v1 = screenXY(vertices[0]);
     point v2 = screenXY(vertices[1]);
     point v3 = screenXY(vertices[2]);
@@ -164,21 +188,23 @@ void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
 
     if (v2.y == v3.y)
     {
-        fillBottomFlatTriangle(v1, v2, v3, depth, rgba_color);
+        fillBottomFlatTriangle(v1, v2, v3, rgba_color);
     }
     else if (v1.y == v2.y)
     {
-        fillTopFlatTriangle(v1, v2, v3, depth, rgba_color);
+        fillTopFlatTriangle(v1, v2, v3, rgba_color);
     }
     else
     {
-        // general case
+        // general case, add intermediate point to have
+        // one top and bottom flat triangle
         point v4 {
             (int)(v1.x + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.x - v1.x)),
-            v2.y
+            v2.y,
+            v1.z + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.z - v1.z)
         };
-        fillBottomFlatTriangle(v1, v2, v4, depth, rgba_color);
-        fillTopFlatTriangle(v2, v4, v3, depth, rgba_color);
+        fillBottomFlatTriangle(v1, v2, v4, rgba_color);
+        fillTopFlatTriangle(v2, v4, v3, rgba_color);
     }
 }
 
@@ -232,6 +258,8 @@ void plotLineHigh(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_co
     }
 }
 
+// todo: convert to also calculate the z-coordinate:
+//      void plotLine(point from, point to, u_int32_t rgba_color)
 // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 void plotLine(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_color)
 {
@@ -255,6 +283,8 @@ void plotLine(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_color)
     }
 }
 
+// convert to use point screenXY(vec3 vertice)
+// and remove average depth to get proper z-buffer
 void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
 {
     int ax, ay, bx, by;
@@ -274,6 +304,7 @@ void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
         return;
     }
 
+    // todo: calculate per pixel depth!
     float depth = (from.z + to.z) / 2.0f;
     // std::cout << "line depth is " << std::to_string(depth) << std::endl;
 
@@ -283,10 +314,10 @@ void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
     // (x=-1, y=-1) -> (0, sHeight)
     // (x=1, y=1) -> (sWidth, 0)
     // (x=1, y=-1) -> (sWidth, sHeight)
-    ax = (int)(((from.x + 1.0f) / 2.0f) * (float)g_SDLWidth); //from.x + 10;
-    ay = (int)((1.0f - ((from.y + 1.0f) / 2.0f)) * (float)g_SDLHeight); // from.y + 10;
-    bx = (int)(((to.x + 1.0f) / 2.0f) * (float)g_SDLWidth); //to.x + 10;
-    by = (int)((1.0f - ((to.y + 1.0f) / 2.0f)) * (float)g_SDLHeight); // to.x + 10;
+    ax = (int)(((from.x + 1.0f) / 2.0f) * (float)g_SDLWidth);
+    ay = (int)((1.0f - ((from.y + 1.0f) / 2.0f)) * (float)g_SDLHeight);
+    bx = (int)(((to.x + 1.0f) / 2.0f) * (float)g_SDLWidth);
+    by = (int)((1.0f - ((to.y + 1.0f) / 2.0f)) * (float)g_SDLHeight);
     plotLine(ax, ay, bx, by, depth, rgba_color);
 }
 
@@ -408,6 +439,13 @@ void drawMesh(mesh *m, cam *c, light *l)
 
         // printTri(projected, "final");
 
+        out = &projected;
+
+        if (g_config->fillTriangles)
+        {
+            fillTriangle(out->vertices, out->color);
+        }
+
         if (g_config->drawNormals)
         {
             // draw face normals for debugging
@@ -423,10 +461,6 @@ void drawMesh(mesh *m, cam *c, light *l)
             drawLine(middle, v3Add(middle, projectedFaceNormal), 0xffffffff); // faceNormal sticking out from the face
         }
 
-
-        out = &projected;
-
-        fillTriangle(out->vertices, out->color);
         if (g_config->drawWireframe)
         {
             // cheat the z-buffer to actually draw the line
@@ -493,31 +527,11 @@ bool loadMeshFromObj(std::string sFilename, mesh *m, u_int32_t color = 0xccccccf
 
 void clearBuffer()
 {
-    // first small performance optimization
-    // before with -O0 this loop took 1.59s/31.1%
-    // after with memset and -O0 this took only 2ms/0%
-
-    // float min_float = std::numeric_limits<float>::lowest();
-    // float min_float = 10000.0f;
-
     // definition: g_SDLBackBuffer = new Uint32[windowWidth * windowHeight];
     memset(g_SDLBackBuffer, 0x00, g_SDLWidth * g_SDLHeight * sizeof(Uint32));
-    // memset(g_DepthBuffer, 0xff, g_SDLWidth * g_SDLHeight * sizeof(float));
-    // memset_pattern4(g_DepthBuffer, &min_float, g_SDLWidth * g_SDLHeight * sizeof(float));
 
-    // for (int i = 0; i < g_SDLHeight; ++i)
-    // {
-    //     for (int j = 0; j < g_SDLWidth; ++j)
-    //     {
-    //         g_SDLBackBuffer[i * g_SDLWidth + j] = 0x000000ff;
-    //     }
-    // }
-    for (int i = 0; i < g_SDLHeight; ++i)
-    {
-        for (int j = 0; j < g_SDLWidth; ++j)
-        {
-            g_DepthBuffer[i * g_SDLWidth + j] = 10000.0f;
-        }
-    }
-
+    // g_DepthBuffer = new float[windowWidth * windowHeight];
+    // camera is looking towards positize z axis, so z_max is infinity
+    float inf = std::numeric_limits<float>::infinity();
+    memset_pattern4(g_DepthBuffer, &inf, g_SDLWidth * g_SDLHeight * sizeof(float));
 }

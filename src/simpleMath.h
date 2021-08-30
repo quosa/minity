@@ -8,12 +8,15 @@ struct point
 {
     int x = 0; // top
     int y = 0; // left
+    float z = 0.0f; // z depth;
     std::string str()
     {
         return "("
             + std::to_string(this->x)
             + ", "
             + std::to_string(this->y)
+            + ", "
+            + std::to_string(this->z)
             + ")";
     };
 };
@@ -30,6 +33,10 @@ struct vec3
             && this->y == other.y
             && this->z == other.z
             && this->w == other.w;
+    };
+    bool operator!=(const vec3& other) const
+    {
+        return !(*this == other);
     };
     std::string str()
     {

@@ -45,13 +45,15 @@ TEST_CASE( "1-vec * 2 = 2-vec" )
 
 TEST_CASE( "swap points (for sorting)" )
 {
-    point a {1, 2};
-    point b {3, 4};
+    point a {1, 2, -3.0f};
+    point b {4, 5, 6.0f};
     REQUIRE( a.x == 1 );
-    REQUIRE( b.y == 4 );
+    REQUIRE( b.y == 5 );
+    REQUIRE( a.z == -3.0f );
     pSwap(&a, &b);
     REQUIRE( b.x == 1 );
-    REQUIRE( a.y == 4 );
+    REQUIRE( a.y == 5 );
+    REQUIRE( b.z == -3.0f );
 }
 
 TEST_CASE( "0-matrix * 0-matrix = 0-matrix" )
