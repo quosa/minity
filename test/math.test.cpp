@@ -1,6 +1,6 @@
-#define CATCH_CONFIG_MAIN
-
 #include <catch2/catch.hpp>
+#include <iostream>
+
 #include "simpleMath.h"
 
 const vec3 v0{};
@@ -136,9 +136,9 @@ TEST_CASE( "matrix inverse - simple" )
     };
     mat4 result;
     invertRowMajor((float *)mt.m, (float *)result.m);
-    printMat4(result);
-    std::cout << "---" << std::endl;
-    printMat4(multiplyMat4(result, mt));
+    // printMat4(result);
+    // std::cout << "---" << std::endl;
+    // printMat4(multiplyMat4(result, mt));
 
     REQUIRE( multiplyMat4(result, mt) == identity);
 }
@@ -147,17 +147,17 @@ TEST_CASE( "matrix inverse for look-at camera" )
 {
     // M * M^-1 = I
     mat4 cameraMatrix = lookAtMatrixRH(vec3{4.0f, 3.0f, 3.0f}, vec3{0.0f, 0.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f});
-    std::cout << "CAMERA MATRIX:"  << std::endl;
-    printMat4(cameraMatrix);
+    // std::cout << "CAMERA MATRIX:"  << std::endl;
+    // printMat4(cameraMatrix);
 
     mat4 viewMatrix;
     invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
-    std::cout << "VIEW MATRIX:"  << std::endl;
-    printMat4(viewMatrix);
+    // std::cout << "VIEW MATRIX:"  << std::endl;
+    // printMat4(viewMatrix);
 
-    std::cout << "---" << std::endl;
+    // std::cout << "---" << std::endl;
     mat4 lookAtResult = multiplyMat4(viewMatrix, cameraMatrix);
-    printMat4(lookAtResult);
+    // printMat4(lookAtResult);
     // CLOSE ENOUGH...
     for (int row=0; row<4; row++)
         for (int col=0; col<4; col++)
@@ -170,21 +170,63 @@ TEST_CASE( "matrix inverse for fps camera" )
 {
     // M * M^-1 = I
     mat4 fpsCameraMatrix = fpsLookAtMatrixRH( vec3{4.0f, 3.0f, 3.0f}, 0.1f, -0.2f);
-    std::cout << "CAMERA MATRIX:"  << std::endl;
-    printMat4(fpsCameraMatrix);
+    // std::cout << "CAMERA MATRIX:"  << std::endl;
+    // printMat4(fpsCameraMatrix);
 
     mat4 fpsViewMatrix;
     invertRowMajor((float *)fpsCameraMatrix.m, (float *)fpsViewMatrix.m);
-    std::cout << "VIEW MATRIX:"  << std::endl;
-    printMat4(fpsViewMatrix);
+    // std::cout << "VIEW MATRIX:"  << std::endl;
+    // printMat4(fpsViewMatrix);
 
-    std::cout << "---" << std::endl;
+    // std::cout << "---" << std::endl;
     mat4 fpsResult = multiplyMat4(fpsViewMatrix, fpsCameraMatrix);
-    printMat4(fpsResult);
+    // printMat4(fpsResult);
     for (int row=0; row<4; row++)
         for (int col=0; col<4; col++)
             fpsResult.m[row][col] = round(1000*fpsResult.m[row][col])/1000.0;
 
-    printMat4(fpsResult);
+    // printMat4(fpsResult);
     REQUIRE( fpsResult == identity);
+}
+
+TEST_CASE( "matrix rotation - X axis" )
+{
+    // full cirle (2*PI) should land us right where we started
+    const mat4 xrot = rotateXMatrix(deg2rad(360));
+
+    // NOTE: this requires a bit of rounding!
+    // See:
+    //  - are_relatively_equal function in math lib
+    //  - http://realtimecollisiondetection.net/blog/?p=89
+    //  - https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+    //  - https://github.com/catchorg/Catch2/blob/devel/docs/assertions.md#floating-point-comparisons
+    REQUIRE( multiplyVec3(v1, xrot) == v1);
+}
+
+TEST_CASE( "matrix rotation - Y axis" )
+{
+    // full cirle (2*PI) should land us right where we started
+    const mat4 yrot = rotateYMatrix(deg2rad(360));
+
+    // NOTE: this requires a bit of rounding!
+    // See:
+    //  - are_relatively_equal function in math lib
+    //  - http://realtimecollisiondetection.net/blog/?p=89
+    //  - https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+    //  - https://github.com/catchorg/Catch2/blob/devel/docs/assertions.md#floating-point-comparisons
+   REQUIRE( multiplyVec3(v1, yrot) == v1);
+}
+
+TEST_CASE( "matrix rotation - Z axis" )
+{
+    // full cirle (2*PI) should land us right where we started
+    const mat4 zrot = rotateZMatrix(deg2rad(360));
+
+    // NOTE: this requires a bit of rounding!
+    // See:
+    //  - are_relatively_equal function in math lib
+    //  - http://realtimecollisiondetection.net/blog/?p=89
+    //  - https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+    //  - https://github.com/catchorg/Catch2/blob/devel/docs/assertions.md#floating-point-comparisons
+    REQUIRE( multiplyVec3(v1, zrot) == v1);
 }

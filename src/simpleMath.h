@@ -4,6 +4,16 @@
 #include <string>
 #include <vector>
 
+// adated from http://realtimecollisiondetection.net/blog/?p=89
+// todo: consider an ulp based solution as explained here:
+// https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+float are_relatively_equal(const float a, const float b)
+{
+    // std::cout << std::fabs(a - b) << " <= " << std::numeric_limits<float>::epsilon() * std::max(std::fabs(a), std::fabs(b)) << std::endl;
+    // 2 multiplier is selected to get the 360/2*pi rotations to work
+    return (std::fabs(a - b) <= 2 * std::numeric_limits<float>::epsilon() * std::max(1.0f, std::max(std::fabs(a), std::fabs(b))));
+};
+
 struct point
 {
     int x = 0; // top
@@ -29,10 +39,10 @@ struct vec3
     // structs don't have default comparison
     bool operator==(const vec3& other) const
     {
-        return this->x == other.x
-            && this->y == other.y
-            && this->z == other.z
-            && this->w == other.w;
+        return are_relatively_equal(this->x, other.x)
+            && are_relatively_equal(this->y, other.y)
+            && are_relatively_equal(this->z, other.z)
+            && are_relatively_equal(this->w, other.w);
     };
     bool operator!=(const vec3& other) const
     {
@@ -71,7 +81,7 @@ struct mat4
         {
             for (int c = 0; c < 4; c++)
             {
-                if (this->m[r][c] != other.m[r][c])
+                if (!are_relatively_equal(this->m[r][c], other.m[r][c]))
                     return false;
             }
         }
@@ -84,8 +94,16 @@ void printMat4(const mat4 &mat);
 void printVec3(const vec3 &v);
 void printTri(const tri &t, std::string label);
 
-#define DEG(degree) (degree * 3.14159f / 180)
-#define RAD(radians) (radians * 180 / 3.14159f)
+constexpr float deg2rad(float degrees)
+{
+    return degrees * M_PI / 180.0f;
+}
+
+constexpr float rad2deg(float radians)
+{
+    return radians * 180.0f / M_PI;
+}
+
 
 // TODO: use template
 void pSwap(point *a, point *b)

@@ -112,19 +112,19 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
                 break;
             case SDLK_a:
                 std::cerr << " LookLeft";
-                inputRotation->y -= DEG(5);
+                inputRotation->y -= deg2rad(5);
                 break;
             case SDLK_d:
                 std::cerr << " LookRight";
-                inputRotation->y += DEG(5);
+                inputRotation->y += deg2rad(5);
                 break;
             case SDLK_w:
                 std::cerr << " LookUp";
-                inputRotation->x += DEG(5);
+                inputRotation->x += deg2rad(5);
                 break;
             case SDLK_s:
                 std::cerr << " LookDown";
-                inputRotation->x -= DEG(5);
+                inputRotation->x -= deg2rad(5);
                 break;
             case SDLK_n:
                 std::cerr << " swap (n)ormals";

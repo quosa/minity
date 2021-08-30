@@ -30,10 +30,10 @@ int main() {
     SDLStart(640, 480);
 
 	camera.fovDegrees = 90.0f;
-	camera.rotation = vec3{DEG(0), DEG(0), DEG(0)};
+	camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 	camera.translation = vec3{0.0f, 0.0f, -2.5f};
 
-	light.rotation = vec3{DEG(45), DEG(-45), DEG(0)};
+	light.rotation = vec3{deg2rad(45), deg2rad(-45), deg2rad(0)};
 	// directional light only cares about rotation...
 	// light.translation = vec3{10.0f, 10.0f, 10.0f};
 
@@ -62,7 +62,7 @@ int main() {
 	// loadMeshFromObj("models/octahedron.obj", &object);
 	// object.translation.z = -4.0f;
 	// object.scale = vec3{0.5f, 0.5f, 0.5f};
-	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
+	// object.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 	// object.translation = vec3{0.0f, 0.0f, 0.0f};
 
 	// loadMeshFromObj("models/teapot.obj", &object, 0xbbbbbbff);
@@ -75,19 +75,19 @@ int main() {
 	// 	object.tris[i].vertices[2] = tmp;
 	// }
 	// object.scale = vec3{0.5f, 0.5f, 0.5f};
-	// object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
+	// object.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 	// object.translation = vec3{0.0f, -1.0f, 0.0f};
 
 	sphere(50, 50, 0xffff00ff, object); // 0xffff00ff = blue is rendered first
 	object.scale = vec3{1.0f, 1.0f, 1.0f};
-	object.rotation = vec3{DEG(0), DEG(0), DEG(0)};
+	object.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 	object.translation = vec3{-1.0f, 0.0f, 0.0f};
 
 	// TODO BUG: yellow box and blue sphere: the sphere appears in a jagged way
 
 	sphere(50, 50, 0x0000ffff, object2); // 0x0000ffff = yellow is rendered later
 	object2.scale = vec3{1.5f, 1.5f, 1.5f};
-	object2.rotation = vec3{DEG(0), DEG(0), DEG(0)};
+	object2.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 	object2.translation = vec3{1.0f, 0.0f, 0.0f};
 
 	// printMesh(&object);
@@ -107,10 +107,10 @@ int main() {
 
 		// object.translation = v3Add(object.translation, inputTranslation);
 		// printVec3(object.translation);
-		object.rotation.y += DEG(deltaTime * 10.0f);
-		object2.rotation.y -= DEG(deltaTime * 10.0f);
+		object.rotation.y += deg2rad(deltaTime * 10.0f);
+		object2.rotation.y -= deg2rad(deltaTime * 10.0f);
 
-		// camera.rotation.y += DEG(0.5); // will overflow eventually
+		// camera.rotation.y += deg2rad(0.5); // will overflow eventually
 		// printVec3(camera.translation);
 
 		camera.translation = v3Add(camera.translation, inputTranslation);
