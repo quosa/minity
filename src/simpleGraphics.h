@@ -22,7 +22,7 @@ struct light
 };
 
 // forward declaration
-void plotLine(int x0, int y0, int x1, int y1, float depth, u_int32_t  rgba_color);
+void plotLine(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_color);
 void setPixel(int x, int y, float depth, u_int32_t rgba_color);
 
 void plotHorizontalLine(point start, point end, u_int32_t rgba_color)
@@ -98,11 +98,10 @@ point screenXY(vec3 vertice)
     // (x=1, y=1) -> (sWidth, 0)
     // (x=1, y=-1) -> (sWidth, sHeight)
     // todo: should z be boxed as well?
-    return point {
+    return point{
         (int)(((xx + 1.0f) / 2.0f) * (float)g_SDLWidth),
         (int)((1.0f - ((yy + 1.0f) / 2.0f)) * (float)g_SDLHeight),
-        vertice.z
-    };
+        vertice.z};
 };
 
 void fillTopFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
@@ -127,8 +126,7 @@ void fillTopFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
         plotHorizontalLine(
             point{(int)sx, y, sz},
             point{(int)ex, y, ez},
-            rgba_color
-        );
+            rgba_color);
 
         sx -= dx31;
         ex -= dx32;
@@ -154,7 +152,6 @@ void fillBottomFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
     float sz = 1.0 * v1.z;
     float ez = 1.0 * v1.z;
 
-
     // std::cout << "fBFT: dx21 " << std::to_string(dx21) << ", dx31 " << std::to_string(dx31) << std::endl;
 
     for (int y = v1.y; y <= v2.y; y++)
@@ -162,8 +159,7 @@ void fillBottomFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
         plotHorizontalLine(
             point{(int)sx, y, sz},
             point{(int)ex, y, ez},
-            rgba_color
-        );
+            rgba_color);
         sx += dx21;
         ex += dx31;
         sz += dz21;
@@ -178,9 +174,12 @@ void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
     point v2 = screenXY(vertices[1]);
     point v3 = screenXY(vertices[2]);
 
-    if (v1.y > v3.y) pSwap(&v1, &v3);
-    if (v1.y > v2.y) pSwap(&v1, &v2);
-    if (v2.y > v3.y) pSwap(&v2, &v3);
+    if (v1.y > v3.y)
+        pSwap(&v1, &v3);
+    if (v1.y > v2.y)
+        pSwap(&v1, &v2);
+    if (v2.y > v3.y)
+        pSwap(&v2, &v3);
 
     assert(v1.y <= v2.y && v2.y <= v3.y);
 
@@ -198,11 +197,10 @@ void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
     {
         // general case, add intermediate point to have
         // one top and bottom flat triangle
-        point v4 {
+        point v4{
             (int)(v1.x + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.x - v1.x)),
             v2.y,
-            v1.z + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.z - v1.z)
-        };
+            v1.z + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.z - v1.z)};
         fillBottomFlatTriangle(v1, v2, v4, rgba_color);
         fillTopFlatTriangle(v2, v4, v3, rgba_color);
     }
@@ -218,7 +216,7 @@ void plotLineLow(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_col
         yi = -1;
         dy = -dy;
     }
-    float D = 2*dy - dx;
+    float D = 2 * dy - dx;
     int y = y0;
 
     for (int x = x0; x <= x1; x++)
@@ -227,9 +225,9 @@ void plotLineLow(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_col
         if (D > 0)
         {
             y += yi;
-            D -= 2*dx;
+            D -= 2 * dx;
         }
-        D += 2*dy;
+        D += 2 * dy;
     }
 }
 
@@ -243,7 +241,7 @@ void plotLineHigh(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_co
         xi = -1;
         dx = -dx;
     }
-    float D = 2*dx - dy;
+    float D = 2 * dx - dy;
     int x = x0;
 
     for (int y = y0; y <= y1; y++)
@@ -252,9 +250,9 @@ void plotLineHigh(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_co
         if (D > 0)
         {
             x += xi;
-            D -= 2*dy;
+            D -= 2 * dy;
         }
-        D += 2*dx;
+        D += 2 * dx;
     }
 }
 
@@ -295,10 +293,7 @@ void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
     //     return;
     // }
 
-    if (from.x < -1 || from.x > 1
-        || from.y < -1 || from.y > 1
-        || to.x < -1 ||to.x > 1
-        || to.y < -1 ||to.y > 1)
+    if (from.x < -1 || from.x > 1 || from.y < -1 || from.y > 1 || to.x < -1 || to.x > 1 || to.y < -1 || to.y > 1)
     {
         std::cerr << "XY CLIPPING!!!" << std::endl;
         return;
@@ -371,7 +366,7 @@ void drawMesh(mesh *m, cam *c, light *l)
     lightRay.z = 1; // todo: use the light entity for real
 
     // We loop each Triangle we need to draw
-    for(auto triangle : m->tris)
+    for (auto triangle : m->tris)
     {
         tri *out, world, view, projected;
 
@@ -396,21 +391,19 @@ void drawMesh(mesh *m, cam *c, light *l)
         // cannot do it in world space as we have to anyway adjust for camera rotation
         auto faceNormal = v3Normalize(v3CrossProduct(
             v3Sub(view.vertices[1], view.vertices[0]),
-            v3Sub(view.vertices[2], view.vertices[0])
-        ));
+            v3Sub(view.vertices[2], view.vertices[0])));
         auto vCameraRay = v3Normalize(view.vertices[0]); // camera is now at origin
         auto camDot = v3DotProduct(faceNormal, vCameraRay);
 
-        if ( camDot < 0.0f)
+        if (camDot < 0.0f)
         {
             // std::cout << "CULLING face normal: " << faceNormal.str() << " camera:" << vCameraRay.str() << " dot: " << std::to_string(camDot) << std::endl;
             // std::cout << "            face[0]: " << view.vertices[0].str() << " [1]: " << view.vertices[1].str() << " [2]: " << view.vertices[2].str() << std::endl;
             continue;
         }
 
-
         // super-simple global Illumination
-        vec3 light_direction = v3Normalize(vec3{ 0.0f, -1.0f, -1.0f });
+        vec3 light_direction = v3Normalize(vec3{0.0f, -1.0f, -1.0f});
         // How "aligned" are light direction and triangle surface normal?
         float dp = std::max(0.1f, v3DotProduct(light_direction, faceNormal));
         view.color = adjustColor(view.color, dp);
@@ -450,14 +443,13 @@ void drawMesh(mesh *m, cam *c, light *l)
         {
             // draw face normals for debugging
             auto projectedFaceNormal = v3Div(v3Normalize(v3CrossProduct(
-                v3Sub(projected.vertices[1], projected.vertices[0]),
-                v3Sub(projected.vertices[2], projected.vertices[0])
-            )), 10.0f);
+                                                 v3Sub(projected.vertices[1], projected.vertices[0]),
+                                                 v3Sub(projected.vertices[2], projected.vertices[0]))),
+                                             10.0f);
 
             auto middle = v3Div(
-                v3Add(projected.vertices[2],v3Add(projected.vertices[1], projected.vertices[0])),
-                3
-            );
+                v3Add(projected.vertices[2], v3Add(projected.vertices[1], projected.vertices[0])),
+                3);
             drawLine(middle, v3Add(middle, projectedFaceNormal), 0xffffffff); // faceNormal sticking out from the face
         }
 
@@ -476,13 +468,13 @@ void drawMesh(mesh *m, cam *c, light *l)
 
 void printMesh(mesh *m)
 {
-    for(auto triangle : m->tris)
+    for (auto triangle : m->tris)
     {
         std::cout << "v";
-        for(int i=0; i < 3; i++)
+        for (int i = 0; i < 3; i++)
         {
             vec3 vertice = triangle.vertices[i];
-            std::cout << " (" << vertice.x << " " << vertice.y << " "<< vertice.z << ")";
+            std::cout << " (" << vertice.x << " " << vertice.y << " " << vertice.z << ")";
         }
         std::cout << std::endl;
     };
@@ -519,7 +511,7 @@ bool loadMeshFromObj(std::string sFilename, mesh *m, u_int32_t color = 0xccccccf
         {
             int f[3];
             s >> junk >> f[0] >> f[1] >> f[2];
-            m->tris.push_back({ {verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1]}, color });
+            m->tris.push_back({{verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1]}, color});
         }
     }
     return true;
