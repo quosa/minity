@@ -4,32 +4,49 @@
 #include <string>
 #include <vector>
 
+// adated from http://realtimecollisiondetection.net/blog/?p=89
+// todo: consider an ulp based solution as explained here:
+// https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+float are_relatively_equal(const float a, const float b)
+{
+    // std::cout << std::fabs(a - b) << " <= " << std::numeric_limits<float>::epsilon() * std::max(std::fabs(a), std::fabs(b)) << std::endl;
+    // 2 multiplier is selected to get the 360/2*pi rotations to work
+    return (std::fabs(a - b) <= 2 * std::numeric_limits<float>::epsilon() * std::max(1.0f, std::max(std::fabs(a), std::fabs(b))));
+};
+
 struct point
 {
-    int x = 0; // top
-    int y = 0; // left
+    int x = 0;      // top
+    int y = 0;      // left
+    float z = 0.0f; // z depth;
     std::string str()
     {
         return "("
             + std::to_string(this->x)
             + ", "
             + std::to_string(this->y)
+            + ", "
+            + std::to_string(this->z)
             + ")";
     };
 };
 struct vec3
 {
-	float x = 0;
-	float y = 0;
-	float z = 0;
-	float w = 1;
+    float x = 0;
+    float y = 0;
+    float z = 0;
+    float w = 1;
     // structs don't have default comparison
-    bool operator==(const vec3& other) const
+    bool operator==(const vec3 &other) const
     {
-        return this->x == other.x
-            && this->y == other.y
-            && this->z == other.z
-            && this->w == other.w;
+        return are_relatively_equal(this->x, other.x)
+            && are_relatively_equal(this->y, other.y)
+            && are_relatively_equal(this->z, other.z)
+            && are_relatively_equal(this->w, other.w);
+    };
+    bool operator!=(const vec3 &other) const
+    {
+        return !(*this == other);
     };
     std::string str()
     {
@@ -43,13 +60,13 @@ struct vec3
 
 struct tri
 {
-	vec3 vertices[3];
+    vec3 vertices[3];
     u_int32_t color = 0xffffffff;
 };
 
 struct mesh
 {
-	std::vector<tri> tris;
+    std::vector<tri> tris;
     vec3 scale{1.0f, 1.0f, 1.0f};
     vec3 rotation{};
     vec3 translation{};
@@ -57,14 +74,14 @@ struct mesh
 
 struct mat4
 {
-	float m[4][4] = {{0}};
-    bool operator==(const mat4& other) const
+    float m[4][4] = {{0}};
+    bool operator==(const mat4 &other) const
     {
         for (int r = 0; r < 4; r++)
         {
             for (int c = 0; c < 4; c++)
             {
-                if (this->m[r][c] != other.m[r][c])
+                if (!are_relatively_equal(this->m[r][c], other.m[r][c]))
                     return false;
             }
         }
@@ -77,8 +94,15 @@ void printMat4(const mat4 &mat);
 void printVec3(const vec3 &v);
 void printTri(const tri &t, std::string label);
 
-#define DEG(degree) (degree * 3.14159f / 180)
-#define RAD(radians) (radians * 180 / 3.14159f)
+constexpr float deg2rad(float degrees)
+{
+    return degrees * M_PI / 180.0f;
+}
+
+constexpr float rad2deg(float radians)
+{
+    return radians * 180.0f / M_PI;
+}
 
 // TODO: use template
 void pSwap(point *a, point *b)
@@ -90,27 +114,27 @@ void pSwap(point *a, point *b)
 
 vec3 v3Add(const vec3 &v1, const vec3 &v2)
 {
-    return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
+    return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
 }
 
 vec3 v3Sub(const vec3 &v1, const vec3 &v2)
 {
-    return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z };
+    return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
 }
 
 vec3 v3Mul(const vec3 &v1, const float k)
 {
-    return { v1.x * k, v1.y * k, v1.z * k };
+    return {v1.x * k, v1.y * k, v1.z * k};
 }
 
 vec3 v3Div(const vec3 &v1, const float k)
 {
-    return { v1.x / k, v1.y / k, v1.z / k };
+    return {v1.x / k, v1.y / k, v1.z / k};
 }
 
 float v3DotProduct(const vec3 &v1, const vec3 &v2)
 {
-    return v1.x*v2.x + v1.y*v2.y + v1.z * v2.z;
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
 
 vec3 v3CrossProduct(const vec3 &v1, const vec3 &v2)
@@ -130,7 +154,7 @@ float v3Length(const vec3 &v)
 vec3 v3Normalize(const vec3 &v)
 {
     float l = v3Length(v);
-    return { v.x / l, v.y / l, v.z / l };
+    return {v.x / l, v.y / l, v.z / l};
 }
 
 mat4 scaleMatrix(const float x, const float y, const float z)
@@ -199,7 +223,7 @@ mat4 translateMatrix(const float x, const float y, const float z)
 // perspective projection:
 mat4 projectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
 {
-    float fFovRad = tanf(fFovDegrees * 0.5f * 3.14159f / 180.0f );
+    float fFovRad = tanf(fFovDegrees * 0.5f * 3.14159f / 180.0f);
 
     mat4 out;
     // row order: matrix[row][col]
@@ -246,7 +270,7 @@ mat4 multiplyMat4(const mat4 &m1, const mat4 &m2)
 // http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html
 mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrices
 {
-    mat4  out;
+    mat4 out;
     // row order: matrix[row][col]
     // The basic idea is that the scaling/rotation combination of the transformation matrix
     // (first 3x3 sub-matrix) is an orthonormal matrix
@@ -259,11 +283,11 @@ mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrice
     float tx = m.m[0][3];
     float ty = m.m[1][3];
     float tz = m.m[2][3];
-    out.m[0][3] = -(m.m[0][0]*tx + m.m[0][1]*ty + m.m[0][2]*tz);
-    out.m[1][3] = -(m.m[1][0]*tx + m.m[1][1]*ty + m.m[1][2]*tz);
-    out.m[2][3] = -(m.m[2][0]*tx + m.m[2][1]*ty + m.m[2][2]*tz);
+    out.m[0][3] = -(m.m[0][0] * tx + m.m[0][1] * ty + m.m[0][2] * tz);
+    out.m[1][3] = -(m.m[1][0] * tx + m.m[1][1] * ty + m.m[1][2] * tz);
+    out.m[2][3] = -(m.m[2][0] * tx + m.m[2][1] * ty + m.m[2][2] * tz);
     out.m[3][3] = 1.0f;
-    return  out;
+    return out;
 }
 
 // https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function (looks flaky)
@@ -277,8 +301,9 @@ mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrice
 // or (0,-1,0). Unfortunately in this particular case, the cross product fails producing a result for
 // the right vector.
 mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
-{   // NOTE RIGHT-HANDED!!!
-    vec3 forward = v3Normalize(v3Sub(to, from));// !!! switched !!! normalize(from - to);
+{
+    // NOTE RIGHT-HANDED!!!
+    vec3 forward = v3Normalize(v3Sub(to, from)); // !!! switched !!! normalize(from - to);
     // printVec3(forward);
     vec3 right = v3Normalize(v3CrossProduct(forward, tmp)); // !!! switched !!! crossProduct(normalize(tmp), forward);
     // printVec3(right);
@@ -297,8 +322,8 @@ mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0
     camToWorld.m[2][1] = -forward.y; // !!! negate !!!
     camToWorld.m[2][2] = -forward.z; // !!! negate !!!
 
-    camToWorld.m[0][3] = -v3DotProduct(right, from); // !!! from.x;
-    camToWorld.m[1][3] = -v3DotProduct(up, from); // !!! from.y;
+    camToWorld.m[0][3] = -v3DotProduct(right, from);   // !!! from.x;
+    camToWorld.m[1][3] = -v3DotProduct(up, from);      // !!! from.y;
     camToWorld.m[2][3] = -v3DotProduct(forward, from); // !!! from.z;
 
     camToWorld.m[3][3] = 1.0f; // GUESS!!!
@@ -309,7 +334,7 @@ mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0
 // Pitch must be in the range of [-90 ... 90] degrees and
 // yaw must be in the range of [0 ... 360] degrees.
 // Pitch and yaw variables must be expressed in radians.
-mat4 fpsLookAtMatrixRH( vec3 eye, float pitch, float yaw )
+mat4 fpsLookAtMatrixRH(vec3 eye, float pitch, float yaw)
 {
     // I assume the values are already converted to radians.
     float cosPitch = cosf(pitch);
@@ -317,11 +342,11 @@ mat4 fpsLookAtMatrixRH( vec3 eye, float pitch, float yaw )
     float cosYaw = cosf(yaw);
     float sinYaw = sinf(yaw);
 
-    vec3 xaxis = { cosYaw, 0, -sinYaw };
-    vec3 yaxis = { sinYaw * sinPitch, cosPitch, cosYaw * sinPitch };
-    vec3 zaxis = { sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw };
+    vec3 xaxis = {cosYaw, 0, -sinYaw};
+    vec3 yaxis = {sinYaw * sinPitch, cosPitch, cosYaw * sinPitch};
+    vec3 zaxis = {sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw};
 
-    mat4 fpsViewMatrix {
+        mat4 fpsViewMatrix {
         {
             { xaxis.x,   xaxis.y,  xaxis.z, -v3DotProduct( xaxis, eye )},
             { yaxis.x,   yaxis.y,  yaxis.z, -v3DotProduct( yaxis, eye )},
@@ -330,17 +355,15 @@ mat4 fpsLookAtMatrixRH( vec3 eye, float pitch, float yaw )
         }
     };
 
-
     return fpsViewMatrix;
 }
 
 float MINOR(float m[16], int r0, int r1, int r2, int c0, int c1, int c2)
 {
-    return m[4*r0+c0] * (m[4*r1+c1] * m[4*r2+c2] - m[4*r2+c1] * m[4*r1+c2]) -
-           m[4*r0+c1] * (m[4*r1+c0] * m[4*r2+c2] - m[4*r2+c0] * m[4*r1+c2]) +
-           m[4*r0+c2] * (m[4*r1+c0] * m[4*r2+c1] - m[4*r2+c0] * m[4*r1+c1]);
+    return m[4 * r0 + c0] * (m[4 * r1 + c1] * m[4 * r2 + c2] - m[4 * r2 + c1] * m[4 * r1 + c2]) -
+           m[4 * r0 + c1] * (m[4 * r1 + c0] * m[4 * r2 + c2] - m[4 * r2 + c0] * m[4 * r1 + c2]) +
+           m[4 * r0 + c2] * (m[4 * r1 + c0] * m[4 * r2 + c1] - m[4 * r2 + c0] * m[4 * r1 + c1]);
 }
-
 
 void adjoint(float m[16], float adjOut[16])
 {
@@ -367,10 +390,9 @@ void invertRowMajor(float m[16], float invOut[16])
     adjoint(m, invOut);
 
     float inv_det = 1.0f / det(m);
-    for(int i = 0; i < 16; ++i)
+    for (int i = 0; i < 16; ++i)
         invOut[i] = invOut[i] * inv_det;
 }
-
 
 void printMat4(const mat4 &mat)
 {
@@ -392,7 +414,7 @@ void printTri(const tri &t, std::string label = "")
 {
     std::cout << "TRI (" << label << "):";
     for (int i = 0; i < 3; i++)
-        std::cout <<  " (" << t.vertices[i].x << " " << t.vertices[i].y << " " << t.vertices[i].z << " " << t.vertices[i].w << ")";
+        std::cout << " (" << t.vertices[i].x << " " << t.vertices[i].y << " " << t.vertices[i].z << " " << t.vertices[i].w << ")";
     std::cout << std::endl;
 }
 
