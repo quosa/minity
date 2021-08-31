@@ -208,3 +208,17 @@ TEST_CASE("matrix rotation - Z axis")
     //  - https://github.com/catchorg/Catch2/blob/devel/docs/assertions.md#floating-point-comparisons
     REQUIRE(multiplyVec3(v1, zrot) == v1);
 }
+
+TEST_CASE("scale matrix")
+{
+    const mat4 scale = scaleMatrix(1.0f, -2.0f, 0.0f);
+    REQUIRE(multiplyVec3(v0, scale) == v0);
+    REQUIRE(multiplyVec3(v1, scale) == vec3{1.0f, -2.0f, 0.0f});
+}
+
+TEST_CASE("translate matrix")
+{
+    const mat4 translate = translateMatrix(0.0f, -2.0f, 3.0f);
+    REQUIRE(multiplyVec3(v0, translate) == vec3{0.0f, -2.0f, 3.0f});
+    REQUIRE(multiplyVec3(v1, translate) == vec3{1.0f, -1.0f, 4.0f});
+}
