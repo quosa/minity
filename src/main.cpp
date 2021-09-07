@@ -26,20 +26,46 @@ int main()
     light light;
     float deltaTime = 0.0f;
 
+    // std::cout << "BUFSIZ is " << BUFSIZ << std::endl;
+    // if(std::setvbuf(stdout, nullptr, _IONBF, 512) != 0) {
+    //    std::perror("setvbuf failed"); // POSIX version sets errno
+    //    return EXIT_FAILURE;
+    // }
+
     std::cout << usage << std::endl;
 
     SDLStart(640, 480);
 
-    camera.fovDegrees = 90.0f;
+    camera.fovDegrees = 60.0f;
     camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    camera.translation = vec3{0.0f, 0.0f, -2.5f};
+    camera.translation = vec3{0.0f, 0.0f, 5.0f};
 
     light.rotation = vec3{deg2rad(45), deg2rad(-45), deg2rad(0)};
     // directional light only cares about rotation...
     // light.translation = vec3{10.0f, 10.0f, 10.0f};
 
+    // cartesian coordinates
+    const u_int32_t yellow = 0xffff00ff;
+    const u_int32_t blue = 0x0000ffff;
+    // const u_int32_t green = 0x00ff00ff;
+    // const u_int32_t red = 0xff0000ff;
     // object.tris = {
-    // 	{ { {-0.5f, -0.5f, 0.0f},  {0.0f, 0.5f, 0.0f},  {0.5f, -0.5f, 0.0f} } },
+    //     { { {0.0f, 0.0f, 0.0f},  {0.0f, 0.1f, 0.0f},  {2.0f, 0.0f, 0.0f} }, red },
+    // 	{ { {0.0f, 0.0f, 0.0f},  {0.0f, 2.0f, 0.0f},  {0.1f, 0.0f, 0.0f} }, green },
+    //     { { {0.0f, 0.0f, 0.0f},  {0.0f, 0.1f, 0.0f},  {0.0f, 0.0f, 2.0f} }, blue },
+    // };
+
+    // object2.tris = {
+    // 	{ {  {0.0f, 0.1f, 0.0f},   {0.0f, 0.0f, 0.0f},  {10.0f, 0.0f, 0.0f} } }, // X
+    //     { { {0.0f, 10.0f, 0.0f},  {-0.1f, 0.0f, 0.0f},   {0.0f, 0.0f, 0.0f} } }, // Y
+    //     { {  {0.0f, 0.1f, 0.0f},  {0.0f, 0.0f, 10.0f},   {0.0f, 0.0f, 0.0f} } }, // Z
+    // 	{ { {0.0f, 0.1f, 0.0f},  {10.0f, 0.0f, 0.0f},  {0.0f, 0.0f, 0.0f} } }, // X
+    //     { { {0.0f, 10.0f, 0.0f},  {0.0f, 0.0f, 0.0f},  {-0.1f, 0.0f, 0.0f} } }, // Y
+    //     { { {0.0f, 0.1f, 0.0f},  {0.0f, 0.0f, 0.0f},  {0.0f, 0.0f, 10.0f} } }, // Z
+    // };
+
+    // object.tris = {
+    // 	{ { {-0.5f, -0.5f, -0.0f},  {0.0f, 0.5f, 0.0f},  {0.5f, -0.5f, 0.0f} } },
     // };
 
     // object.tris = {
@@ -60,6 +86,9 @@ int main()
     // object.translation = vec3{0.0f, -0.0f, -50.0f};
 
     // loadMeshFromObj("models/box.obj", &object, 0xffff00ff);
+    // object.translation.y = 5.0f;
+    // object.translation.z = -10.0f;
+
     // loadMeshFromObj("models/octahedron.obj", &object);
     // object.translation.z = -4.0f;
     // object.scale = vec3{0.5f, 0.5f, 0.5f};
@@ -79,17 +108,17 @@ int main()
     // object.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
     // object.translation = vec3{0.0f, -1.0f, 0.0f};
 
-    sphere(50, 50, 0xffff00ff, object); // 0xffff00ff = blue is rendered first
+    sphere(50, 50, yellow, object);
     object.scale = vec3{1.0f, 1.0f, 1.0f};
     object.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
     object.translation = vec3{-1.0f, 0.0f, 0.0f};
 
-    // TODO BUG: yellow box and blue sphere: the sphere appears in a jagged way
-
-    sphere(50, 50, 0x0000ffff, object2); // 0x0000ffff = yellow is rendered later
+    sphere(50, 50, blue, object2); // blue is rendered later
     object2.scale = vec3{1.5f, 1.5f, 1.5f};
     object2.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
     object2.translation = vec3{1.0f, 0.0f, 0.0f};
+
+    object2.enabled = true;
 
     // printMesh(&object);
     clearBuffer();
@@ -103,6 +132,7 @@ int main()
     vec3 zeroVector{};
     while (isRunning(&inputTranslation, &inputRotation))
     {
+#if 1 // FPS MODE
         SDL_Delay(20); // some computation budget...
         clearBuffer();
 
@@ -119,9 +149,14 @@ int main()
 
         if (inputTranslation != zeroVector || inputRotation != zeroVector)
         {
+
+            // SDL_Log("minity: cam pos: %s cam rot: %s \n", camera.translation.str().c_str(), camera.rotation.str().c_str());
             std::cout << "cam: position " << camera.translation.str()
-                      << " rotation " << camera.rotation.str() << std::endl;
+                      << " rotation " << camera.rotation.str() << std::flush << std::endl;
         }
+        // std::cout << "cam: position " << camera.translation.str()
+        //             << " rotation " << camera.rotation.str() << std::endl;
+
 
         drawMesh(&object, &camera, &light);
         drawMesh(&object2, &camera, &light);
@@ -131,6 +166,27 @@ int main()
         deltaTime = ft->deltaTime();
         inputTranslation = vec3{};
         inputRotation = vec3{};
+#else // render on input change
+        SDL_Delay(100); // busy loop
+        if (inputTranslation != zeroVector || inputRotation != zeroVector)
+        {
+            clearBuffer();
+            camera.translation = v3Add(camera.translation, inputTranslation);
+            camera.rotation = v3Add(camera.rotation, inputRotation);
+
+            std::cout << "cam: position " << camera.translation.str()
+                      << " rotation " << camera.rotation.str() << std::endl;
+
+            drawMesh(&object, &camera, &light);
+            drawMesh(&object2, &camera, &light);
+
+            SDLSwapBuffers();
+            SDLFPSUpdate(ft->delta());
+            inputTranslation = vec3{};
+            inputRotation = vec3{};
+        }
+        deltaTime = ft->deltaTime();
+#endif // FPS mode or render-on-input
     }
 
     SDLEnd();

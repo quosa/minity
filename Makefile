@@ -1,9 +1,10 @@
 RM = rm -f
-CXX = g++
-CXXFLAGS = -std=c++14 -Wall -Wextra -pedantic-errors -Werror
-CPPFLAGS = -I /usr/local/include/SDL2 -I include
+# CXX = g++
+CXX = clang++
+CXXFLAGS = -std=c++14 -Wall -Wextra -pedantic-errors -Werror `sdl2-config --cflags`
+CPPFLAGS = -I /usr/local/include/SDL2 -I include -I ${IMGUI_DIR}
 LDFLAGS = -L /usr/local/lib
-LDLIBS = -l SDL2
+LDLIBS = -l SDL2 -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo `sdl2-config --libs`
 
 ifeq ($(mode),release)
 	CXXFLAGS += -O2
@@ -31,10 +32,12 @@ BIN_DIR = bin
 BUILD_DIR = build
 SOURCE_DIR = src
 TEST_DIR = test
+IMGUI_DIR = external/imgui
 
 SRCS = $(wildcard ${SOURCE_DIR}/*.cpp)
-OBJS = $(patsubst $(SOURCE_DIR)/%,$(BUILD_DIR)/%,${SRCS:.cpp=.o})
-DEPS := $(patsubst $(SOURCE_DIR)/%,$(BUILD_DIR)/%,${SRCS:.cpp=.d})
+SRCS += $(wildcard ${IMGUI_DIR}//*.cpp)
+OBJS = $(patsubst ${IMGUI_DIR}/%, $(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${SRCS:.cpp=.o}))
+DEPS := $(patsubst ${IMGUI_DIR}/%,$(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${SRCS:.cpp=.d}))
 
 TEST_INC = -I ${SOURCE_DIR}
 TEST_SRCS = $(wildcard ${TEST_DIR}/*.cpp)
@@ -48,8 +51,14 @@ DEPS += $(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/%,${TEST_SRCS:.cpp=.d})
 MAIN = minity
 TEST = test
 
-all: ${TEST} ${MAIN}
+all: debug ${TEST} ${MAIN}
 	@echo   Run ./${BIN_DIR}/${MAIN} to start minity
+
+.PHONY: debug
+debug:
+	@echo ${SRCS}
+	@echo ${OBJS}
+	@echo ${DEPS}
 
 ${MAIN}: ${OBJS}
 	@echo building in $(mode) mode
@@ -58,6 +67,10 @@ ${MAIN}: ${OBJS}
 -include $(DEPS)
 
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp
+	$(info $(shell ls build))
+	${CXX} ${CPPFLAGS} ${CXXFLAGS} -MMD -MP -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(IMGUI_DIR)/%.cpp
 	$(info $(shell ls build))
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -MMD -MP -c $< -o $@
 

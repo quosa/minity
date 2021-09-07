@@ -3,6 +3,8 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <iostream> // << overload for catch2
+
 
 // adated from http://realtimecollisiondetection.net/blog/?p=89
 // todo: consider an ulp based solution as explained here:
@@ -56,7 +58,19 @@ struct vec3
             + ", " + std::to_string(this->z)
             + ")";
     };
+    friend std::ostream& operator<<(std::ostream& os, const vec3 &value);
 };
+
+// mainly for catch2 to be able to print the assertions
+std::ostream& operator<<( std::ostream &os, const vec3 &value )
+{
+    os << "("
+            + std::to_string(value.x)
+            + ", " + std::to_string(value.y)
+            + ", " + std::to_string(value.z)
+            + ")";
+    return os;
+}
 
 struct tri
 {
@@ -66,6 +80,7 @@ struct tri
 
 struct mesh
 {
+    bool enabled = true;
     std::vector<tri> tris;
     vec3 scale{1.0f, 1.0f, 1.0f};
     vec3 rotation{};
@@ -87,12 +102,20 @@ struct mat4
         }
         return true;
     };
+    friend std::ostream& operator<<(std::ostream& os, const mat4 &value);
 };
 
 // forward declarations:
-void printMat4(const mat4 &mat);
+void printMat4(const mat4 &mat, std::ostream& os = std::cout);
 void printVec3(const vec3 &v);
 void printTri(const tri &t, std::string label);
+
+std::ostream& operator<<(std::ostream& os, const mat4 &value)
+{
+    printMat4(value, os);
+    return os;
+}
+
 
 constexpr float deg2rad(float degrees)
 {
@@ -221,17 +244,28 @@ mat4 translateMatrix(const float x, const float y, const float z)
 };
 
 // perspective projection:
+// see: https://unspecified.wordpress.com/2012/06/21/calculating-the-gluperspective-matrix-and-other-opengl-matrix-maths/
 mat4 projectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
 {
-    float fFovRad = tanf(fFovDegrees * 0.5f * 3.14159f / 180.0f);
+    assert(fNear >= 0.0f && fFar >= 0.0f && fNear <= fFar);
+
+    float fFovRad = tanf(deg2rad(fFovDegrees) * 0.5f);
 
     mat4 out;
     // row order: matrix[row][col]
+    // x
     out.m[0][0] = 1 / (fAspectRatio * fFovRad);
+    // y
     out.m[1][1] = 1 / fFovRad;
-    out.m[2][2] = (-fNear - fFar) / (fNear - fFar);
-    out.m[2][3] = (2 * fFar * fNear) / (fNear - fFar);
-    out.m[3][2] = 1.0f;
+    // z
+    // There is also a weirdness because OpenGL is supposed to use a right-handed coordinate system:
+    // the Z axis is inverted (recall that the -Z axis points away from the camera,
+    // but in the depth buffer, smaller z values are considered closer).
+    // To fix this, we can invert the Z coordinate (...[2][2] = -1)
+    out.m[2][2] = (fFar + fNear) / (fNear - fFar);      // Same as OpenGL: - (zFar + zNear) / (zFar - zNear);
+    out.m[2][3] = (2 * fFar * fNear) / (fNear - fFar);  // Same as OpenGL: - (2 * zFar * zNear) / (zFar - zNear);
+    // w
+    out.m[3][2] = -1.0f; // w = -z which will be divided again
     return out;
 };
 
@@ -294,39 +328,69 @@ mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrice
 // https://github.com/g-truc/glm/blob/master/glm/ext/matrix_transform.inl#L99 (lookAtRH)
 // and finally https://www.3dgep.com/understanding-the-view-matrix/
 //
+// After the camera lookat transformation, the camera is at origin
+// looking at negative Z-axis (so the z-axis is flipped!)
+//
 // NOTE: https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function
 // When the camera is vertical looking straight down or straight up, the forward axis gets very close
 // to the arbitrary axis used to compute the right axis. The extreme case is of course when the froward
 // axis and this arbitrary axis are perfectly parallel e.g. when the forward vector is either (0,1,0)
 // or (0,-1,0). Unfortunately in this particular case, the cross product fails producing a result for
 // the right vector.
-mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
+// mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
+// {
+//     // NOTE RIGHT-HANDED!!!
+//     vec3 forward = v3Normalize(v3Sub(to, from));
+//     printVec3(forward);
+//     vec3 right = v3Normalize(v3CrossProduct(forward, tmp));
+//     printVec3(right);
+//     vec3 up = v3CrossProduct(right, forward);
+//     printVec3(up);
+
+//     mat4 camToWorld;
+
+//     camToWorld.m[0][0] = right.x;
+//     camToWorld.m[0][1] = right.y;
+//     camToWorld.m[0][2] = right.z;
+//     camToWorld.m[1][0] = up.x;
+//     camToWorld.m[1][1] = up.y;
+//     camToWorld.m[1][2] = up.z;
+//     camToWorld.m[2][0] = -forward.x; // !!! negate !!!
+//     camToWorld.m[2][1] = -forward.y; // !!! negate !!!
+//     camToWorld.m[2][2] = -forward.z; // !!! negate !!!
+
+//     camToWorld.m[0][3] = -v3DotProduct(right, from);  // !!! from.x;
+//     camToWorld.m[1][3] = -v3DotProduct(up, from);     // !!! from.y;
+//     camToWorld.m[2][3] = v3DotProduct(forward, from); // !!! from.z;
+
+//     camToWorld.m[3][3] = 1.0f; // GUESS!!!
+//     printMat4(camToWorld);
+
+//     return camToWorld;
+// }
+
+// https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function
+mat4 lookAtMatrixRH(const vec3 &eye, const vec3 &center, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
 {
     // NOTE RIGHT-HANDED!!!
-    vec3 forward = v3Normalize(v3Sub(to, from)); // !!! switched !!! normalize(from - to);
+    vec3 forward = v3Normalize(v3Sub(eye, center)); // camera looks towards negative z-axis still
     // printVec3(forward);
-    vec3 right = v3Normalize(v3CrossProduct(forward, tmp)); // !!! switched !!! crossProduct(normalize(tmp), forward);
+    vec3 right = v3Normalize(v3CrossProduct(tmp, forward));
     // printVec3(right);
-    vec3 up = v3CrossProduct(right, forward); // !!! switched !!! crossProduct(forward, right);
+    vec3 up = v3Normalize(v3CrossProduct(forward, right));
     // printVec3(up);
 
-    mat4 camToWorld;
-
-    camToWorld.m[0][0] = right.x;
-    camToWorld.m[0][1] = right.y;
-    camToWorld.m[0][2] = right.z;
-    camToWorld.m[1][0] = up.x;
-    camToWorld.m[1][1] = up.y;
-    camToWorld.m[1][2] = up.z;
-    camToWorld.m[2][0] = -forward.x; // !!! negate !!!
-    camToWorld.m[2][1] = -forward.y; // !!! negate !!!
-    camToWorld.m[2][2] = -forward.z; // !!! negate !!!
-
-    camToWorld.m[0][3] = -v3DotProduct(right, from);   // !!! from.x;
-    camToWorld.m[1][3] = -v3DotProduct(up, from);      // !!! from.y;
-    camToWorld.m[2][3] = -v3DotProduct(forward, from); // !!! from.z;
-
-    camToWorld.m[3][3] = 1.0f; // GUESS!!!
+    // See: https://stackoverflow.com/questions/349050/calculating-a-lookat-matrix
+    // and https://docs.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatrh
+    mat4 camToWorld {
+        {
+            {   right.x,     right.y,    right.z, -v3DotProduct(right, eye)},
+            {      up.x,        up.y,       up.z, -v3DotProduct(up, eye)},
+            { forward.x,   forward.y,  forward.z, -v3DotProduct(forward, eye)},
+            {      0.0f,        0.0f,       0.0f,                         1.0f}
+        }
+    };
+    // printMat4(camToWorld);
 
     return camToWorld;
 }
@@ -343,10 +407,13 @@ mat4 fpsLookAtMatrixRH(vec3 eye, float pitch, float yaw)
     float sinYaw = sinf(yaw);
 
     vec3 xaxis = {cosYaw, 0, -sinYaw};
+    printVec3(xaxis);
     vec3 yaxis = {sinYaw * sinPitch, cosPitch, cosYaw * sinPitch};
+    printVec3(yaxis);
     vec3 zaxis = {sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw};
+    printVec3(zaxis);
 
-        mat4 fpsViewMatrix {
+    mat4 fpsViewMatrix {
         {
             { xaxis.x,   xaxis.y,  xaxis.z, -v3DotProduct( xaxis, eye )},
             { yaxis.x,   yaxis.y,  yaxis.z, -v3DotProduct( yaxis, eye )},
@@ -394,15 +461,15 @@ void invertRowMajor(float m[16], float invOut[16])
         invOut[i] = invOut[i] * inv_det;
 }
 
-void printMat4(const mat4 &mat)
+void printMat4(const mat4 &mat, std::ostream& os)
 {
     for (int r : {0, 1, 2, 3})
     {
         for (int c : {0, 1, 2, 3})
         {
-            std::cout << " " << mat.m[r][c];
+            os << " " << mat.m[r][c];
         }
-        std::cout << std::endl;
+        os << std::endl;
     }
 }
 void printVec3(const vec3 &v)

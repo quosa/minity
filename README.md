@@ -10,7 +10,7 @@ The main purpose is to do a fun project to re-learn [modern](https://docs.micros
 Design choises:
  * matrices are in [row-major order](https://en.wikipedia.org/wiki/Row-_and_column-major_order) to align with maths notation (unlike OpenGL!)
  * coordinate system and rotation follow [righ-hand rule](https://en.wikipedia.org/wiki/Cartesian_coordinate_system)
- * camera is watching towards positive Z-axis (TODO: swap?)
+ * camera is watching towards negative Z-axis
  * screen coordinates are top-left (0,0) to bottom-right (screed-width, screen-height)
 
 Working:

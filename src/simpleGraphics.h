@@ -83,13 +83,15 @@ void setPixel(int x, int y, float depth, u_int32_t rgba_color)
 
 point screenXY(vec3 vertice)
 {
-    // todo: use clamp
-    float xx = vertice.x;
-    float yy = vertice.y;
-    xx = std::max(-1.0f, xx);
-    xx = std::min(1.0f, xx);
-    yy = std::max(-1.0f, yy);
-    yy = std::min(1.0f, yy);
+    // vertice must be in normalized device coordinates (NDC)
+    // (we choose opengl style: x, y, z inside [-1,1] - Direct3D has z [0,1])
+
+    // screen coordinates are (0, 0) top-left
+    // and (width, height) bottom-right
+
+    assert(vertice.x >= -1 && vertice.x <= 1
+        && vertice.y >= -1 && vertice.y <= 1
+        && vertice.z >= -1 && vertice.z <= 1);
 
     // Assumes -1 .. +1 box
     // Screen coordinates: (0,0) is top-left!
@@ -97,11 +99,11 @@ point screenXY(vec3 vertice)
     // (x=-1, y=-1) -> (0, sHeight)
     // (x=1, y=1) -> (sWidth, 0)
     // (x=1, y=-1) -> (sWidth, sHeight)
-    // todo: should z be boxed as well?
+    // z=-1 -> 0 and z=1 -> 1
     return point{
-        (int)(((xx + 1.0f) / 2.0f) * (float)g_SDLWidth),
-        (int)((1.0f - ((yy + 1.0f) / 2.0f)) * (float)g_SDLHeight),
-        vertice.z};
+        (int)(((vertice.x + 1.0f) / 2.0f) * (float)g_SDLWidth),
+        (int)((1.0f - ((vertice.y + 1.0f) / 2.0f)) * (float)g_SDLHeight),
+        (vertice.z + 1.0f) / 2.0f};
 };
 
 void fillTopFlatTriangle(point v1, point v2, point v3, u_int32_t rgba_color)
@@ -318,6 +320,9 @@ void drawLine(vec3 from, vec3 to, u_int32_t rgba_color)
 
 void drawMesh(mesh *m, cam *c, light *l)
 {
+    if (!m->enabled)
+        return;
+
     std::vector<tri> trianglesToSortAndDraw;
 
     // mat4 scaler = scaleMatrix(0.25f, 0.25f, 0.25f);
@@ -337,20 +342,22 @@ void drawMesh(mesh *m, cam *c, light *l)
     // perspective
     float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
     // TODO: near and far field to camera
-    mat4 projector = projectionMatrix(c->fovDegrees, aspectRatio, -0.1f, -400.0f);
+    // mat4 projector = projectionMatrix(c->fovDegrees, aspectRatio, -0.1f, -400.0f);
+    mat4 projector = projectionMatrix(c->fovDegrees, aspectRatio, 0.1f, 400.0f);
 
     vec3 cameraPos{c->translation.x, c->translation.y, c->translation.z};
 
     // for basic look-at camera
-    // vec3 lookAt{0.0f, 0.0f, 0.0f};
-    // vec3 up{0.0f, 1.0f, 0.0f};
-    // mat4 cameraMatrix = lookAtMatrixRH(cameraPos, lookAt, up);
+    vec3 lookAt{0.0f, 0.0f, 0.0f};
+    vec3 up{0.0f, 1.0f, 0.0f};
+    mat4 cameraMatrix = lookAtMatrixRH(cameraPos, lookAt, up);
 
     // pitch -90 .. 90, yaw 0 ... 360, (both in rad)
-    mat4 cameraMatrix = fpsLookAtMatrixRH(cameraPos, c->rotation.x, c->rotation.y);
+    //mat4 cameraMatrix = fpsLookAtMatrixRH(cameraPos, c->rotation.x, c->rotation.y);
 
-    mat4 viewMatrix;
-    invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
+    // mat4 viewMatrix;
+    // invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
+    mat4 viewMatrix = cameraMatrix;
 
     // light transformations
     mat4 lightXRotator = rotateXMatrix(l->rotation.x);
@@ -370,12 +377,18 @@ void drawMesh(mesh *m, cam *c, light *l)
     {
         tri *out, world, view, projected;
 
+        // Here triangles are in MODEL/LOCAL SPACE
+        // i.e. coordinates coming from the modeling software (and .obj file)
+
         // printTri(triangle, " raw ");
 
         world = triangle;
         world.vertices[0] = multiplyVec3(triangle.vertices[0], worldTransformations);
         world.vertices[1] = multiplyVec3(triangle.vertices[1], worldTransformations);
         world.vertices[2] = multiplyVec3(triangle.vertices[2], worldTransformations);
+
+        // Here triangles are in WORLD SPACE
+        // i.e. common coordinates for all models in scene
 
         // printTri(world, "world");
 
@@ -385,9 +398,14 @@ void drawMesh(mesh *m, cam *c, light *l)
         view.vertices[1] = multiplyVec3(world.vertices[1], viewMatrix);
         view.vertices[2] = multiplyVec3(world.vertices[2], viewMatrix);
 
+        // Here triangles are in VIEW SPACE
+        // i.e. coordinates looking from camera
+        // so a point at world space camera coordinates is (0,0,0)
+
         // printTri(view, " view");
 
-        // back-face culling - we do it in view space (=camera coordinates)
+        // back-face culling - polygons that face away from the camera can be culled
+        // we do it in view space (=camera coordinates)
         // cannot do it in world space as we have to anyway adjust for camera rotation
         auto faceNormal = v3Normalize(v3CrossProduct(
             v3Sub(view.vertices[1], view.vertices[0]),
@@ -414,21 +432,59 @@ void drawMesh(mesh *m, cam *c, light *l)
         projected.vertices[1] = multiplyVec3(view.vertices[1], projector);
         projected.vertices[2] = multiplyVec3(view.vertices[2], projector);
 
-        // printTri(projected, " proj");
+        // Here triangles are in CLIP SPACE in homogeneous coordinates
+        // https://en.wikipedia.org/wiki/Homogeneous_coordinates
 
         // normalise into cartesian space
         projected.vertices[0] = v3Div(projected.vertices[0], projected.vertices[0].w);
         projected.vertices[1] = v3Div(projected.vertices[1], projected.vertices[1].w);
         projected.vertices[2] = v3Div(projected.vertices[2], projected.vertices[2].w);
 
+        // Here triangles are in NDC SPACE x, y, z in [-1,1]
+
+        // View volume culling - Geometry outside the view volume can be culled
+        int numFacesOutside = 0;
+        for (auto &v : projected.vertices)
+        {
+            if (!(v.x >= -1 && v.x <= 1
+             && v.y >= -1 && v.y <= 1
+             && v.z >= -1 && v.z <= 1))
+             {
+                // std::cout << "vertex outside view frustrum: " << v.str() << std::endl;
+                numFacesOutside += 1;
+             }
+        }
+        switch (numFacesOutside)
+        {
+        case 3:
+            // std::cout << "discarding face - view volume culling 3 outside " << projected.vertices[0].str() << " " << projected.vertices[1].str() << " " << projected.vertices[2].str() << std::endl;
+            continue;
+        case 2:
+            // std::cout << "discarding face - view volume culling 2 outside " << projected.vertices[0].str() << " " << projected.vertices[1].str() << " " << projected.vertices[2].str() << std::endl;
+            continue;
+        case 1:
+            // std::cout << "discarding face - view volume culling 1 outside " << projected.vertices[0].str() << " " << projected.vertices[1].str() << " " << projected.vertices[2].str() << std::endl;
+            continue;
+        case 0:
+            // std::cout << "discarding face - view volume culling 1 outside " << projected.vertices[0].str() << " " << projected.vertices[2].str() << " " << projected.vertices[2].str() << std::endl;
+            // face fully within frustrum - render normally
+            break;
+        default:
+            break;
+        }
+
+        assert(numFacesOutside <= 1);
+
+        // printTri(projected, " proj");
+
         // invert x and y (+z) because
         // we are using box-hole camera model
-        projected.vertices[0].x *= -1.0f;
-        projected.vertices[1].x *= -1.0f;
-        projected.vertices[2].x *= -1.0f;
-        projected.vertices[0].y *= -1.0f;
-        projected.vertices[1].y *= -1.0f;
-        projected.vertices[2].y *= -1.0f;
+        // projected.vertices[0].x *= -1.0f;
+        // projected.vertices[1].x *= -1.0f;
+        // projected.vertices[2].x *= -1.0f;
+        // projected.vertices[0].y *= -1.0f;
+        // projected.vertices[1].y *= -1.0f;
+        // projected.vertices[2].y *= -1.0f;
 
         // printTri(projected, "final");
 
