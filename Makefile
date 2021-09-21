@@ -1,6 +1,8 @@
 RM = rm -f
 # CXX = g++
+CC = clang
 CXX = clang++
+CFLAGS = -Wall -Wextra -pedantic-errors -Werror
 CXXFLAGS = -std=c++14 -Wall -Wextra -pedantic-errors -Werror `sdl2-config --cflags`
 CPPFLAGS = -I /usr/local/include/SDL2 -I include -I ${IMGUI_DIR}
 LDFLAGS = -L /usr/local/lib
@@ -34,10 +36,22 @@ SOURCE_DIR = src
 TEST_DIR = test
 IMGUI_DIR = external/imgui
 
-SRCS = $(wildcard ${SOURCE_DIR}/*.cpp)
-SRCS += $(wildcard ${IMGUI_DIR}//*.cpp)
-OBJS = $(patsubst ${IMGUI_DIR}/%, $(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${SRCS:.cpp=.o}))
-DEPS := $(patsubst ${IMGUI_DIR}/%,$(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${SRCS:.cpp=.d}))
+CXX_SRCS = $(wildcard ${SOURCE_DIR}/*.cpp)
+CXX_SRCS += $(wildcard ${IMGUI_DIR}/*.cpp)
+CXX_OBJS = $(patsubst ${IMGUI_DIR}/%, $(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${CXX_SRCS:.cpp=.o}))
+CXX_DEPS := $(patsubst ${IMGUI_DIR}/%,$(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${CXX_SRCS:.cpp=.d}))
+
+C_SRCS = $(wildcard ${SOURCE_DIR}/*.c)
+C_OBJS = $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${C_SRCS:.c=.o})
+C_DEPS := $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${C_SRCS:.c=.d})
+
+SRCS = ${C_SRCS} ${CXX_SRCS}
+OBJS = ${C_OBJS} ${CXX_OBJS}
+DEPS = ${C_DEPS} ${CXX_DEPS}
+
+# SRCS = ${CXX_SRCS}
+# OBJS = ${CXX_OBJS}
+# DEPS = ${CXX_DEPS}
 
 TEST_INC = -I ${SOURCE_DIR}
 TEST_SRCS = $(wildcard ${TEST_DIR}/*.cpp)
@@ -56,15 +70,28 @@ all: debug ${TEST} ${MAIN}
 
 .PHONY: debug
 debug:
+	@echo ${C_SRCS}
+	@echo ${C_OBJS}
+	@echo ${C_DEPS}
+	@echo "---"
+	@echo ${CXX_SRCS}
+	@echo ${CXX_OBJS}
+	@echo ${CXX_DEPS}
+	@echo "---"
 	@echo ${SRCS}
 	@echo ${OBJS}
 	@echo ${DEPS}
+	@echo "---"
 
 ${MAIN}: ${OBJS}
 	@echo building in $(mode) mode
 	${CXX} ${LDFLAGS} ${OBJS} ${LDLIBS} -o ${BIN_DIR}/${MAIN}
 
 -include $(DEPS)
+
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c
+	$(info $(shell ls build))
+	${CC} ${CPPFLAGS} ${CFLAGS} -MMD -MP -c $< -o $@
 
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 	$(info $(shell ls build))
