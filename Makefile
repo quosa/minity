@@ -1,5 +1,5 @@
 RM = rm -f
-CXX = g++
+CXX = clang++
 CXXFLAGS = -std=c++14 -Wall -Wextra -pedantic-errors -Werror
 CPPFLAGS = -I /usr/local/include/SDL2 -I include
 LDFLAGS = -L /usr/local/lib
