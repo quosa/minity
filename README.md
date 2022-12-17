@@ -7,18 +7,18 @@ Minity is a minimal 3d game engine.
 
 The main purpose is to do a fun project to re-learn [modern](https://docs.microsoft.com/en-us/cpp/cpp/welcome-back-to-cpp-modern-cpp?view=vs-2019) [C++](https://isocpp.org/) and try to follow the new [guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines). [SDL2](https://www.libsdl.org/) is used to get a simple canvas to draw to (`setPixel(x, y)`) and input handling. Math is written all by hand to re-learn vector and matrix operations. For now, no GPU acceleration, write all graphics pipeline operations by hand to understand what the GPU does for us.
 
-Design choises:
+Design choices:
  * matrices are in [row-major order](https://en.wikipedia.org/wiki/Row-_and_column-major_order) to align with maths notation (unlike OpenGL!)
- * coordinate system and rotation follow [righ-hand rule](https://en.wikipedia.org/wiki/Cartesian_coordinate_system)
- * camera is watching towards positive Z-axis (TODO: swap?)
- * screen coordinates are top-left (0,0) to bottom-right (screed-width, screen-height)
+ * coordinate system and rotation follow the [right-hand rule](https://en.wikipedia.org/wiki/Cartesian_coordinate_system)
+ * camera is watching towards the positive Z-axis (TODO: swap?)
+ * screen coordinates are top-left (0,0) to bottom-right (screen-width, screen-height)
 
 Working:
- * object loading from simple obj file (vertices and faces only)
- * object scaling, rotation and move (translation)
+ * object loading from a simple obj file (vertices and faces only)
+ * object scaling, rotation, and movement (translation)
  * rudimentary input handling for move ([arrow-keys](https://en.wikipedia.org/wiki/Arrow_keys), +, -) and rotate ([wasd](https://en.wikipedia.org/wiki/Arrow_keys#WASD_keys))
  * camera rotation and move (TODO: better key mapping for exploration)
- * [orthoraphic](https://en.wikipedia.org/wiki/Orthographic_projection) perspective correction with fixed [FoV, field-of-view](https://en.wikipedia.org/wiki/Angle_of_view)
+ * [orthographic](https://en.wikipedia.org/wiki/Orthographic_projection) perspective correction with fixed [FoV, field-of-view](https://en.wikipedia.org/wiki/Angle_of_view)
  * rudimentary clipping (TODO: proper clipping)
  * face normal check to discard hidden triangles (model needs to be in clockwise winding order!)
  * wireframe and global face color
