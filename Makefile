@@ -43,7 +43,7 @@ DEPS += $(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/%,${TEST_SRCS:.cpp=.d})
 
 # .PHONY means these rules get executed even if
 # files of those names exist.
-.PHONY: clean
+.PHONY: clean all
 
 MAIN = minity
 TEST = test
