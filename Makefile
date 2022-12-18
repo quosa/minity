@@ -49,10 +49,6 @@ SRCS = ${C_SRCS} ${CXX_SRCS}
 OBJS = ${C_OBJS} ${CXX_OBJS}
 DEPS = ${C_DEPS} ${CXX_DEPS}
 
-# SRCS = ${CXX_SRCS}
-# OBJS = ${CXX_OBJS}
-# DEPS = ${CXX_DEPS}
-
 TEST_INC = -I ${SOURCE_DIR}
 TEST_SRCS = $(wildcard ${TEST_DIR}/*.cpp)
 TEST_OBJS = $(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/%,${TEST_SRCS:.cpp=.o})
@@ -65,23 +61,8 @@ DEPS += $(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/%,${TEST_SRCS:.cpp=.d})
 MAIN = minity
 TEST = test
 
-all: debug ${TEST} ${MAIN}
+all: ${TEST} ${MAIN}
 	@echo   Run ./${BIN_DIR}/${MAIN} to start minity
-
-.PHONY: debug
-debug:
-	@echo ${C_SRCS}
-	@echo ${C_OBJS}
-	@echo ${C_DEPS}
-	@echo "---"
-	@echo ${CXX_SRCS}
-	@echo ${CXX_OBJS}
-	@echo ${CXX_DEPS}
-	@echo "---"
-	@echo ${SRCS}
-	@echo ${OBJS}
-	@echo ${DEPS}
-	@echo "---"
 
 ${MAIN}: ${OBJS}
 	@echo building in $(mode) mode

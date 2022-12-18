@@ -41,3 +41,5 @@ bin/*
 *.out
 *.app
 
+# stores imgui window positions
+imgui.ini
