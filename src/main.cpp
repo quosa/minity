@@ -26,12 +26,6 @@ int main()
     light light;
     float deltaTime = 0.0f;
 
-    // std::cout << "BUFSIZ is " << BUFSIZ << std::endl;
-    // if(std::setvbuf(stdout, nullptr, _IONBF, 512) != 0) {
-    //    std::perror("setvbuf failed"); // POSIX version sets errno
-    //    return EXIT_FAILURE;
-    // }
-
     std::cout << usage << std::endl;
 
     SDLStart(640, 480);
