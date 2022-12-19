@@ -3,17 +3,16 @@
 #include "imgui_impl_sdlrenderer.h"
 #include <SDL.h>
 #include <list>
-#include <string>
 
 // for vec3 and DEG :-/
 #include "simpleMath.h"
 
 struct config
 {
-    bool drawNormals = false;
-    bool drawWireframe = false;
-    bool fillTriangles = true;
-    bool show_stats_window = true;
+    bool drawNormals = false; // n key
+    bool drawWireframe = false; // l key
+    bool fillTriangles = true; // f key
+    bool show_stats_window = false; // F1 key
 };
 config *g_config = new config();
 
@@ -30,6 +29,7 @@ std::list<uint> g_fpsSamples(100, 0);
 // runtime config info
 std::string g_SDLVersion;
 std::string g_SDLLinkedVersion;
+std::string g_SDLRendererType;
 std::string g_ImGuiVersion;
 
 // Get scaling factor for high-DPI displays
@@ -97,10 +97,6 @@ void SDLStart(int windowWidth, int windowHeight)
         std::cerr << "SDL_CreateRenderer failed: " << SDL_GetError() << std::endl;
         exit(-1);
     }
-
-    SDL_RendererInfo info;
-    SDL_GetRendererInfo(g_SDLRenderer, &info);
-    std::cout << "Current SDL_Renderer: " << info.name << std::endl;
 
     // Set render scale for high DPI displays
     const float scale{SDLGetScale()};
@@ -176,6 +172,10 @@ void SDLStart(int windowWidth, int windowHeight)
         + "." + std::to_string(linked.minor)
         + "." + std::to_string(linked.patch);
 
+    SDL_RendererInfo rendererInfo;
+    SDL_GetRendererInfo(g_SDLRenderer, &rendererInfo);
+    g_SDLRendererType = rendererInfo.name;
+
     g_ImGuiVersion = std::to_string(IMGUI_VERSION_NUM);
 }
 
@@ -200,7 +200,7 @@ void SDLSwapBuffers(/*color_t * backbuffer*/)
 
         ImGui::SetNextWindowPos(ImVec2(10, 10));
         ImGui::Begin("Minity Stats Window", &g_config->show_stats_window, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("Minity is running at %u fps.", avg);
+        ImGui::Text("Minity is running at %u fps using %s renderer.", avg, g_SDLRendererType.c_str());
         ImGui::Text("SDL compiled %s, linked %s.", g_SDLVersion.c_str(), g_SDLLinkedVersion.c_str());
         ImGui::Text("ImGui %s.", g_ImGuiVersion.c_str());
         ImGui::End();

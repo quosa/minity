@@ -16,7 +16,9 @@ const std::string usage = R"(minity key bindings:
     arrow keys - move camera
     f key      - flat shade triangles
     l key      - draw wireframe
-    n key      - draw normals)";
+    n key      - draw normals
+    q key      - quit minity
+    F1 key     - show stats window)";
 
 int main()
 {
@@ -150,7 +152,6 @@ int main()
         }
         // std::cout << "cam: position " << camera.translation.str()
         //             << " rotation " << camera.rotation.str() << std::endl;
-
 
         drawMesh(&object, &camera, &light);
         drawMesh(&object2, &camera, &light);
