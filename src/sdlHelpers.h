@@ -1,8 +1,9 @@
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_sdlrenderer.h"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <list>
+#include <string>
 
 // for vec3 and DEG :-/
 #include "simpleMath.h"
@@ -12,6 +13,7 @@ struct config
     bool drawNormals = false;
     bool drawWireframe = false;
     bool fillTriangles = true;
+    bool show_stats_window = true;
 };
 config *g_config = new config();
 
@@ -25,9 +27,10 @@ int g_SDLWidth;
 int g_SDLHeight;
 std::list<uint> g_fpsSamples(100, 0);
 
-bool g_show_demo_window = false;
-bool g_show_metrics_window = true;
-bool g_show_another_window = false;
+// runtime config info
+std::string g_SDLVersion;
+std::string g_SDLLinkedVersion;
+std::string g_ImGuiVersion;
 
 // Get scaling factor for high-DPI displays
 float SDLGetScale() {
@@ -55,20 +58,11 @@ float SDLGetScale() {
 
 void SDLStart(int windowWidth, int windowHeight)
 {
-
-    if (SDL_Init(SDL_INIT_VIDEO != 0)) // TODO: | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER
+    if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
         std::cerr << "SDL_Init failed: " << SDL_GetError() << std::endl;
         exit(-1);
     }
-
-    SDL_version compiled;
-    SDL_version linked;
-    SDL_VERSION(&compiled);
-    SDL_GetVersion(&linked);
-
-    fprintf(stdout, "We compiled against SDL version %d.%d.%d ...\n", compiled.major, compiled.minor, compiled.patch);
-    fprintf(stdout, "And we are linking against SDL version %d.%d.%d.\n", linked.major, linked.minor, linked.patch);
 
     g_SDLWidth = windowWidth;
     g_SDLHeight = windowHeight;
@@ -97,7 +91,7 @@ void SDLStart(int windowWidth, int windowHeight)
     g_SDLRenderer = SDL_CreateRenderer(
         g_SDLWindow,
         -1,
-        0); // SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED); // SDL_RENDERER_ACCELERATED); // SDL_RENDERER_SOFTWARE); // SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE); // 0);
+        SDL_RENDERER_SOFTWARE);
     if (g_SDLRenderer == nullptr)
     {
         std::cerr << "SDL_CreateRenderer failed: " << SDL_GetError() << std::endl;
@@ -138,54 +132,81 @@ void SDLStart(int windowWidth, int windowHeight)
     (void)io;
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // TODO: docking would be nice...
+    // io.ConfigFlags |=  ImGuiWindowFlags_AlwaysAutoResize;  // Resize every window to its content every frame
 
     // Setup Dear ImGui style
     // ImGui::StyleColorsDark();
     ImGui::StyleColorsLight();
 
+    // use a better font
+
+    // Get proper display scaling for high DPI displays
+    const float font_scaling_factor{scale};
+
+    // Font size will be 18pt
+    const float font_size{18.0F * font_scaling_factor};
+
+    // Load font and set as default with proper scaling
+    io.Fonts->AddFontFromFileTTF(
+        "fonts/SourceCodePro-Regular.ttf",
+        font_size
+    );
+    io.FontDefault = io.Fonts->AddFontFromFileTTF(
+        "fonts/SourceCodePro-Regular.ttf",
+        font_size
+    );
+    io.FontGlobalScale = 1.0F / font_scaling_factor;
+
     // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForSDLRenderer(g_SDLWindow, g_SDLRenderer);
     ImGui_ImplSDLRenderer_Init(g_SDLRenderer);
+
+    // store SDL and ImGui versions for stats screen
+    SDL_version compiled;
+    SDL_version linked;
+    SDL_VERSION(&compiled);
+    SDL_GetVersion(&linked);
+
+    g_SDLVersion = std::to_string(compiled.major)
+        + "." + std::to_string(compiled.minor)
+        + "." + std::to_string(compiled.patch);
+
+    g_SDLLinkedVersion = std::to_string(linked.major)
+        + "." + std::to_string(linked.minor)
+        + "." + std::to_string(linked.patch);
+
+    g_ImGuiVersion = std::to_string(IMGUI_VERSION_NUM);
 }
 
 void SDLSwapBuffers(/*color_t * backbuffer*/)
 {
-    // ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    ImVec4 clear_color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f); // yellow
-
     SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
     SDL_RenderClear(g_SDLRenderer);
     SDL_RenderCopy(g_SDLRenderer, g_SDLTexture, NULL, NULL);
 
-    // Start the Dear ImGui frame
-    ImGui_ImplSDLRenderer_NewFrame();
-    ImGui_ImplSDL2_NewFrame(g_SDLWindow);
-    ImGui::NewFrame();
 
-    if (g_show_demo_window)
-        ImGui::ShowDemoWindow(&g_show_demo_window);
-    if (g_show_metrics_window)
-        ImGui::ShowMetricsWindow(&g_show_metrics_window);
-    if (g_show_another_window)
+    if (g_config->show_stats_window)
     {
-        // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        ImGui::Begin("Another Window", &g_show_another_window);
-        ImGui::Text("Hello from another window!");
-        if (ImGui::Button("Close Me"))
-            g_show_another_window = false;
+        ImGui_ImplSDLRenderer_NewFrame();
+        ImGui_ImplSDL2_NewFrame(g_SDLWindow);
+        ImGui::NewFrame();
+
+        uint avg = 0;
+        std::list<uint>::const_iterator it;
+        for (it = g_fpsSamples.begin(); it != g_fpsSamples.end(); it++)
+            avg += *it;
+        avg /= g_fpsSamples.size();
+
+        ImGui::SetNextWindowPos(ImVec2(10, 10));
+        ImGui::Begin("Minity Stats Window", &g_config->show_stats_window, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Minity is running at %u fps.", avg);
+        ImGui::Text("SDL compiled %s, linked %s.", g_SDLVersion.c_str(), g_SDLLinkedVersion.c_str());
+        ImGui::Text("ImGui %s.", g_ImGuiVersion.c_str());
         ImGui::End();
+        ImGui::Render();
+        ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
     }
-
-    // SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
-    // SDL_RenderClear(g_SDLRenderer);
-    // SDL_RenderCopy(g_SDLRenderer, g_SDLTexture, NULL, NULL);
-
-    // Rendering - https://github.com/ocornut/imgui/issues/4264
-    ImGui::Render();
-
-    SDL_SetRenderDrawColor(g_SDLRenderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255), (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
-    // SDL_RenderClear(g_SDLRenderer);
-    ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(g_SDLRenderer);
 }
 
@@ -256,6 +277,13 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
             // std::cerr << " swap triangle (f)illing" << std::endl;
             g_config->fillTriangles = g_config->fillTriangles ? false : true;
             break;
+        case SDLK_F1:
+            // std::cerr << " show/hide stats window" << std::endl;
+            g_config->show_stats_window = g_config->show_stats_window ? false : true;
+            break;
+        case SDLK_q:
+            return false;
+            break;
         default:
             break;
         }
@@ -270,11 +298,10 @@ void SDLEnd()
     delete[] g_DepthBuffer;
 
     // UI Cleanup
-    // ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDLRenderer_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
-    // SDL_GL_DeleteContext(g_gl_context);
+
     // canvas cleanup
     SDL_DestroyTexture(g_SDLTexture);
     SDL_DestroyRenderer(g_SDLRenderer);
