@@ -161,7 +161,8 @@ int main()
         deltaTime = ft->deltaTime();
         inputTranslation = vec3{};
         inputRotation = vec3{};
-#else // render on input change
+#else // render on input change (to debug rendering pipeline)
+        (void)deltaTime; // silence linter
         SDL_Delay(100); // busy loop
         if (inputTranslation != zeroVector || inputRotation != zeroVector)
         {
