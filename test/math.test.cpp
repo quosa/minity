@@ -440,8 +440,6 @@ bool pipeline(const pipeline_config &conf, const vec3 &modelVertex, point &onScr
         break;
     }
 
-    // mat4 viewMatrix;
-    // invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
     mat4 viewMatrix = cameraMatrix;
     std::cout << "view:" << std::endl;
     printMat4(viewMatrix);

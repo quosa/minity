@@ -325,8 +325,6 @@ void drawMesh(mesh *m, cam *c, light *l)
 
     std::vector<tri> trianglesToSortAndDraw;
 
-    // mat4 scaler = scaleMatrix(0.25f, 0.25f, 0.25f);
-    // mat4 scaler = scaleMatrix(1.0f, 1.0f, 1.0f);
     mat4 scaler = scaleMatrix(m->scale.x, m->scale.y, m->scale.z);
     mat4 xRotator = rotateXMatrix(m->rotation.x);
     mat4 yRotator = rotateYMatrix(m->rotation.y);
@@ -342,7 +340,6 @@ void drawMesh(mesh *m, cam *c, light *l)
     // perspective
     float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
     // TODO: near and far field to camera
-    // mat4 projector = projectionMatrix(c->fovDegrees, aspectRatio, -0.1f, -400.0f);
     mat4 projector = projectionMatrix(c->fovDegrees, aspectRatio, 0.1f, 400.0f);
 
     vec3 cameraPos{c->translation.x, c->translation.y, c->translation.z};
@@ -355,8 +352,6 @@ void drawMesh(mesh *m, cam *c, light *l)
     // pitch -90 .. 90, yaw 0 ... 360, (both in rad)
     //mat4 cameraMatrix = fpsLookAtMatrixRH(cameraPos, c->rotation.x, c->rotation.y);
 
-    // mat4 viewMatrix;
-    // invertRowMajor((float *)cameraMatrix.m, (float *)viewMatrix.m);
     mat4 viewMatrix = cameraMatrix;
 
     // light transformations
@@ -457,36 +452,28 @@ void drawMesh(mesh *m, cam *c, light *l)
         switch (numFacesOutside)
         {
         case 3:
+            // if all vertices are outside, this triangle can be discarded
             // std::cout << "discarding face - view volume culling 3 outside " << projected.vertices[0].str() << " " << projected.vertices[1].str() << " " << projected.vertices[2].str() << std::endl;
             continue;
         case 2:
+            // TODO: bring the 2 vertices that are outside to screen border
             // std::cout << "discarding face - view volume culling 2 outside " << projected.vertices[0].str() << " " << projected.vertices[1].str() << " " << projected.vertices[2].str() << std::endl;
             continue;
         case 1:
+            // TODO: split the base into 2 triangles and change the new vertices to screen border
             // std::cout << "discarding face - view volume culling 1 outside " << projected.vertices[0].str() << " " << projected.vertices[1].str() << " " << projected.vertices[2].str() << std::endl;
             continue;
         case 0:
-            // std::cout << "discarding face - view volume culling 1 outside " << projected.vertices[0].str() << " " << projected.vertices[2].str() << " " << projected.vertices[2].str() << std::endl;
             // face fully within frustrum - render normally
             break;
         default:
+            exit(1);
             break;
         }
 
         assert(numFacesOutside <= 1);
 
         // printTri(projected, " proj");
-
-        // invert x and y (+z) because
-        // we are using box-hole camera model
-        // projected.vertices[0].x *= -1.0f;
-        // projected.vertices[1].x *= -1.0f;
-        // projected.vertices[2].x *= -1.0f;
-        // projected.vertices[0].y *= -1.0f;
-        // projected.vertices[1].y *= -1.0f;
-        // projected.vertices[2].y *= -1.0f;
-
-        // printTri(projected, "final");
 
         out = &projected;
 

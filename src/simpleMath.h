@@ -6,7 +6,7 @@
 #include <iostream> // << overload for catch2
 
 
-// adated from http://realtimecollisiondetection.net/blog/?p=89
+// adapted from http://realtimecollisiondetection.net/blog/?p=89
 // todo: consider an ulp based solution as explained here:
 // https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
 float are_relatively_equal(const float a, const float b)
@@ -324,6 +324,7 @@ mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrice
     return out;
 }
 
+// TODO: check if these are still valid references/notes
 // https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function (looks flaky)
 // https://github.com/g-truc/glm/blob/master/glm/ext/matrix_transform.inl#L99 (lookAtRH)
 // and finally https://www.3dgep.com/understanding-the-view-matrix/
@@ -337,37 +338,6 @@ mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrice
 // axis and this arbitrary axis are perfectly parallel e.g. when the forward vector is either (0,1,0)
 // or (0,-1,0). Unfortunately in this particular case, the cross product fails producing a result for
 // the right vector.
-// mat4 lookAtMatrixRH(const vec3 &from, const vec3 &to, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
-// {
-//     // NOTE RIGHT-HANDED!!!
-//     vec3 forward = v3Normalize(v3Sub(to, from));
-//     printVec3(forward);
-//     vec3 right = v3Normalize(v3CrossProduct(forward, tmp));
-//     printVec3(right);
-//     vec3 up = v3CrossProduct(right, forward);
-//     printVec3(up);
-
-//     mat4 camToWorld;
-
-//     camToWorld.m[0][0] = right.x;
-//     camToWorld.m[0][1] = right.y;
-//     camToWorld.m[0][2] = right.z;
-//     camToWorld.m[1][0] = up.x;
-//     camToWorld.m[1][1] = up.y;
-//     camToWorld.m[1][2] = up.z;
-//     camToWorld.m[2][0] = -forward.x; // !!! negate !!!
-//     camToWorld.m[2][1] = -forward.y; // !!! negate !!!
-//     camToWorld.m[2][2] = -forward.z; // !!! negate !!!
-
-//     camToWorld.m[0][3] = -v3DotProduct(right, from);  // !!! from.x;
-//     camToWorld.m[1][3] = -v3DotProduct(up, from);     // !!! from.y;
-//     camToWorld.m[2][3] = v3DotProduct(forward, from); // !!! from.z;
-
-//     camToWorld.m[3][3] = 1.0f; // GUESS!!!
-//     printMat4(camToWorld);
-
-//     return camToWorld;
-// }
 
 // https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function
 mat4 lookAtMatrixRH(const vec3 &eye, const vec3 &center, const vec3 &tmp = vec3{0.0f, 1.0f, 0.0f})
