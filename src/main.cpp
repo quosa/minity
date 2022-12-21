@@ -11,7 +11,8 @@
 #include "simpleGraphics.h"
 #include "utils.h"
 
-const std::string usage = R"(minity key bindings:
+const std::string usage = R"(
+key bindings:
     wasd keys  - look up/left/down/right
     arrow keys - move camera
     f key      - flat shade triangles
@@ -19,6 +20,14 @@ const std::string usage = R"(minity key bindings:
     n key      - draw normals
     q key      - quit minity
     F1 key     - show stats window)";
+
+const std::string banner = R"(
+
+ ._ _  o ._  o _|_        |
+ | | | | | | |  |_ \/     |____
+                   /     /
+                        '
+)";
 
 int main()
 {
@@ -28,7 +37,7 @@ int main()
     light light;
     float deltaTime = 0.0f;
 
-    std::cout << usage << std::endl;
+    std::cout << banner << usage << std::endl;
 
     SDLStart(640, 480);
 
