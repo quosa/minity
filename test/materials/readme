@@ -1,0 +1,28 @@
+
+Newell teapot
+ - https://en.wikipedia.org/wiki/Utah_teapot
+ - https://www.computerhistory.org/revolution/computer-graphics-music-and-art/15/206
+
+ash_uvgrid01.jpg
+ - http://www.pixelcg.com/blog/?p=146
+ - via https://github.com/timoxley/threejs/tree/master/examples/textures
+
+shovel
+ - https://www.pngwing.com/en/free-png-boxfh/download
+
+wall
+ - https://www.katsbits.com/download/textures/stone-wall.php
+
+bitmap field sample
+ - https://filesamples.com/formats/bmp
+
+tga field sample
+ - https://filesamples.com/formats/bmp
+
+png field sample (no alpha)
+ - https://filesamples.com/formats/bmp
+
+tif pattern
+ - https://www.poliigon.com/search/free
+ - https://downloader.poliigon.com/api/download?download_request_id=2659347
+ - NOTE: stb_image does not support tif!
