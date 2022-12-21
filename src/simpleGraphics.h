@@ -323,8 +323,6 @@ void drawMesh(mesh *m, cam *c, light *l)
     if (!m->enabled)
         return;
 
-    std::vector<tri> trianglesToSortAndDraw;
-
     mat4 scaler = scaleMatrix(m->scale.x, m->scale.y, m->scale.z);
     mat4 xRotator = rotateXMatrix(m->rotation.x);
     mat4 yRotator = rotateYMatrix(m->rotation.y);
