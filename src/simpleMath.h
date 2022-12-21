@@ -6,15 +6,8 @@
 #include <iostream> // << overload for catch2
 
 
-// adapted from http://realtimecollisiondetection.net/blog/?p=89
-// todo: consider an ulp based solution as explained here:
-// https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
-float are_relatively_equal(const float a, const float b)
-{
-    // std::cout << std::fabs(a - b) << " <= " << std::numeric_limits<float>::epsilon() * std::max(std::fabs(a), std::fabs(b)) << std::endl;
-    // 2 multiplier is selected to get the 360/2*pi rotations to work
-    return (std::fabs(a - b) <= 2 * std::numeric_limits<float>::epsilon() * std::max(1.0f, std::max(std::fabs(a), std::fabs(b))));
-};
+// forward declarations
+float are_relatively_equal(const float a, const float b);
 
 struct point
 {
@@ -61,17 +54,6 @@ struct vec3
     friend std::ostream& operator<<(std::ostream& os, const vec3 &value);
 };
 
-// mainly for catch2 to be able to print the assertions
-std::ostream& operator<<( std::ostream &os, const vec3 &value )
-{
-    os << "("
-            + std::to_string(value.x)
-            + ", " + std::to_string(value.y)
-            + ", " + std::to_string(value.z)
-            + ")";
-    return os;
-}
-
 struct tri
 {
     vec3 vertices[3];
@@ -110,12 +92,36 @@ void printMat4(const mat4 &mat, std::ostream& os = std::cout);
 void printVec3(const vec3 &v);
 void printTri(const tri &t, std::string label);
 
+
+#ifndef MATH_TYPES_ONLY
+
+// mainly for catch2 to be able to print the assertions
+std::ostream& operator<<( std::ostream &os, const vec3 &value )
+{
+    os << "("
+            + std::to_string(value.x)
+            + ", " + std::to_string(value.y)
+            + ", " + std::to_string(value.z)
+            + ")";
+    return os;
+}
+
+
 std::ostream& operator<<(std::ostream& os, const mat4 &value)
 {
     printMat4(value, os);
     return os;
 }
 
+// adapted from http://realtimecollisiondetection.net/blog/?p=89
+// todo: consider an ulp based solution as explained here:
+// https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+float are_relatively_equal(const float a, const float b)
+{
+    // std::cout << std::fabs(a - b) << " <= " << std::numeric_limits<float>::epsilon() * std::max(std::fabs(a), std::fabs(b)) << std::endl;
+    // 2 multiplier is selected to get the 360/2*pi rotations to work
+    return (std::fabs(a - b) <= 2 * std::numeric_limits<float>::epsilon() * std::max(1.0f, std::max(std::fabs(a), std::fabs(b))));
+};
 
 constexpr float deg2rad(float degrees)
 {
@@ -468,3 +474,4 @@ u_int32_t adjustColor(u_int32_t color, float multiplier)
 
     return (r << 24) | (g << 16) | (b << 8) | a;
 }
+#endif // MATH_TYPES_ONLY
