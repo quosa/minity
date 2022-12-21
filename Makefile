@@ -71,15 +71,12 @@ ${MAIN}: ${OBJS}
 -include $(DEPS)
 
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c
-	$(info $(shell ls build))
 	${CC} ${CPPFLAGS} ${CFLAGS} -MMD -MP -c $< -o $@
 
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp
-	$(info $(shell ls build))
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -MMD -MP -c $< -o $@
 
 $(BUILD_DIR)/%.o: $(IMGUI_DIR)/%.cpp
-	$(info $(shell ls build))
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -MMD -MP -c $< -o $@
 
 #
