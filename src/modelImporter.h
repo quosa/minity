@@ -82,8 +82,6 @@ bool model::load(const std::string &path)
         std::string line;
         std::getline(f, line);
 
-        // std::cout << line << std::endl;
-
         if(!handleLine(line))
         {
             std::cerr << "Trouble reading line: '" << line << "'" << std::endl;
@@ -95,7 +93,10 @@ bool model::load(const std::string &path)
         std::cerr << "Trouble aligning faces" << std::endl;
         return false;
     }
-
+    std::cout << "loaded a model with " << numFaces << " faces, ";
+    std::cout << (hasNormals ? "" : "no ") << "normals and ";
+    std::cout << (hasTextureCoordinates ? "" : "no ") << "texture coordinates";
+    std::cout << "." << std::endl;
     return true;
 }
 

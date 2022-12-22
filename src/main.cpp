@@ -11,6 +11,9 @@
 #include "simpleGraphics.h"
 #include "utils.h"
 
+#include "imageImporter.h"
+#include "modelImporter.h"
+
 const std::string usage = R"(
 key bindings:
     wasd keys  - look up/left/down/right
@@ -38,6 +41,17 @@ int main()
     float deltaTime = 0.0f;
 
     std::cout << banner << usage << std::endl;
+
+    {
+        bool ok = false;
+        minity::image img{};
+        ok = img.load("test/materials/newell_teapot.jpg");
+        assert(ok);
+        minity::model mdl{};
+        ok = mdl.load("test/models/teapot.obj");
+        assert(ok);
+        std::cout << "image and model import successful" << std::endl;
+    }
 
     SDLStart(640, 480);
 
