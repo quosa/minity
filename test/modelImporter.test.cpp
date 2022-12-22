@@ -28,3 +28,17 @@ TEST_CASE("can handle full face line")
     REQUIRE(mdl.textureCoordinates.size() == 3378); // was 1230
     REQUIRE(mdl.faces.size() == 1126);
 }
+
+TEST_CASE("can import bigger free asset")
+{
+    minity::model mdl{};
+    bool res = mdl.load("test/models/Model_D0606058/head.obj");
+    REQUIRE(res);
+    REQUIRE(mdl.numFaces == 15716);
+    REQUIRE(mdl.hasNormals);
+    REQUIRE(mdl.hasTextureCoordinates);
+    REQUIRE(mdl.vertices.size() == 47148);
+    REQUIRE(mdl.normals.size() == 47148);
+    REQUIRE(mdl.textureCoordinates.size() == 47148);
+    REQUIRE(mdl.faces.size() == 15716);
+}
