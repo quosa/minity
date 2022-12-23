@@ -46,6 +46,7 @@ struct renderStats
     unsigned long int outside{0};
     unsigned long int inside{0};
     unsigned long int drawnPoints{0};
+    unsigned long int depth{0};
     const unsigned long int bufferSize{
         static_cast<unsigned long int>(g_SDLWidth)
         * static_cast<unsigned long int>(g_SDLHeight)
@@ -69,6 +70,7 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
     //    << "  in : out     " << static_cast<float>(stats.inside) \
     //         / static_cast<float>(stats.outside) << std::endl // todo: div-by-zero
        << "  drawn points " << stats.drawnPoints << std::endl
+       << "  depth       " << stats.depth << std::endl
        << "  buffer size  " << stats.bufferSize << std::endl;
     return os;
 }
@@ -381,15 +383,21 @@ void Barycentric(Point p, Point a, Point b, Point c, float &u, float &v, float &
                     continue; // we're outside the viewport
                 }
 
-
-                // D R A W !!!
-                // std::cout << "drawing to " << p << std::endl;
-
-                g_SDLBackBuffer[y * g_SDLWidth + x] = faceColor;
-                stats.drawnPoints++;
-
-                // TODO: Z-buffer
-
+                // z-buffer (depth) check
+                // get the z value for this point using the barymetric coordinates:
+                float z = vt1.z * u + vt2.z * v + vt3.z * w;
+                // std::cout << x << " " << y << " " << z << " vs (" << g_DepthBuffer[y * g_SDLWidth + x] << ")" << std::endl;
+                if (z < g_DepthBuffer[y * g_SDLWidth + x])
+                {
+                    // std::cout << "drawing to " << p << std::endl;
+                    g_SDLBackBuffer[y * g_SDLWidth + x] = faceColor;
+                    g_DepthBuffer[y * g_SDLWidth + x] = z;
+                    stats.drawnPoints++;
+                }
+                else
+                {
+                    stats.depth++;
+                }
             }
         }
         stats.drawnFaces++;

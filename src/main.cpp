@@ -77,9 +77,9 @@ void newScenario()
 
     // draw the model just once
     // todo: move all to a scene that is rendered
-    // ok = minity::render(teapot, camera, light);
+    ok = minity::render(teapot, camera, light);
     // ok = minity::render(box, camera, light);
-    ok = minity::render(male, camera, light);
+    // ok = minity::render(male, camera, light);
     if (!ok)
     {
         std::cerr << "Trouble rendering model" << std::endl;
