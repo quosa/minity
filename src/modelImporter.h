@@ -30,6 +30,13 @@ struct model
     // during loading this houses {vertix_idx, normal_idx, texture_idx}, ...
     // u_int32_t color = 0xffffffff;
 
+    // from mesh
+    bool enabled = true;
+    std::vector<tri> tris;
+    vec3 scale{1.0f, 1.0f, 1.0f};
+    vec3 rotation{};
+    vec3 translation{};
+
     bool load(const std::string &path);
 private:
     bool handleLine(const std::string &line);
