@@ -102,20 +102,20 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
 // };
 
 
-bool render(const minity::model &mdl, const camera &cam, const light &lgt)
+bool render(const minity::model &model, const camera &camera, const light &light)
 {
     renderStats stats{};
 
-    std::cout << "rendering a model with " << mdl.numFaces << " faces, ";
-    std::cout << (mdl.hasNormals ? "" : "no ") << "normals and ";
-    std::cout << (mdl.hasTextureCoordinates ? "" : "no ") << "texture coordinates";
+    std::cout << "rendering a model with " << model.numFaces << " faces, ";
+    std::cout << (model.hasNormals ? "" : "no ") << "normals and ";
+    std::cout << (model.hasTextureCoordinates ? "" : "no ") << "texture coordinates";
     std::cout << "." << std::endl;
 
-    mat4 scaler = scaleMatrix(mdl.scale.x, mdl.scale.y, mdl.scale.z);
-    mat4 xRotator = rotateXMatrix(mdl.rotation.x);
-    mat4 yRotator = rotateYMatrix(mdl.rotation.y);
-    mat4 zRotator = rotateZMatrix(mdl.rotation.z);
-    mat4 translator = translateMatrix(mdl.translation.x, mdl.translation.y, mdl.translation.z);
+    mat4 scaler = scaleMatrix(model.scale.x, model.scale.y, model.scale.z);
+    mat4 xRotator = rotateXMatrix(model.rotation.x);
+    mat4 yRotator = rotateYMatrix(model.rotation.y);
+    mat4 zRotator = rotateZMatrix(model.rotation.z);
+    mat4 translator = translateMatrix(model.translation.x, model.translation.y, model.translation.z);
 
     // order matters: scale > rotate > move (=translate)
     mat4 worldTransformations = multiplyMat4(xRotator, scaler);
@@ -125,40 +125,32 @@ bool render(const minity::model &mdl, const camera &cam, const light &lgt)
 
     // perspective
     float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
-    // TODO: near and far field to camera
-    mat4 projector = projectionMatrix(cam.fovDegrees, aspectRatio, 0.1f, 400.0f);
-
-    vec3 cameraPos{cam.translation.x, cam.translation.y, cam.translation.z};
+    // TODO: near and far field to camera structure
+    mat4 projector = projectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
 
     // for basic look-at camera
     vec3 lookAt{0.0f, 0.0f, 0.0f};
     vec3 up{0.0f, 1.0f, 0.0f};
-    mat4 cameraMatrix = lookAtMatrixRH(cameraPos, lookAt, up);
+    mat4 cameraMatrix = lookAtMatrixRH( camera.translation, lookAt, up);
 
     mat4 viewMatrix = cameraMatrix;
 
     // light transformations
-    mat4 lightXRotator = rotateXMatrix(lgt.rotation.x);
-    mat4 lightYRotator = rotateYMatrix(lgt.rotation.y);
-    mat4 lightZRotator = rotateZMatrix(lgt.rotation.z);
-    mat4 lightTranslator = translateMatrix(lgt.translation.x, lgt.translation.y, lgt.translation.z);
+    mat4 lightXRotator = rotateXMatrix(light.rotation.x);
+    mat4 lightYRotator = rotateYMatrix(light.rotation.y);
+    mat4 lightZRotator = rotateZMatrix(light.rotation.z);
+    mat4 lightTranslator = translateMatrix(light.translation.x, light.translation.y, light.translation.z);
 
     // order matters: scale > rotate > move (=translate)
     mat4 lightTransformations = multiplyMat4(lightYRotator, lightXRotator);
     lightTransformations = multiplyMat4(lightZRotator, lightTransformations);
     lightTransformations = multiplyMat4(lightTranslator, lightTransformations);
-    vec3 lightRay = v3Normalize(multiplyVec3(vec3{0.0f, -1.0f, 0.0f}, lightTransformations));
-    lightRay.z = 1; // todo: use the light entity for real
 
-    (void)viewMatrix;
-    (void)projector;
-
-    // TODO: start from triangle loop
-
-    for (auto face : mdl.faces)
+    for (auto face : model.faces)
     {
         stats.faces++;
 
+        // TODO: move color to model
         u_int32_t faceColor = blue; // simple fallback if no texture
 
         // SEE: spaceType enum for indices
@@ -170,31 +162,28 @@ bool render(const minity::model &mdl, const camera &cam, const light &lgt)
         for (int idx : face)
         {
             stats.vertices++;
-            // Here triangles are in MODEL/LOCAL SPACE
+
+            // Here triangles are still in MODEL/LOCAL SPACE
             // i.e. coordinates coming from the modeling software (and .obj file)
 
-            vects[worldSpace][idx % 3] = multiplyVec3(mdl.vertices[idx], worldTransformations);
-            if (mdl.hasNormals)
-                norms[worldSpace][idx % 3] = multiplyVec3(mdl.normals[idx], worldTransformations);
+            vects[worldSpace][idx % 3] = multiplyVec3(model.vertices[idx], worldTransformations);
+            if (model.hasNormals)
+                norms[worldSpace][idx % 3] = multiplyVec3(model.normals[idx], worldTransformations);
 
             // Here triangles are in WORLD SPACE
             // i.e. common coordinates for all models in scene
             // only camera, no projection
 
             vects[viewSpace][idx % 3] = multiplyVec3(vects[worldSpace][idx % 3], viewMatrix);
-            if (mdl.hasNormals)
+            if (model.hasNormals)
                 norms[viewSpace][idx % 3] = multiplyVec3(norms[worldSpace][idx % 3], viewMatrix);
-
-            // TODO: back-face culling in view space
 
             // Here triangles are in VIEW SPACE
             // i.e. coordinates looking from camera
             // so a point at world space camera coordinates is (0,0,0)
 
-            // TODO: Global illumination
-
             vects[clipSpace][idx % 3] = multiplyVec3(vects[viewSpace][idx % 3], projector);
-            if (mdl.hasNormals)
+            if (model.hasNormals)
                 norms[clipSpace][idx % 3] = multiplyVec3(norms[viewSpace][idx % 3], projector);
 
             // Here triangles are in CLIP SPACE in homogeneous coordinates
@@ -204,17 +193,19 @@ bool render(const minity::model &mdl, const camera &cam, const light &lgt)
             vec3 vClip = vects[clipSpace][idx % 3];
 
             vects[clipSpace][idx % 3] = v3Div(vClip, vClip.w);
-            if (mdl.hasNormals)
+            if (model.hasNormals)
             {
                 vec3 vNorm = vects[clipSpace][idx % 3];
                 norms[clipSpace][idx % 3] = v3Div(vNorm, vNorm.w);
             }
 
             // Here triangles are in NDC SPACE x, y, z in [-1,1]
-            vec3 vertice = vects[clipSpace][idx % 3];
-            assert(vertice.x >= -1 && vertice.x <= 1
-                && vertice.y >= -1 && vertice.y <= 1
-                && vertice.z >= -1 && vertice.z <= 1);
+
+            // model can be outside of the view area
+            // vec3 vertice = vects[clipSpace][idx % 3];
+            // assert(vertice.x >= -1 && vertice.x <= 1
+            //     && vertice.y >= -1 && vertice.y <= 1
+            //     && vertice.z >= -1 && vertice.z <= 1);
 
 
             // TODO: view volume culling (outside frustrum)
@@ -231,12 +222,15 @@ bool render(const minity::model &mdl, const camera &cam, const light &lgt)
             vec3 v = multiplyVec3(vects[clipSpace][idx % 3], viewMatrix);
             v.x = (v.x + 1.0f) * static_cast<float>(g_SDLWidth) / 2.0f;
             v.y = (1.0f - ((v.y + 1.0f) / 2.0f)) * static_cast<float>(g_SDLHeight);
+            // z is retained as -1 .. 1 for z-buffering
             vects[screenSpace][idx % 3] = v;
+
             // we don't need normals in screenspace???
-            // if (mdl.hasNormals)
+            // if (model.hasNormals)
             //     norms[screenSpace][idx % 3] = multiplyVec3(norms[clipSpace][idx % 3], viewMatrix);
 
             // Here triangles are all in screen space (0,0) -> (screenWidth, screenHeight)
+
         } // end of vertex shader (space transformations)
 
         // Begin rasterization, working in screen space
@@ -245,7 +239,7 @@ bool render(const minity::model &mdl, const camera &cam, const light &lgt)
         vec3 vt1 = vects[screenSpace][0];
         vec3 vt2 = vects[screenSpace][1];
         vec3 vt3 = vects[screenSpace][2];
-        if (mdl.hasNormals)
+        if (model.hasNormals)
         {
             vec3 nt1 = norms[clipSpace][0];
             vec3 nt2 = norms[clipSpace][1];
@@ -254,61 +248,61 @@ bool render(const minity::model &mdl, const camera &cam, const light &lgt)
             (void)nt2;
             (void)nt3;
         }
-        else
+
+        // TODO: if the model does not have texture and texture coordinates
+
+        // calculate a simple face normal
+
+        // Take the view-space as that is not
+        // perspective corrected
+
+        // faces are in clockwise winding order
+        // i.e. left-hand rule (thumb faces front)
+        // (center > up > right faces front)
+
+        // cross-product a x b follows right-hand rule
+        // i.e. a = v2 - v0 and b = v1 - v0
+        // so that the normal points front
+        vec3 faceNormal = v3Normalize(v3CrossProduct(
+            v3Sub(vects[viewSpace][2], vects[viewSpace][0]),
+            v3Sub(vects[viewSpace][1], vects[viewSpace][0])));
+        // vec3 faceNormal = v3Normalize(v3CrossProduct(
+        //     v3Sub(vects[clipSpace][2], vects[clipSpace][0]),
+        //     v3Sub(vects[clipSpace][1], vects[clipSpace][0])));
+
+
+        // back-face culling - polygons that face away from the camera can be culled
+        // we do it in view space (=camera coordinates)
+        // cannot do it in world space as we have to anyway adjust for camera rotation
+
+        auto vCameraRay = v3Normalize(v3Sub(camera.translation, vects[viewSpace][0])); // in view space camera is at origin
+        auto camDot = v3DotProduct(faceNormal, vCameraRay);
+
+        if (camDot < 0.0f)
         {
-            // calculate a simple face normal
-
-            // Take the view-space as that is not
-            // perspective corrected and NDC
-            // faces are in clockwise winding order
-            // i.e. left-hand rule (thumb faces front)
-            // (center > up > right faces front)
-
-            // cross-product a x b follows right-hand rule
-            // i.e. a = v2 - v0 and b = v1 - v0
-            // so that the normal points front
-            vec3 faceNormal = v3Normalize(v3CrossProduct(
-                v3Sub(vects[viewSpace][2], vects[viewSpace][0]),
-                v3Sub(vects[viewSpace][1], vects[viewSpace][0])));
-            // vec3 faceNormal = v3Normalize(v3CrossProduct(
-            //     v3Sub(vects[clipSpace][2], vects[clipSpace][0]),
-            //     v3Sub(vects[clipSpace][1], vects[clipSpace][0])));
-
-
-            // back-face culling - polygons that face away from the camera can be culled
-            // we do it in view space (=camera coordinates)
-            // cannot do it in world space as we have to anyway adjust for camera rotation
-
-            // auto vCameraRay = v3Normalize(vects[clipSpace][0]); // camera is now at origin
-            // auto vCameraRay = v3Normalize(vects[viewSpace][0]); // camera is now at origin
-            auto vCameraRay = v3Normalize(v3Sub(cam.translation, vects[viewSpace][0])); // camera is now at origin
-            auto camDot = v3DotProduct(faceNormal, vCameraRay);
-
-            if (camDot < 0.0f)
-            {
-                std::cout << "CULLING face normal: " << faceNormal << " camera:" << vCameraRay << " dot: " << std::to_string(camDot) << std::endl << std::endl;
-                // std::cout << "            face[0]: " << view.vertices[0].str() << " [1]: " << view.vertices[1].str() << " [2]: " << view.vertices[2].str() << std::endl;
-                stats.culled++;
-                continue;
-            }
-
-            // light is coming from positive z axis
-            vec3 lightDirection = v3Normalize(vec3{1.0f, 0.0f, 1.0f});
-            float dp = std::max(0.1f, v3DotProduct(lightDirection, faceNormal));
-
-            for (int idx : face)
-                std::cout << std::left << std::setw(35) << mdl.vertices[idx];
-            std::cout << std::endl;
-            for (int i : {worldSpace, viewSpace, clipSpace, screenSpace})
-            {
-                for (int j : {0, 1, 2})
-                    std::cout << std::left << std::setw(35) << vects[i][j];
-                std::cout << std::endl;
-            }
-            std::cout << "  face normal: " << faceNormal << " dot product: " << dp << std::endl;
-            std::cout << "camera normal: " << vCameraRay << " dot: " << std::to_string(camDot) << std::endl << std::endl;
-            faceColor = adjustColor(faceColor, dp);
+            std::cout << "CULLING face normal: " << faceNormal << " camera:" << vCameraRay << " dot: " << std::to_string(camDot) << std::endl << std::endl;
+            // std::cout << "            face[0]: " << view.vertices[0].str() << " [1]: " << view.vertices[1].str() << " [2]: " << view.vertices[2].str() << std::endl;
+            stats.culled++;
+            continue;
         }
+
+        vec3 lightDirection = v3Normalize(light.translation);
+        float dp = std::max(0.1f, v3DotProduct(lightDirection, faceNormal));
+        // float dp = std::max(0.25f, v3DotProduct(lightDirection, faceNormal));
+
+        for (int idx : face)
+            std::cout << std::left << std::setw(35) << model.vertices[idx];
+        std::cout << std::endl;
+        for (int i : {worldSpace, viewSpace, clipSpace, screenSpace})
+        {
+            for (int j : {0, 1, 2})
+                std::cout << std::left << std::setw(35) << vects[i][j];
+            std::cout << std::endl;
+        }
+        std::cout << "  face normal: " << faceNormal << " dot product: " << dp << std::endl;
+        std::cout << "camera normal: " << vCameraRay << " dot: " << std::to_string(camDot) << std::endl << std::endl;
+        faceColor = adjustColor(faceColor, dp);
+
 
         /* get the bounding box of the triangle */
         int maxX = std::max(vt1.x, std::max(vt2.x, vt3.x));
