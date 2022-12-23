@@ -40,17 +40,23 @@ void newScenario()
     minity::model teapot{};
     ok = teapot.load("test/models/teapot.obj", true); // reverse winding
     assert(ok);
-    // teapot.scale = vec3{0.5f, 0.5f, 0.5f};
+    teapot.scale = vec3{1.0f, 1.0f, 1.0f};
     teapot.rotation = vec3{deg2rad(30), deg2rad(-30), deg2rad(0)};
     teapot.translation = vec3{0.0f, -1.5f, 0.0f};
 
     minity::model box{};
     ok = box.load("models/box.obj");
     assert(ok);
-    // box.translation.y = 5.0f;
-    // box.translation.z = -10.0f;
     box.scale = vec3{2.0f, 2.0f, 2.0f};
     box.rotation = vec3{deg2rad(0), deg2rad(-30), deg2rad(0)};
+    box.translation = vec3{0.0f, 0.0f, 1.0f};
+
+    minity::model male{};
+    ok = male.load("test/models/MaleLow.obj"); // , true); // reverse winding
+    assert(ok);
+    male.scale = vec3{0.5f, 0.5f, 0.5f};
+    male.translation = vec3{0.0f, -5.0f, -6.0f};
+    male.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 
     std::cout << "image and model import successful" << std::endl;
 
@@ -63,12 +69,17 @@ void newScenario()
     camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
     camera.translation = vec3{0.0f, 0.0f, 5.0f};
 
-    light.rotation = vec3{deg2rad(45), deg2rad(-45), deg2rad(0)};
+    // light direction is ignored for now (only global illumination)
+    // light.rotation = vec3{deg2rad(45), deg2rad(-45), deg2rad(0)};
+    // light is coming from positive z axis
+    light.translation = vec3{0.0f, 0.0f, 1.0f}; // vec3{1.0f, 0.0f, 1.0f}
+
 
     // draw the model just once
     // todo: move all to a scene that is rendered
-    ok = minity::render(teapot, camera, light);
+    // ok = minity::render(teapot, camera, light);
     // ok = minity::render(box, camera, light);
+    ok = minity::render(male, camera, light);
     if (!ok)
     {
         std::cerr << "Trouble rendering model" << std::endl;
