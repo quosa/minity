@@ -252,13 +252,6 @@ bool model::handleLine(const std::string &line)
             }
             i++;
         }
-        if (i>3)
-        {
-            std::cerr << "Warning, clipping a polygon of " << i << " vertices !!!" << std::endl;
-        }
-
-        // TODO: for 4-vertex polygon, do the triangulation manually?
-
         // pack the scattered indices to each face in v1, n1, t1, v2, n2, t2...
         std::vector<int> face;
         for (int i : {0, 1, 2})
@@ -266,6 +259,22 @@ bool model::handleLine(const std::string &line)
             face.insert( face.end(), { vrt[i] - 1, nrm[i] - 1, tex[i] -1} );
         }
         faces.push_back(face);
+
+        if (i == 4)
+        {
+            // Break the 4 vertex manually
+            // TODO: this is fragile!
+            face.clear();
+            for (int i : {0, 2, 3})
+            {
+                face.insert( face.end(), { vrt[i] - 1, nrm[i] - 1, tex[i] -1} );
+            }
+            faces.push_back(face);
+        }
+        else if (i>4)
+        {
+            std::cerr << "Warning, clipping a polygon of " << i << " vertices !!!" << std::endl;
+        }
 
     }
     return true;
