@@ -1,4 +1,5 @@
 #include <catch2/catch.hpp>
+#include <math.h>
 #include <list>
 #include <utility>
 #include <iostream>
@@ -6,8 +7,27 @@
 
 #include "simpleMath.h"
 
+
+// for hiding std::cout
+// auto old_buffer = std::cout.rdbuf(nullptr);
+auto old_buffer = std::cerr.rdbuf(nullptr);
+
 const vec3 v0{};
 const vec3 v1{1.0f, 1.0f, 1.0f};
+
+const vec3 right{1.0f, 0.0f, 0.0f};
+const vec3 left{-1.0f, 0.0f, 0.0f};
+const vec3 up{0.0f, 1.0f, 0.0f};
+const vec3 down{0.0f, -1.0f, 0.0f};
+const vec3 forward{0.0f, 0.0f, 1.0f};
+const vec3 back{0.0f, 0.0f, -1.0f};
+const vec3 forwardleft = v3Normalize(v3Add(forward, left));
+const vec3 forwardright = v3Normalize(v3Add(forward, right));
+const vec3 backleft = v3Normalize(v3Add(back, left));
+const vec3 backright = v3Normalize(v3Add(back, right));
+
+// TODO: wait for c++20 and std::numbers::pi
+const double pi = std::atan(1)*4;
 
 const mat4 m0; // all zeroes
 const mat4 m1{
@@ -34,6 +54,70 @@ TEST_CASE("zero-vec * 1 = zero-vec")
 TEST_CASE("1-vec * 2 = 2-vec")
 {
     REQUIRE(multiplyVec3(v1, 2.0f) == vec3{2.0f, 2.0f, 2.0f});
+}
+
+TEST_CASE("dot products - orthogonal all quadrants")
+{
+    REQUIRE(v3DotProduct(up, right) == 0.0f);
+    REQUIRE(v3DotProduct(right, down) == 0.0f);
+    REQUIRE(v3DotProduct(down, left) == 0.0f);
+    REQUIRE(v3DotProduct(left, up) == 0.0f);
+    REQUIRE(v3DotProduct(right, forward) == 0.0f);
+    REQUIRE(v3DotProduct(forward, left) == 0.0f);
+    REQUIRE(v3DotProduct(left, back) == 0.0f);
+    REQUIRE(v3DotProduct(back, right) == 0.0f);
+}
+
+TEST_CASE("dot products - parallel all quadrants")
+{
+    REQUIRE(v3DotProduct(right, right) == 1.0f);
+    REQUIRE(v3DotProduct(left, left) == 1.0f);
+    REQUIRE(v3DotProduct(up, up) == 1.0f);
+    REQUIRE(v3DotProduct(down, down) == 1.0f);
+    REQUIRE(v3DotProduct(forward, forward) == 1.0f);
+    REQUIRE(v3DotProduct(back, back) == 1.0f);
+}
+
+TEST_CASE("dot products - opposites all axis")
+{
+    REQUIRE(v3DotProduct(left, right) == -1.0f);
+    REQUIRE(v3DotProduct(up, down) == -1.0f);
+    REQUIRE(v3DotProduct(forward, back) == -1.0f);
+}
+
+TEST_CASE("dot products - angles")
+{
+    REQUIRE(v3DotProduct(forward, right) == 0.0f);
+    REQUIRE(v3DotProduct(forward, forward) == 1.0f);
+    // v2 is so long that projection is full
+    REQUIRE(v3DotProduct(forward, vec3{1.0f, 0.0f, 1.0f}) == 1.0f);
+    // a**2 + b**2 == c**2 where c=1 and a=b (unit vector)
+    // sin(45) = x / 1 = 0,707106781186548
+    float unitSide = sinf(45*pi/180);
+    REQUIRE(v3DotProduct(forward, v3Normalize(vec3{1.0f, 0.0f, 1.0f})) == unitSide); // 0.707106781186548f);
+}
+
+TEST_CASE("dot products - 45deg angles")
+{
+    // orthogonal, cos(90) == 0
+    REQUIRE(v3DotProduct(forwardleft, forwardright) == 0.0f);
+
+    // parallel, cos(0) == 1
+    REQUIRE_THAT(
+        v3DotProduct(forwardright, forwardright),
+        Catch::Matchers::WithinAbs(1.0f, 0.000001)
+    );
+    // REQUIRE(v3DotProduct(forwardright, forwardright) == 1.0f);
+
+    // opposites, cos(180) == -1
+    REQUIRE_THAT(
+        v3DotProduct(forwardright, backleft),
+        Catch::Matchers::WithinAbs(-1.0f, 0.000001)
+    );
+    // REQUIRE(v3DotProduct(forwardright, backleft) == -1.0f);
+
+    // orthogonal, cos(-90) == 0
+    REQUIRE(v3DotProduct(forwardright, backright) == 0.0f);
 }
 
 TEST_CASE("swap points (for sorting)")
@@ -746,4 +830,76 @@ TEST_CASE("lookat camera matrix - double-check with components")
         REQUIRE_THAT( result.y, Catch::Matchers::WithinRel(expected.y, 0.0000001f) );
         REQUIRE_THAT( result.z, Catch::Matchers::WithinRel(expected.z, 0.0000001f) );
     };
+}
+
+TEST_CASE("calculate face normal - facing right")
+{
+    // clockwise winding order
+    // i.e. left-hand rule (thumb faces front)
+    // (center > up > back faces right)
+    vec3 faceNormal = v3Normalize(v3CrossProduct(
+        v3Sub(back, v0), // v2 - v0
+        v3Sub(up, v0) // v1 - v0
+    ));
+    REQUIRE(faceNormal == right);
+}
+
+TEST_CASE("calculate face normal - facing left")
+{
+    // clockwise winding order
+    // i.e. left-hand rule (thumb faces front)
+    // (center > back > up faces left)
+    vec3 faceNormal = v3Normalize(v3CrossProduct(
+        v3Sub(up, v0), // v2 - v0
+        v3Sub(back, v0) // v1 - v0
+    ));
+    REQUIRE(faceNormal == left);
+}
+
+TEST_CASE("calculate face normal - facing forward")
+{
+    // clockwise winding order
+    // i.e. left-hand rule (thumb faces front)
+    // (center > up > right faces front)
+    vec3 faceNormal = v3Normalize(v3CrossProduct(
+        v3Sub(right, v0), // v2 - v0
+        v3Sub(up, v0) // v1 - v0
+    ));
+    REQUIRE(faceNormal == forward);
+}
+
+TEST_CASE("calculate face normal - facing backward")
+{
+    // clockwise winding order
+    // i.e. left-hand rule (thumb faces front)
+    // (center > up > left faces back)
+    vec3 faceNormal = v3Normalize(v3CrossProduct(
+        v3Sub(left, v0), // v2 - v0
+        v3Sub(up, v0) // v1 - v0
+    ));
+    REQUIRE(faceNormal == back);
+}
+
+TEST_CASE("calculate face normal - facing up")
+{
+    // clockwise winding order
+    // i.e. left-hand rule (thumb faces front)
+    // (center > back > right faces up)
+    vec3 faceNormal = v3Normalize(v3CrossProduct(
+        v3Sub(right, v0), // v2 - v0
+        v3Sub(back, v0) // v1 - v0
+    ));
+    REQUIRE(faceNormal == up);
+}
+
+TEST_CASE("calculate face normal - facing down")
+{
+    // clockwise winding order
+    // i.e. left-hand rule (thumb faces front)
+    // (center > back > left faces down)
+    vec3 faceNormal = v3Normalize(v3CrossProduct(
+        v3Sub(left, v0), // v2 - v0
+        v3Sub(back, v0) // v1 - v0
+    ));
+    REQUIRE(faceNormal == down);
 }
