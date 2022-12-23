@@ -179,6 +179,17 @@ void SDLStart(int windowWidth, int windowHeight)
     g_ImGuiVersion = std::to_string(IMGUI_VERSION_NUM);
 }
 
+void SDLClearBuffers()
+{
+    // definition: g_SDLBackBuffer = new Uint32[windowWidth * windowHeight];
+    memset(g_SDLBackBuffer, 0x00, g_SDLWidth * g_SDLHeight * sizeof(Uint32));
+
+    // g_DepthBuffer = new float[windowWidth * windowHeight];
+    // camera is looking towards positize z axis, so z_max is infinity
+    float inf = std::numeric_limits<float>::infinity();
+    memset_pattern4(g_DepthBuffer, &inf, g_SDLWidth * g_SDLHeight * sizeof(float));
+}
+
 void SDLSwapBuffers(/*color_t * backbuffer*/)
 {
     SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
