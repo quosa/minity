@@ -10,9 +10,11 @@ The main purpose is to do a fun project to re-learn [modern](https://docs.micros
 Design choices:
  * matrices are in [row-major order](https://en.wikipedia.org/wiki/Row-_and_column-major_order) to align with maths notation (unlike OpenGL!)
  * coordinate system and rotation follow the [right-hand rule](https://en.wikipedia.org/wiki/Cartesian_coordinate_system)
+   * axis rotation follow right-hand: right-thumb to axis and fingers point to positive rotation
  * camera is watching towards the positive Z-axis (TODO: swap?)
  * screen coordinates are top-left (0,0) to bottom-right (screen-width, screen-height)
- * model faces are defined in clockwise winding order (LEFT-hand rule, e.g. center > up > right and thumb points front)
+ * model faces are defined in clockwise winding order
+   * faces follow LEFT-hand rule: e.g. center > up > right and LEFT-thumb points front
 
 Working:
  * object loading from a simple obj file (vertices and faces only)

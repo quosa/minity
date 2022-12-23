@@ -32,13 +32,17 @@ const std::string banner = R"(
 void newScenario()
 {
     bool ok = false;
+
     minity::image img{};
     ok = img.load("test/materials/newell_teapot.jpg");
-    // TODO: CHECK TEAPOT WINDING ORDER
     assert(ok);
-    minity::model mdl{};
-    ok = mdl.load("test/models/teapot.obj");
+
+    minity::model teapot{};
+    ok = teapot.load("test/models/teapot.obj", true); // reverse winding
     assert(ok);
+    // teapot.scale = vec3{0.5f, 0.5f, 0.5f};
+    teapot.rotation = vec3{deg2rad(30), deg2rad(-30), deg2rad(0)};
+    teapot.translation = vec3{0.0f, -1.5f, 0.0f};
 
     minity::model box{};
     ok = box.load("models/box.obj");
@@ -46,16 +50,11 @@ void newScenario()
     // box.translation.y = 5.0f;
     // box.translation.z = -10.0f;
     box.scale = vec3{2.0f, 2.0f, 2.0f};
-    box.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    box.rotation = vec3{deg2rad(0), deg2rad(-30), deg2rad(0)};
 
     std::cout << "image and model import successful" << std::endl;
 
     minity::init();
-
-    // teapot
-    // mdl.scale = vec3{0.5f, 0.5f, 0.5f};
-    // mdl.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    mdl.translation = vec3{0.0f, -1.5f, 0.0f};
 
     minity::camera camera{};
     minity::light light{};
@@ -68,8 +67,8 @@ void newScenario()
 
     // draw the model just once
     // todo: move all to a scene that is rendered
-    // ok = minity::render(mdl, camera, light);
-    ok = minity::render(box, camera, light);
+    ok = minity::render(teapot, camera, light);
+    // ok = minity::render(box, camera, light);
     if (!ok)
     {
         std::cerr << "Trouble rendering model" << std::endl;

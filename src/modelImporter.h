@@ -7,6 +7,8 @@
 #include <fstream>
 #include <strstream>
 #include <string>
+#include <vector>
+#include <utility>
 
 namespace minity
 {
@@ -37,10 +39,10 @@ struct model
     vec3 rotation{};
     vec3 translation{};
 
-    bool load(const std::string &path);
+    bool load(const std::string &path, bool reverseWinding=false);
 private:
     bool handleLine(const std::string &line);
-    bool alignFaces();
+    bool alignFaces(bool reverseWinding);
 };
 
 // struct mesh
@@ -76,7 +78,7 @@ scene
 // load the mesh from an obj file
 // supports vertices, faces, normals
 // and texture coordinates
-bool model::load(const std::string &path)
+bool model::load(const std::string &path, bool reverseWinding)
 {
     std::ifstream f(path);
     if (!f.is_open())
@@ -95,7 +97,7 @@ bool model::load(const std::string &path)
             return false;
         }
     }
-    if(!alignFaces())
+    if(!alignFaces(reverseWinding))
     {
         std::cerr << "Trouble aligning faces" << std::endl;
         return false;
@@ -109,7 +111,7 @@ bool model::load(const std::string &path)
 
 // utility to align vertices, normals
 // and texture coordinates for easy access
-bool model::alignFaces()
+bool model::alignFaces(bool reverseWinding)
 {
     // (deep-)copy the unsorted arrays
     std::vector<vec3> _vertices = vertices;
@@ -128,15 +130,22 @@ bool model::alignFaces()
     int i = 0;
     for (auto vnt : _faces)
     {
-        vertices.insert( vertices.end(),
-            { _vertices[vnt[0]], _vertices[vnt[3]], _vertices[vnt[6]]}
-        );
+
+        vertices.insert( vertices.end(), { _vertices[vnt[0]], _vertices[vnt[3]], _vertices[vnt[6]]});
+        if (reverseWinding)
+        {
+            int n = vertices.size();
+            std::swap( vertices[n-2], vertices[n-1]);
+        }
 
         if (hasNormals)
         {
-            normals.insert( normals.end(),
-                {_normals[vnt[1]], _normals[vnt[4]], _normals[vnt[7]]}
-            );
+            normals.insert( normals.end(), {_normals[vnt[1]], _normals[vnt[4]], _normals[vnt[7]]});
+            if (reverseWinding)
+            {
+                int n = normals.size();
+                std::swap( normals[n-2], normals[n-1]);
+            }
         }
 
         if (hasTextureCoordinates)
@@ -144,6 +153,11 @@ bool model::alignFaces()
             textureCoordinates.insert( textureCoordinates.end(),
                 { _textureCoordinates[vnt[2]], _textureCoordinates[vnt[5]], _textureCoordinates[vnt[8]]}
             );
+            if (reverseWinding)
+            {
+                int n = textureCoordinates.size();
+                std::swap( textureCoordinates[n-2], textureCoordinates[n-1]);
+            }
         }
         std::vector<int> face{ i, i+1, i+2 };
         faces.insert( faces.end(), face);
