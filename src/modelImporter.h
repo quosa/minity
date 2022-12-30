@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <strstream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <utility>
@@ -40,6 +41,9 @@ struct model
     vec3 translation{};
 
     bool load(const std::string &path, bool reverseWinding=false);
+    bool loadFromString(const std::string &model, bool reverseWinding=false);
+    void printModelInfo(bool debug=false);
+    void dumpModel();
 private:
     bool handleLine(const std::string &line);
     bool alignFaces(bool reverseWinding);
@@ -102,11 +106,93 @@ bool model::load(const std::string &path, bool reverseWinding)
         std::cerr << "Trouble aligning faces" << std::endl;
         return false;
     }
-    std::cout << "loaded a model with " << numFaces << " faces, ";
-    std::cout << (hasNormals ? "" : "no ") << "normals and ";
-    std::cout << (hasTextureCoordinates ? "" : "no ") << "texture coordinates";
-    std::cout << "." << std::endl;
+    // std::cout << "loaded a model with " << numFaces << " faces, ";
+    // std::cout << (hasNormals ? "" : "no ") << "normals and ";
+    // std::cout << (hasTextureCoordinates ? "" : "no ") << "texture coordinates";
+    // std::cout << "." << std::endl;
+    printModelInfo();
     return true;
+}
+
+bool model::loadFromString(const std::string &model, bool reverseWinding)
+{
+    std::istringstream iss(model);
+    std::string line;
+    while (std::getline(iss, line)) {
+        // std::cout << line << std::endl;
+        if(!handleLine(line))
+        {
+            std::cerr << "Trouble reading line: '" << line << "'" << std::endl;
+            return false;
+        }
+    }
+    // printModelInfo();
+    // std::cout << "FOO" << std::endl;
+    if(!alignFaces(reverseWinding))
+    {
+        std::cerr << "Trouble aligning faces" << std::endl;
+        return false;
+    }
+    printModelInfo(true); // typically these are small so put debug output
+    return true;
+}
+
+void  model::printModelInfo(bool debug)
+{
+    std::cout << "loaded a model with " << numFaces << " faces, ";
+    std::cout << (hasNormals ? "has " : "no ") << "normals and ";
+    std::cout << (hasTextureCoordinates ? "has " : "no ") << "texture coordinates";
+    std::cout << "." << std::endl;
+
+    if(debug)
+    {
+        std::cout << "vertices: [";
+        for (auto v : vertices) { std::cout << " " << v; };
+        std::cout << " ]" << std::endl;
+
+        std::cout << "normals: [";
+        for (auto n : normals) { std::cout << " " << n; };
+        std::cout << " ]" << std::endl;
+
+        std::cout << "texture coordinates: [";
+        for (auto tc : textureCoordinates)
+        {
+            std::cout << " (" << tc.u << ", " << tc.v << ")";
+        };
+        std::cout << " ]" << std::endl;
+    }
+}
+
+void  model::dumpModel()
+{
+    for (auto face : faces)
+    {
+        // v0, v1, v2 | n0, n1, n2 | t0, t1, t2
+        for (int i : {0,1,2})
+        {
+            std::cout << " " << std::setw(35) << std::setprecision(3) << vertices[face[i]];
+        };
+        std::cout << " | ";
+        if (hasNormals)
+        {
+            for (int i : {0,1,2})
+            {
+                std::cout << " " << std::setw(35) << std::setprecision(3) << normals[face[i]];
+            };
+            std::cout << " | ";
+        }
+        if (hasTextureCoordinates)
+        {
+            for (int i : {0,1,2})
+            {
+                auto tc = textureCoordinates[face[i]];
+                // << std::setw(7) << std::setprecision(3)
+                std::cout << " (" << tc.u << ", " << tc.v << ")" ;
+            };
+
+        }
+        std::cout << std::endl;
+    }
 }
 
 // utility to align vertices, normals
@@ -187,23 +273,23 @@ bool model::handleLine(const std::string &line)
     {
         // e.g. vn 0.707 0.000 0.707
         vec3 v;
-        s >> junk >> v.x >> v.y >> v.z;
+        s >> junk >> junk >> v.x >> v.y >> v.z;
         normals.push_back(v);
     }
     else if (line.rfind("vt ", 0) == 0) // texture coordinates
     {
         // e.g. vt 0.500 1 [0]
         vec2 v;
-        s >> junk >> v.u >> v.v;
+        s >> junk >> junk >> v.u >> v.v;
         textureCoordinates.push_back(v);
     }
     else if (line.rfind("f ", 0) == 0) // face
     {
         // e.g. f 1/11/111 2/22/222 3/33/333 (there are other types!)
         std::string vertexDetails;
-        int vrt[50]; // vertex indices
-        int nrm[50]; // normal indices
-        int tex[50]; // texture cordinate indices
+        int vrt[50]{0}; // vertex indices
+        int nrm[50]{0}; // normal indices
+        int tex[50]{0}; // texture cordinate indices
         int i = 0;
 
         s >> junk;
@@ -216,12 +302,15 @@ bool model::handleLine(const std::string &line)
             // handle all possible scenarios here: 1, 1/2, 1/2/3, 1//3
             while ((next = vertexDetails.find('/', last)) != std::string::npos)
             {
-                indices.push_back(std::stoi(vertexDetails.substr(last, next - last)));
+                int idx = 0; // case f 1//3
+                if ((next - last) > 0)
+                    idx = std::stoi(vertexDetails.substr(last, next - last));
+                indices.push_back(idx);
                 last = next + 1;
             }
             indices.push_back(std::stoi(vertexDetails.substr(last)));
 
-            // std::cout << "[";
+            // std::cout << "indices: [";
             // for (auto elem : indices) { std::cout << " " << elem; };
             // std::cout << " ]" << std::endl;
 
@@ -244,7 +333,7 @@ bool model::handleLine(const std::string &line)
                 tex[i] = indices.at(1);
                 nrm[i] = indices.at(2);
                 hasNormals = true;
-                hasTextureCoordinates = true;
+                hasTextureCoordinates = (tex[i] != 0);
                 break;
             default:
                 std::cerr << "Trouble reading face vertex information: " << vertexDetails << std::endl;
@@ -252,6 +341,7 @@ bool model::handleLine(const std::string &line)
             }
             i++;
         }
+
         // pack the scattered indices to each face in v1, n1, t1, v2, n2, t2...
         std::vector<int> face;
         for (int i : {0, 1, 2})
@@ -259,6 +349,7 @@ bool model::handleLine(const std::string &line)
             face.insert( face.end(), { vrt[i] - 1, nrm[i] - 1, tex[i] -1} );
         }
         faces.push_back(face);
+        ++numFaces;
 
         if (i == 4)
         {
@@ -270,6 +361,7 @@ bool model::handleLine(const std::string &line)
                 face.insert( face.end(), { vrt[i] - 1, nrm[i] - 1, tex[i] -1} );
             }
             faces.push_back(face);
+            ++numFaces;
         }
         else if (i>4)
         {

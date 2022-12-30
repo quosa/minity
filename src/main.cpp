@@ -48,17 +48,64 @@ void newScenario()
     ok = box.load("models/box.obj");
     assert(ok);
     box.scale = vec3{2.0f, 2.0f, 2.0f};
-    box.rotation = vec3{deg2rad(0), deg2rad(-30), deg2rad(0)};
+    box.rotation = vec3{deg2rad(0), deg2rad(30), deg2rad(0)};
     box.translation = vec3{0.0f, 0.0f, 1.0f};
 
+    minity::model bbox{};
+    // exported as y = up, Z- = forward
+    ok = bbox.load("models/BlenderBoxMinusZ.obj", true); // counter-clockwise winding from Blender
+    // exported as y = up, Z+ = forward
+    // ok = bbox.load("models/BlenderBoxZ.obj", true); // counter-clockwise winding from Blender
+    // NO DIFFERENCE IN RENDERING, AFFECTS THE FACE ORDER
+    assert(ok);
+    bbox.scale = vec3{2.0f, 2.0f, 2.0f};
+    bbox.rotation = vec3{deg2rad(30), deg2rad(30), deg2rad(0)};
+    bbox.translation = vec3{0.0f, 0.0f, -3.0f};
+    bbox.hasNormals = false;
+    // bbox.printModelInfo(true);
+    // bbox.printModelInfo();
+    // bbox.dumpModel();
+
+    minity::model sphere{};
+    ok = sphere.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
+    assert(ok);
+    sphere.scale = vec3{1.0f, 1.0f, 1.0f};
+    sphere.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    sphere.translation = vec3{0.0f, 0.0f, 2.0f};
+    // sphere.hasNormals = false;
+
     minity::model male{};
-    ok = male.load("test/models/MaleLow.obj"); // , true); // reverse winding
+    ok = male.load("test/models/MaleLow.obj");
     assert(ok);
     male.scale = vec3{0.5f, 0.5f, 0.5f};
     male.translation = vec3{0.0f, -5.0f, -6.0f};
     male.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 
-    std::cout << "image and model import successful" << std::endl;
+    minity::model head{};
+    ok = head.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
+    assert(ok);
+    head.scale = vec3{0.05f, 0.05f, 0.05f};
+    head.translation = vec3{0.0f, -2.5f, -0.8f};
+    head.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    // head.hasNormals = false;
+
+    std::cout << "image and model imports successful" << std::endl;
+
+
+    minity::model test{};
+    test.numFaces = 1;
+    test.hasNormals = true;
+    test.hasTextureCoordinates = false;
+    // clockwise winding order, i.e. center > up > right (left-hand rule!!!)
+    test.vertices = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}}; // x, y, z (w=1.0)
+    test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
+    test.textureCoordinates = {}; // u, v (w ignored)
+    test.faces = {{0, 1, 2}}; // [[v1_idx, v2_idx, v3_idx], [...
+    test.scale = vec3{1.0f, 1.0f, 1.0f};
+    test.translation = vec3{0.0f, 0.0f, 0.0f};
+    test.rotation = vec3{deg2rad(0), deg2rad(-45), deg2rad(0)};
+    // test.printModelInfo();
+    // test.dumpModel();
 
     minity::init();
 
@@ -72,14 +119,18 @@ void newScenario()
     // light direction is ignored for now (only global illumination)
     // light.rotation = vec3{deg2rad(45), deg2rad(-45), deg2rad(0)};
     // light is coming from positive z axis
-    light.translation = vec3{0.0f, 0.0f, 1.0f}; // vec3{1.0f, 0.0f, 1.0f}
+    light.translation = vec3{0.0f, 0.0f, 10.0f};
 
 
     // draw the model just once
     // todo: move all to a scene that is rendered
-    ok = minity::render(teapot, camera, light);
-    // ok = minity::render(box, camera, light);
-    // ok = minity::render(male, camera, light);
+    // ok = minity::render(teapot, camera, light); // OK
+    // ok = minity::render(box, camera, light); // OK
+    // ok = minity::render(bbox, camera, light); // OK
+    // ok = minity::render(sphere, camera, light); // OK
+    // ok = minity::render(male, camera, light); // ??? model is broken ???
+    ok = minity::render(head, camera, light); // OK
+    // ok = minity::render(test, camera, light); // OK
     if (!ok)
     {
         std::cerr << "Trouble rendering model" << std::endl;

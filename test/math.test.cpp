@@ -191,6 +191,19 @@ TEST_CASE("1000-matrix * 0001-matrix both ways")
     REQUIRE(multiplyMat4(m0001, m1000) == expected2);
 }
 
+TEST_CASE("transpose matrix")
+{
+    const mat4 matrix{
+        {{1.1f, 1.2f, 1.3f, 1.4f},
+         {2.1f, 2.2f, 2.3f, 2.4f},
+         {3.1f, 3.2f, 3.3f, 3.4f},
+         {4.1f, 4.2f, 4.3f, 4.4f}}};
+    mat4 transpose;
+    transpose = transposeMat4(matrix);
+    // printMat4(transpose);
+    REQUIRE(transposeMat4(transpose) == matrix);
+}
+
 TEST_CASE("matrix inverse - simple")
 {
     // M * M^-1 = I
@@ -206,6 +219,24 @@ TEST_CASE("matrix inverse - simple")
     // printMat4(multiplyMat4(result, mt));
 
     REQUIRE(multiplyMat4(result, mt) == identity);
+}
+
+TEST_CASE("inverse matrix")
+{
+    // const mat4 matrix{
+    //     {{1.1f, 1.2f, 1.3f, 1.4f},
+    //      {2.1f, 2.2f, 2.3f, 2.4f},
+    //      {3.1f, 3.2f, 3.3f, 3.4f},
+    //      {4.1f, 4.2f, 4.3f, 4.4f}}};
+    const mat4 matrix{
+        {{1.0f, 1.0f, 1.0f, 10.0f},
+         {-1.0f, 1.0f, 1.0f, 20.0f},
+         {-1.0f, -1.0f, 1.0f, 30.0f},
+         {0.0f, 0.0f, 0.0f, 1.0f}}};
+    mat4 inverse;
+    inverse = invertMat4(matrix);
+    // printMat4(inverse);
+    REQUIRE(multiplyMat4(inverse, matrix) == identity);
 }
 
 TEST_CASE("matrix inverse for look-at camera")

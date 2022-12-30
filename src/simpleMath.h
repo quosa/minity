@@ -437,6 +437,24 @@ void invertRowMajor(float m[16], float invOut[16])
         invOut[i] = invOut[i] * inv_det;
 }
 
+mat4 invertMat4(const mat4 &matrix)
+{
+    mat4 inverse;
+    invertRowMajor((float *)matrix.m, (float *)inverse.m);
+    return inverse;
+}
+
+mat4 transposeMat4(const mat4 &matrix)
+{
+    mat4 transpose{};
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+            transpose.m[j][i] = matrix.m[i][j];
+    }
+    return transpose;
+}
+
 void printMat4(const mat4 &mat, std::ostream& os)
 {
     for (int r : {0, 1, 2, 3})
@@ -473,5 +491,16 @@ u_int32_t adjustColor(u_int32_t color, float multiplier)
     b *= multiplier;
 
     return (r << 24) | (g << 16) | (b << 8) | a;
+}
+void printColor(u_int32_t color)
+{
+    u_int8_t r = (u_int8_t)(color >> 24);
+    u_int8_t g = (u_int8_t)(color >> 16);
+    u_int8_t b = (u_int8_t)(color >> 8);
+    u_int8_t a = (u_int8_t)(color >> 0);
+    std::cout << "color r:" << std::to_string(r)
+        << " color b:" << std::to_string(b)
+        << " color g:" << std::to_string(g)
+        << " color a:" << std::to_string(a) << std::endl;
 }
 #endif // MATH_TYPES_ONLY
