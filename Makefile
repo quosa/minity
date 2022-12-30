@@ -8,6 +8,7 @@ CPPFLAGS = -I /usr/local/include/SDL2 -I include -I ${IMGUI_DIR}
 LDFLAGS = -L /usr/local/lib
 LDLIBS = -l SDL2 -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo `sdl2-config --libs`
 
+# call with mode=release make all
 ifeq ($(mode),release)
 	CXXFLAGS += -O2
 else
@@ -28,6 +29,13 @@ else
 	# https://stackoverflow.com/questions/7408692/g-compiler-option-s-is-obsolete-and-being-ignored-c
 	# obsolete? : LDFLAGS += -s
 	# LDFLAGS += -pg
+endif
+
+# filter can be used to run only a subset of tests
+# e.g. filter="detailed hand-written model with normals" make test
+# See: https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#specifying-which-tests-to-run
+ifndef filter
+	filter = ""
 endif
 
 BIN_DIR = bin
@@ -83,10 +91,14 @@ $(BUILD_DIR)/%.o: $(IMGUI_DIR)/%.cpp
 # Test Section
 #
 # No external libraries for tests!
+# use filter="test case name" make test to run only a subset of tests
 ${TEST}: ${TEST_OBJS}
 	@echo building in $(mode) mode
+ifdef filter
+	@echo using filter $(filter) for tests
+endif
 	${CXX} ${TEST_OBJS} -o ${BIN_DIR}/${TEST} \
-	&& ./${BIN_DIR}/${TEST} --reporter compact --success
+	&& ./${BIN_DIR}/${TEST} --reporter compact --success "$(filter)"
 
 # add src for private headers
 $(BUILD_DIR)/%test.o: CPPFLAGS += ${TEST_INC}
