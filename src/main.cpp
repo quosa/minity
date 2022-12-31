@@ -7,8 +7,10 @@
 #include <iostream>
 
 // #include "originalScenario.h"
+
+#define IMAGEIMPORTER_IMPLEMENTATION
 #include "renderPipeline.h"
-#include "imageImporter.h" // math imports only
+#include "imageImporter.h"
 #include "modelImporter.h"
 
 const std::string usage = R"(
@@ -35,6 +37,9 @@ void newScenario()
 
     minity::image img{};
     ok = img.load("test/materials/newell_teapot.jpg");
+    assert(ok);
+    minity::image texture{};
+    ok = texture.load("test/materials/texture_uvgrid01.jpg");
     assert(ok);
 
     minity::model teapot{};

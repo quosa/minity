@@ -2,6 +2,7 @@
 
 #define MATH_TYPES_ONLY
 #include "simpleMath.h" // mesh etc. for now
+#include "imageImporter.h"
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -26,12 +27,14 @@ struct model
     int numFaces{0};
     bool hasNormals{false};
     bool hasTextureCoordinates{false};
+    bool hasTexture{false};
     std::vector<vec3> vertices; // x, y, z (w=1.0)
     std::vector<vec3> normals; // x, y, z (w=1.0)
     std::vector<vec2> textureCoordinates; // u, v (w ignored)
     std::vector<std::vector<int>> faces; // [[v1_idx, v2_idx, v3_idx], [...
     // during loading this houses {vertix_idx, normal_idx, texture_idx}, ...
     // u_int32_t color = 0xffffffff;
+    minity::image texture{};
 
     // from mesh
     bool enabled = true;
@@ -44,6 +47,7 @@ struct model
     bool loadFromString(const std::string &model, bool reverseWinding=false);
     void printModelInfo(bool debug=false);
     void dumpModel();
+    bool addTexture(minity::image &textureImage);
 private:
     bool handleLine(const std::string &line);
     bool alignFaces(bool reverseWinding);
@@ -77,6 +81,12 @@ scene
         - ??? Line element ???
 */
 
+bool model::addTexture(minity::image &textureImage)
+{
+    texture = textureImage;
+    hasTexture = true;
+    return true;
+}
 
 // adapted from: https://github.com/OneLoneCoder/videos/blob/master/OneLoneCoder_olcEngine3D_Part3.cpp
 // load the mesh from an obj file

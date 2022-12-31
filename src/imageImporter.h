@@ -1,9 +1,12 @@
 #pragma once
-#define STB_IMAGE_IMPLEMENTATION
+#ifdef IMAGEIMPORTER_IMPLEMENTATION
+    #define STB_IMAGE_IMPLEMENTATION
+#endif // IMAGEIMPORTER_IMPLEMENTATION
 #include <stb/stb_image.h>
 
 #include <iostream>
 #include <string>
+#include <cassert>
 
 namespace minity
 {
@@ -27,6 +30,15 @@ public:
         std::cout << "loaded a " << width << "x" << height << " image with " << components << " components per pixel." << std::endl;
         _raw_data = data;
         return true;
+    }
+    unsigned char* get(float u, float v)
+    {
+        int x = static_cast<int>(u * (width - 1));
+        int y = static_cast<int>(v * (height -1));
+        assert(0 <= x && x < width);
+        assert(0 <= y && y < height);
+
+        return _raw_data + (x + y * width) * components;
     }
     ~image()
     {
