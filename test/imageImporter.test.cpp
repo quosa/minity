@@ -87,3 +87,69 @@ TEST_CASE("can import tif file with an alpha channel")
     // REQUIRE(img.height == 1024);
     // REQUIRE(img.components == 4); // HAS ALPHA CHANNEL!
 }
+
+TEST_CASE("can import 2 files to different objects")
+{
+    bool res{false};
+    minity::image img1{};
+    minity::image img2{};
+    res = img1.load("test/materials/sample_1280×853.bmp");
+    REQUIRE(res);
+    res = img2.load("test/materials/texture_uvgrid01.jpg");
+    REQUIRE(res);
+    REQUIRE(img1.width == 1280);
+    REQUIRE(img1.height == 853);
+    REQUIRE(img1.components == 3); // NO ALPHA CHANNEL!
+    REQUIRE(img2.width == 1024);
+    REQUIRE(img2.height == 1024);
+    REQUIRE(img2.components == 3); // NO ALPHA CHANNEL!
+}
+
+TEST_CASE("can get color at (u,v) coordinate")
+{
+    minity::image img{};
+    bool res = img.load("test/materials/texture_uvgrid01.jpg");
+    REQUIRE(res);
+    REQUIRE(img.width == 1024);
+    REQUIRE(img.height == 1024);
+    REQUIRE(img.components == 3); // NO ALPHA CHANNEL!
+    u_int32_t color1 = img.get(1.0f, 1.0f);
+    REQUIRE(color1 == 0xffffffff);
+}
+
+
+TEST_CASE("check non-flipped texture (u,v) corners")
+{
+    minity::image img{};
+    bool res = img.load("test/materials/test_image_10x10.png");
+    REQUIRE(res);
+    REQUIRE(img.width == 10);
+    REQUIRE(img.height == 10);
+    REQUIRE(img.components == 4); // HAS ALPHA CHANNEL!
+    u_int32_t color00 = img.get(0.0f, 0.0f);
+    REQUIRE(color00 == 0xff0000ff); // red corner
+    u_int32_t color10 = img.get(1.0f, 0.0f);
+    REQUIRE(color10 == 0xff000000); // black corner aabbggrr
+    u_int32_t color01 = img.get(0.0f, 1.0f);
+    REQUIRE(color01 == 0xff00ff00); // green corner
+    u_int32_t color11 = img.get(1.0f, 1.0f);
+    REQUIRE(color11 == 0xffff0000); // blue corner
+}
+
+TEST_CASE("check flipped texture (u,v) corners")
+{
+    minity::image img{};
+    bool res = img.load("test/materials/test_image_10x10.png", true); // flipped vertically
+    REQUIRE(res);
+    REQUIRE(img.width == 10);
+    REQUIRE(img.height == 10);
+    REQUIRE(img.components == 4); // HAS ALPHA CHANNEL!
+    u_int32_t color00 = img.get(0.0f, 0.0f);
+    REQUIRE(color00 == 0xff00ff00); // green corner
+    u_int32_t color10 = img.get(1.0f, 0.0f);
+    REQUIRE(color10 == 0xffff0000); // blue corner aabbggrr
+    u_int32_t color01 = img.get(0.0f, 1.0f);
+    REQUIRE(color01 == 0xff0000ff); // red corner
+    u_int32_t color11 = img.get(1.0f, 1.0f);
+    REQUIRE(color11 == 0xff000000); // black corner
+}

@@ -357,6 +357,7 @@ bool render(const minity::model &model, const camera &camera, const light &light
                     u_int32_t c = faceColor;
                     // calculate normal at (x, y) and adjust face color
                     // Phong shading?
+
                     if (model.hasTextureCoordinates && model.hasTexture)
                     {
                         // get u, v and the corresponding pixel
@@ -365,12 +366,13 @@ bool render(const minity::model &model, const camera &camera, const light &light
                         vec2 tc3 = texc[2];
                         float uu = tc1.u * u + tc2.u * v + tc3.u * w;
                         float vv = tc1.v * u + tc2.v * v + tc3.v * w;
-                        auto texture = model.texture;
-                        unsigned char * foo = texture.get(uu, vv);
-                        (void)foo;
-                        // unsigned char * texel_data = model.texture.get(uu, vv);
+                        c = model.texture->get(uu, vv);
+                        // std::cout << "texture coordinates: " << uu << ", " << vv << " color: ";
+                        // printColor(c);
+                        // std::cout << std::endl;
                     }
-                    else if (model.hasNormals)
+
+                    if (model.hasNormals)
                     {
                         vec3 vn =  v3Normalize(v3Add(v3Add(v3Mul(nt1, u), v3Mul(nt2, v)), v3Mul(nt3, w)));
                         float dp = std::max(0.1f, v3DotProduct(lightDirection, vn));

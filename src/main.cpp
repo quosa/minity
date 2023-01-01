@@ -37,10 +37,12 @@ void newScenario()
 
     minity::image img{};
     ok = img.load("test/materials/newell_teapot.jpg");
-    assert(ok);
-    minity::image texture{};
-    ok = texture.load("test/materials/texture_uvgrid01.jpg");
-    assert(ok);
+    assert(ok); // just to test loading...
+
+    std::shared_ptr<minity::image> texture = std::make_shared<minity::image>();
+    ok = texture->load("test/models/Model_D0606058/CS.JPG", true); // flip
+    // ok = texture->load("test/materials/texture_uvgrid01.jpg", true); // flip
+    assert(ok); // shared texture for assigning to many models
 
     minity::model teapot{};
     ok = teapot.load("test/models/teapot.obj", true); // reverse winding
@@ -92,6 +94,7 @@ void newScenario()
     head.scale = vec3{0.05f, 0.05f, 0.05f};
     head.translation = vec3{0.0f, -2.5f, -0.8f};
     head.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    head.addTexture(texture);
     // head.hasNormals = false;
 
     std::cout << "image and model imports successful" << std::endl;

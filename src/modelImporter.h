@@ -34,7 +34,8 @@ struct model
     std::vector<std::vector<int>> faces; // [[v1_idx, v2_idx, v3_idx], [...
     // during loading this houses {vertix_idx, normal_idx, texture_idx}, ...
     // u_int32_t color = 0xffffffff;
-    minity::image texture{};
+    // minity::image texture{};
+    std::shared_ptr<minity::image> texture {nullptr};
 
     // from mesh
     bool enabled = true;
@@ -47,7 +48,7 @@ struct model
     bool loadFromString(const std::string &model, bool reverseWinding=false);
     void printModelInfo(bool debug=false);
     void dumpModel();
-    bool addTexture(minity::image &textureImage);
+    bool addTexture(std::shared_ptr<minity::image> pTextureImage);
 private:
     bool handleLine(const std::string &line);
     bool alignFaces(bool reverseWinding);
@@ -81,9 +82,9 @@ scene
         - ??? Line element ???
 */
 
-bool model::addTexture(minity::image &textureImage)
+bool model::addTexture(std::shared_ptr<minity::image> pTextureImage)
 {
-    texture = textureImage;
+    texture = pTextureImage;
     hasTexture = true;
     return true;
 }
