@@ -18,17 +18,20 @@ Design choices:
    * faces follow LEFT-hand rule: e.g. center > up > right and LEFT-thumb points front
 
 Working:
- * object loading from a simple obj file (vertices and faces only)
+ * object loading from a simple obj file (vertices, faces, normals and texture coordinates)
  * object scaling, rotation, and movement (translation)
- * rudimentary input handling for move ([arrow-keys](https://en.wikipedia.org/wiki/Arrow_keys), +, -) and rotate ([wasd](https://en.wikipedia.org/wiki/Arrow_keys#WASD_keys))
- * camera rotation and move (TODO: better key mapping for exploration)
+ * // rudimentary input handling for move ([arrow-keys](https://en.wikipedia.org/wiki/Arrow_keys), +, -) and rotate ([wasd](https://en.wikipedia.org/wiki/Arrow_keys#WASD_keys))
+ * // camera rotation and move (TODO: better key mapping for exploration)
  * [orthographic](https://en.wikipedia.org/wiki/Orthographic_projection) perspective correction with fixed [FoV, field-of-view](https://en.wikipedia.org/wiki/Angle_of_view)
- * rudimentary clipping (TODO: proper clipping)
- * face normal check to discard hidden triangles (model needs to be in clockwise winding order!)
- * wireframe and global face color
+ * // rudimentary clipping (TODO: proper clipping)
+ * face normal check to discard hidden triangles (model needs to be in left-hand/clockwise winding order!)
+ * // wireframe
+ * global face color
+ * [Phong-shading](https://en.wikipedia.org/wiki/Phong_shading) with normals for a smooth surface
+ * textures with model texture coordinates
  * basic math tests with [Catch2](https://github.com/catchorg/Catch2)
  * z-buffer check (instead of z-sorting the vertices before rendering)
- * simple util for generating a sphere
+ * // simple util for generating a sphere
 
 TODO:
  * proper clipping (zoom in and the entire face is removed if clipped)
@@ -45,7 +48,7 @@ TODO:
 Main influences:
  * [OneLoneCoder/Javidx9](https://github.com/OneLoneCoder): console game engine and 3d videos
  * [Michael Kissner/Kayzaks](https://github.com/Kayzaks): StupidGL [gamasutra article](https://gamasutra.com/blogs/MichaelKissner/20160112/263097/Writing_a_Game_Engine_from_Scratch__Part_4_Graphics_Library.php)
-
+ * [Gabriel Gambetta](https://gabrielgambetta.com/computer-graphics-from-scratch/): Computer Graphics from Scratch
 # Gallery
 
 Tilted yellow sphere with 50 meridians and parallels in basic global illumination:
@@ -53,3 +56,6 @@ Tilted yellow sphere with 50 meridians and parallels in basic global illuminatio
 
 Simple statistics window (turn on with [F1]) to get basic fps and library information:
 ![Minity showing statistics window](./doc/img/minity-stats-window.png "Minity showing statistics window")
+
+Head model with texture (incomplete mesh split and no eye/lash textures)
+![Minity showing a textured head](./doc/img/minity-head-with-texture.png "Minity showing a head with texture")
