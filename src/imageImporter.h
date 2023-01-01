@@ -36,6 +36,7 @@ public:
         return true;
     }
 
+    // stb_image: the first pixel pointed to is top-left-most in the image
     // 0,0 = top-left (or bottom-left if flipped vertically)
     // 1,0 = top-right (or bottom-right if flipped vertically)
     // 0,1 = bottom-left (or top-left if flipped vertically)
@@ -48,15 +49,17 @@ public:
         assert(0 <= y && y < height);
         assert(_raw_data != nullptr);
 
-        u_int32_t c{0};
-        std::memcpy(&c, _raw_data + (x + y * width) * components, components);
-
+        auto data = _raw_data + (x + y * width) * components;
+        // stb_image: comp 3 are red, green, blue
+        // stb_image: comp 4 are red, green, blue, alpha
+        // this sets the output to 0xrrggbbaa
+        u_int32_t color = (data[3]<<0) | (data[2]<<8) | (data[1]<<16) | ((unsigned)data[0]<<24);
         if (components == 3)
         {
-            c = c << 8; // rgb components
-            c += 0xff; // alpha to full
+            color = color | 0xff;
         }
-        return c;
+
+        return color;
     }
 
     ~image()

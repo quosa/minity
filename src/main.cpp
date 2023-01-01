@@ -42,7 +42,12 @@ void newScenario()
     std::shared_ptr<minity::image> texture = std::make_shared<minity::image>();
     ok = texture->load("test/models/Model_D0606058/CS.JPG", true); // flip
     // ok = texture->load("test/materials/texture_uvgrid01.jpg", true); // flip
-    assert(ok); // shared texture for assigning to many models
+    assert(ok);
+
+    std::shared_ptr<minity::image> boxTexture = std::make_shared<minity::image>();
+    // ok = boxTexture->load("test/materials/test_image_blue_100x100.png", false); // flip
+    ok = boxTexture->load("test/materials/test_image_100x100.png", false); // flip
+    assert(ok);
 
     minity::model teapot{};
     ok = teapot.load("test/models/teapot.obj", true); // reverse winding
@@ -68,10 +73,11 @@ void newScenario()
     bbox.scale = vec3{2.0f, 2.0f, 2.0f};
     bbox.rotation = vec3{deg2rad(30), deg2rad(30), deg2rad(0)};
     bbox.translation = vec3{0.0f, 0.0f, -3.0f};
-    bbox.hasNormals = false;
+    // bbox.hasNormals = false;
     // bbox.printModelInfo(true);
     // bbox.printModelInfo();
     // bbox.dumpModel();
+    // bbox.addTexture(boxTexture);
 
     minity::model sphere{};
     ok = sphere.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
@@ -80,6 +86,7 @@ void newScenario()
     sphere.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
     sphere.translation = vec3{0.0f, 0.0f, 2.0f};
     // sphere.hasNormals = false;
+    sphere.addTexture(boxTexture);
 
     minity::model male{};
     ok = male.load("test/models/MaleLow.obj");
@@ -95,6 +102,7 @@ void newScenario()
     head.translation = vec3{0.0f, -2.5f, -0.8f};
     head.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
     head.addTexture(texture);
+    // head.addTexture(boxTexture);
     // head.hasNormals = false;
 
     std::cout << "image and model imports successful" << std::endl;
@@ -103,11 +111,12 @@ void newScenario()
     minity::model test{};
     test.numFaces = 1;
     test.hasNormals = true;
-    test.hasTextureCoordinates = false;
+    test.hasTextureCoordinates = true;
+    test.addTexture(boxTexture);
     // clockwise winding order, i.e. center > up > right (left-hand rule!!!)
     test.vertices = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}}; // x, y, z (w=1.0)
     test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
-    test.textureCoordinates = {}; // u, v (w ignored)
+    test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
     test.faces = {{0, 1, 2}}; // [[v1_idx, v2_idx, v3_idx], [...
     test.scale = vec3{1.0f, 1.0f, 1.0f};
     test.translation = vec3{0.0f, 0.0f, 0.0f};

@@ -84,6 +84,10 @@ scene
 
 bool model::addTexture(std::shared_ptr<minity::image> pTextureImage)
 {
+    if (texture != nullptr)
+    {
+        texture = nullptr;
+    }
     texture = pTextureImage;
     hasTexture = true;
     return true;

@@ -113,10 +113,11 @@ TEST_CASE("can get color at (u,v) coordinate")
     REQUIRE(img.width == 1024);
     REQUIRE(img.height == 1024);
     REQUIRE(img.components == 3); // NO ALPHA CHANNEL!
-    u_int32_t color1 = img.get(1.0f, 1.0f);
-    REQUIRE(color1 == 0xffffffff);
+    u_int32_t color00 = img.get(0.0f, 0.0f);
+    REQUIRE(color00 == 0xfbfcf7ff);
+    u_int32_t color11 = img.get(1.0f, 1.0f);
+    REQUIRE(color11 == 0xffffffff);
 }
-
 
 TEST_CASE("check non-flipped texture (u,v) corners")
 {
@@ -129,11 +130,11 @@ TEST_CASE("check non-flipped texture (u,v) corners")
     u_int32_t color00 = img.get(0.0f, 0.0f);
     REQUIRE(color00 == 0xff0000ff); // red corner
     u_int32_t color10 = img.get(1.0f, 0.0f);
-    REQUIRE(color10 == 0xff000000); // black corner aabbggrr
+    REQUIRE(color10 == 0x000000ff); // black corner aabbggrr
     u_int32_t color01 = img.get(0.0f, 1.0f);
-    REQUIRE(color01 == 0xff00ff00); // green corner
+    REQUIRE(color01 == 0x00ff00ff); // green corner
     u_int32_t color11 = img.get(1.0f, 1.0f);
-    REQUIRE(color11 == 0xffff0000); // blue corner
+    REQUIRE(color11 == 0x0000ffff); // blue corner
 }
 
 TEST_CASE("check flipped texture (u,v) corners")
@@ -145,11 +146,29 @@ TEST_CASE("check flipped texture (u,v) corners")
     REQUIRE(img.height == 10);
     REQUIRE(img.components == 4); // HAS ALPHA CHANNEL!
     u_int32_t color00 = img.get(0.0f, 0.0f);
-    REQUIRE(color00 == 0xff00ff00); // green corner
+    REQUIRE(color00 == 0x00ff00ff); // green corner
     u_int32_t color10 = img.get(1.0f, 0.0f);
-    REQUIRE(color10 == 0xffff0000); // blue corner aabbggrr
+    REQUIRE(color10 == 0x0000ffff); // blue corner
     u_int32_t color01 = img.get(0.0f, 1.0f);
     REQUIRE(color01 == 0xff0000ff); // red corner
     u_int32_t color11 = img.get(1.0f, 1.0f);
-    REQUIRE(color11 == 0xff000000); // black corner
+    REQUIRE(color11 == 0x000000ff); // black corner
+}
+
+TEST_CASE("check blue texture many (u,v) points")
+{
+    minity::image img{};
+    bool res = img.load("test/materials/test_image_blue_100x100.png");
+    REQUIRE(res);
+    REQUIRE(img.width == 100);
+    REQUIRE(img.height == 100);
+    REQUIRE(img.components == 4);
+    for (float u : {0.0f, 0.5f, 1.0f})
+    {
+        for (float v : {0.0f, 0.5f, 1.0f})
+        {
+            u_int32_t color00 = img.get(u, v);
+            REQUIRE(color00 == 0x0000ffff); // blue
+        }
+    }
 }
