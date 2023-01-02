@@ -126,6 +126,8 @@ bool render(const minity::model &model, const camera &camera, const light &light
     {
         stats.faces++;
 
+        std::cout << "face #" << stats.faces << std::endl;
+
         // TODO: move color to model
         u_int32_t faceColor = yellow; // simple fallback if no texture
 
@@ -228,9 +230,12 @@ bool render(const minity::model &model, const camera &camera, const light &light
         // Begin rasterization, working in screen space
 
         // fragment shader (works on triangles)
-        vec3 vt1 = vects[screenSpace][0];
-        vec3 vt2 = vects[screenSpace][1];
-        vec3 vt3 = vects[screenSpace][2];
+        vec3 v1 = vects[screenSpace][0];
+        vec3 v2 = vects[screenSpace][1];
+        vec3 v3 = vects[screenSpace][2];
+        // vec3 v1 = vects[clipSpace][0];
+        // vec3 v2 = vects[clipSpace][1];
+        // vec3 v3 = vects[clipSpace][2];
         vec3 nt1{};
         vec3 nt2{};
         vec3 nt3{};
@@ -288,7 +293,7 @@ bool render(const minity::model &model, const camera &camera, const light &light
         auto vCameraRay = v3Normalize(v3Sub(vec3{0}, vects[viewSpace][0])); // in view space camera is at origin, so pick one vertice and calculate direction towards it
         auto camDot = v3DotProduct(faceNormal, vCameraRay);
 
-        if (camDot < 0.0f)
+        if (camDot <= 0.0f)
         {
             // std::cout << "CULLING face normal: " << faceNormal << " camera:" << vCameraRay << " dot: " << std::to_string(camDot) << std::endl << std::endl;
             // std::cout << "            face[0]: " << view.vertices[0].str() << " [1]: " << view.vertices[1].str() << " [2]: " << view.vertices[2].str() << std::endl;
@@ -308,13 +313,13 @@ bool render(const minity::model &model, const camera &camera, const light &light
         }
 
         /* get the bounding box of the triangle */
-        int maxX = std::max(vt1.x, std::max(vt2.x, vt3.x));
-        int minX = std::min(vt1.x, std::min(vt2.x, vt3.x));
-        int maxY = std::max(vt1.y, std::max(vt2.y, vt3.y));
-        int minY = std::min(vt1.y, std::min(vt2.y, vt3.y));
+        int maxX = std::max(v1.x, std::max(v2.x, v3.x));
+        int minX = std::min(v1.x, std::min(v2.x, v3.x));
+        int maxY = std::max(v1.y, std::max(v2.y, v3.y));
+        int minY = std::min(v1.y, std::min(v2.y, v3.y));
 
-        // std::cout << "vt1:" << vt1.str() << " vt2:" << vt2.str() << " vt3:" << vt3.str() <<std::endl;
-        // std::cout << "BB:("<<minX<<","<<minY<<") ("<<maxX<<","<<maxY<<")"<<std::endl;
+        std::cout << "v1:" << v1.str() << " v2:" << v2.str() << " v3:" << v3.str() <<std::endl;
+        std::cout << "BB:("<<minX<<","<<minY<<") ("<<maxX<<","<<maxY<<")"<<std::endl;
 
         // barycentric coordinates
         float u{0};
@@ -328,6 +333,7 @@ bool render(const minity::model &model, const camera &camera, const light &light
 
                 vec3 point  = {static_cast<float>(x), static_cast<float>(y), 0}; // IS THIS 0 CORRECT ???
                 barycentricCoordinatesAt(vects[screenSpace], point, u, v, w);
+                // barycentricCoordinatesAt(vects[clipSpace], point, u, v, w);
 
                 if (u < 0 || v < 0 || w < 0)
                 {
@@ -346,12 +352,21 @@ bool render(const minity::model &model, const camera &camera, const light &light
 
                 // z-buffer (depth) check
                 // get the z value for this point using the barymetric coordinates:
-                float z = vt1.z * u + vt2.z * v + vt3.z * w;
+                // float z = v1.z * u + v2.z * v + v3.z * w;
+                // we need to use 1/z because the depth cannot be interpolated linearly!
+                // see: https://gabrielgambetta.com/computer-graphics-from-scratch/12-hidden-surface-removal.html#why-1z-instead-of-z
+                // and https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/visibility-problem-depth-buffer-depth-interpolation.html
+                float inv_z = u / v1.z + v / v2.z + w / v3.z;
+                // std::cout << "Z-buffer check: inv_z (bary) " << inv_z << " z-buffer(x,y) " << g_DepthBuffer[y * g_SDLWidth + x] << std::endl;
 
 
                 // std::cout << x << " " << y << " " << z << " vs (" << g_DepthBuffer[y * g_SDLWidth + x] << ")" << std::endl;
                 // TODO: < or <= here? Do we draw the new pixel if x, y, z are the same?
-                if (z < g_DepthBuffer[y * g_SDLWidth + x])
+                // camera looks at Z- so
+                // furthest away 1/z is 1/-inf = -0 and
+                // close 1/z is e.g. 1/-10 = -0.1
+                // so we need to compare with <=
+                if (inv_z <= g_DepthBuffer[y * g_SDLWidth + x])
                 {
 
                     u_int32_t c = faceColor;
@@ -364,8 +379,37 @@ bool render(const minity::model &model, const camera &camera, const light &light
                         vec2 tc1 = texc[0];
                         vec2 tc2 = texc[1];
                         vec2 tc3 = texc[2];
+
+                        std::cout << "v1 " << v1 << " v2 " << v2 << " v3 " << v3 << std::endl;
+                        std::cout << "tc1 " << tc1 << " tc2 " << tc2 << " tc3 " << tc3 << std::endl;
+
+                        // working (u,v) coordinates that have the perspective dent
                         float uu = tc1.u * u + tc2.u * v + tc3.u * w;
                         float vv = tc1.v * u + tc2.v * v + tc3.v * w;
+
+                        // uu *= -inv_z; // NO
+                        // vv *= -inv_z; // NO
+                        // trials to get the perspective correction to work:
+                        // float uu = u / tc1.u + v / tc2.u + w / tc3.u;
+                        // float vv = u / tc1.v + v / tc2.v + w / tc3.v;
+
+                        // float uu = tc1.u * u / -v1.z + tc2.u * v / -v2.z + tc3.u * w / -v3.z;
+                        // float vv = tc1.v * u / -v1.z + tc2.v * v / -v2.z + tc3.v * w / -v3.z;
+                        // float inv_z2 = u / -v1.z + v / -v2.z + w / -v3.z;
+                        // // uu *= inv_z2;
+                        // // vv *= inv_z2;
+                        // uu /= inv_z2;
+                        // vv /= inv_z2;
+
+                        float uup = tc1.u * u / v1.z + tc2.u * v / v2.z + tc3.u * w / v3.z;
+                        float vvp = tc1.v * u / v1.z + tc2.v * v / v2.z + tc3.v * w / v3.z;
+                        uup /= inv_z;
+                        vvp /= inv_z;
+
+
+                        std::cout << "texture coordinates (affine): " << uu << ", " << vv << std::endl;
+                        std::cout << "texture coordinates (persp.): " << uup << ", " << vvp << std::endl;
+
                         c = model.texture->get(uu, vv);
                         // std::cout << "texture coordinates: " << uu << ", " << vv << " color: ";
                         // printColor(c);
@@ -383,7 +427,7 @@ bool render(const minity::model &model, const camera &camera, const light &light
 
                     // std::cout << "drawing to " << p << std::endl;
                     g_SDLBackBuffer[y * g_SDLWidth + x] = c;
-                    g_DepthBuffer[y * g_SDLWidth + x] = z;
+                    g_DepthBuffer[y * g_SDLWidth + x] = inv_z;
                     stats.drawnPoints++;
                 }
                 else

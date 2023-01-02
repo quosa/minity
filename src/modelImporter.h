@@ -20,7 +20,18 @@ struct vec2
 {
     float u = 0;
     float v = 0;
+    friend std::ostream& operator<<(std::ostream& os, const vec2 &value);
 };
+
+std::ostream& operator<<( std::ostream &os, const vec2 &value )
+{
+    os << "("
+            + std::to_string(value.u)
+            + ", " + std::to_string(value.v)
+            + ")";
+    return os;
+}
+
 
 struct model
 {
@@ -54,6 +65,7 @@ private:
     bool alignFaces(bool reverseWinding);
 };
 
+// OLD:
 // struct mesh
 // {
 //     bool enabled = true;
@@ -73,7 +85,7 @@ scene
             * full: f 1/29/52 2/24/52 3/52/27
             * no normals: f v1/vt1 v2/vt2 v3/vt3 ...
             * no texture coordinates: f v1//vn1 v2//vn2 v3//vn3 ...
-            * NOTE: can have polygons by having more then 3 items
+            * NOTE: can have polygons that have more than 3 vertices
         - vertices (x, y, z, [w]) v-lines, w=1.0 by default
             - ??? vertex colors, no w ???
         - normals (x,y,z) !!! might not be normalized to unit vectors !!!

@@ -186,8 +186,12 @@ void SDLClearBuffers()
 
     // g_DepthBuffer = new float[windowWidth * windowHeight];
     // camera is looking towards positize z axis, so z_max is infinity
-    float inf = std::numeric_limits<float>::infinity();
-    memset_pattern4(g_DepthBuffer, &inf, g_SDLWidth * g_SDLHeight * sizeof(float));
+    // float inf = std::numeric_limits<float>::infinity();
+    // memset_pattern4(g_DepthBuffer, &inf, g_SDLWidth * g_SDLHeight * sizeof(float));
+    // after calculating the 1/z, we initialize to 0 and keep higher values (smaller z)
+    float negInf = -std::numeric_limits<float>::infinity();
+    float invNegInf = 1.0f / negInf;
+    memset_pattern4(g_DepthBuffer, &invNegInf, g_SDLWidth * g_SDLHeight * sizeof(float));
 }
 
 void SDLSwapBuffers(/*color_t * backbuffer*/)

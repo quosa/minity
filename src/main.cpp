@@ -46,7 +46,9 @@ void newScenario()
 
     std::shared_ptr<minity::image> boxTexture = std::make_shared<minity::image>();
     // ok = boxTexture->load("test/materials/test_image_blue_100x100.png", false); // flip
-    ok = boxTexture->load("test/materials/test_image_100x100.png", false); // flip
+    // ok = boxTexture->load("test/materials/test_image_100x100.png", false); // flip
+    // ok = boxTexture->load("test/materials/texture_uvgrid01.jpg", false); // flip
+    ok = boxTexture->load("test/materials/grid.tga", false); // flip
     assert(ok);
 
     minity::model teapot{};
@@ -71,13 +73,13 @@ void newScenario()
     // NO DIFFERENCE IN RENDERING, AFFECTS THE FACE ORDER
     assert(ok);
     bbox.scale = vec3{2.0f, 2.0f, 2.0f};
-    bbox.rotation = vec3{deg2rad(30), deg2rad(30), deg2rad(0)};
+    bbox.rotation = vec3{deg2rad(0), deg2rad(30), deg2rad(0)};
     bbox.translation = vec3{0.0f, 0.0f, -3.0f};
     // bbox.hasNormals = false;
     // bbox.printModelInfo(true);
     // bbox.printModelInfo();
     // bbox.dumpModel();
-    // bbox.addTexture(boxTexture);
+    bbox.addTexture(boxTexture);
 
     minity::model sphere{};
     ok = sphere.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
@@ -108,21 +110,37 @@ void newScenario()
     std::cout << "image and model imports successful" << std::endl;
 
 
+    // minity::model test{};
+    // test.numFaces = 1;
+    // test.hasNormals = true;
+    // test.hasTextureCoordinates = true;
+    // test.addTexture(boxTexture);
+    // // clockwise winding order, i.e. center > up > right (left-hand rule!!!)
+    // test.vertices = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}}; // x, y, z (w=1.0)
+    // test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
+    // test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
+    // test.faces = {{0, 1, 2}}; // [[v1_idx, v2_idx, v3_idx], [...
+    // test.scale = vec3{1.0f, 1.0f, 1.0f};
+    // test.translation = vec3{0.0f, 0.0f, 0.0f};
+    // test.rotation = vec3{deg2rad(0), deg2rad(-45), deg2rad(0)};
+    // // test.printModelInfo();
+    // // test.dumpModel();
+
     minity::model test{};
     test.numFaces = 1;
     test.hasNormals = true;
-    test.hasTextureCoordinates = true;
+    test.hasTextureCoordinates = true; // false to disable texture mapping
     test.addTexture(boxTexture);
     // clockwise winding order, i.e. center > up > right (left-hand rule!!!)
-    test.vertices = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}}; // x, y, z (w=1.0)
-    test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
-    test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
-    test.faces = {{0, 1, 2}}; // [[v1_idx, v2_idx, v3_idx], [...
-    test.scale = vec3{1.0f, 1.0f, 1.0f};
-    test.translation = vec3{0.0f, 0.0f, 0.0f};
-    test.rotation = vec3{deg2rad(0), deg2rad(-45), deg2rad(0)};
+    test.vertices = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}}; // x, y, z (w=1.0)
+    test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
+    test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
+    test.faces = {{0, 1, 2}, {3, 4, 5}}; // [[v1_idx, v2_idx, v3_idx], [...
+    test.scale = vec3{4.0f, 4.0f, 4.0f};
+    test.translation = vec3{0.0f, -2.0f, 0.0f};
+    test.rotation = vec3{deg2rad(0), deg2rad(45), deg2rad(0)};
     // test.printModelInfo();
-    // test.dumpModel();
+    test.dumpModel();
 
     minity::init();
 
@@ -146,8 +164,8 @@ void newScenario()
     // ok = minity::render(bbox, camera, light); // OK
     // ok = minity::render(sphere, camera, light); // OK
     // ok = minity::render(male, camera, light); // ??? model is broken ???
-    ok = minity::render(head, camera, light); // OK
-    // ok = minity::render(test, camera, light); // OK
+    // ok = minity::render(head, camera, light); // OK
+    ok = minity::render(test, camera, light); // OK
     if (!ok)
     {
         std::cerr << "Trouble rendering model" << std::endl;
