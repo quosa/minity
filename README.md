@@ -59,3 +59,7 @@ Simple statistics window (turn on with [F1]) to get basic fps and library inform
 
 Head model with texture (incomplete mesh split and no eye/lash textures)
 ![Minity showing a textured head](./doc/img/minity-head-with-texture.png "Minity showing a head with texture")
+
+Texture with perspective-correct interpolation (no dent in face)
+
+![Minity showing texture perspective correct interpolation](./doc/img/texture_with_perspective_correction.png "Minity showing texture perspective correct interpolation")
