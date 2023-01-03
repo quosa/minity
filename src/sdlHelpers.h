@@ -9,8 +9,8 @@
 
 struct config
 {
-    bool drawNormals = false; // n key
-    bool drawWireframe = false; // l key
+    bool drawNormals = true; // n key
+    bool drawWireframe = true; // l key
     bool fillTriangles = true; // f key
     bool show_stats_window = false; // F1 key
 };

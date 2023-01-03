@@ -138,8 +138,15 @@ void newScenario()
     test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
     test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
     test.faces = {{0, 1, 2}, {3, 4, 5}}; // [[v1_idx, v2_idx, v3_idx], [...
-    test.scale = vec3{4.0f, 4.0f, 4.0f};
-    test.translation = vec3{-1.0f, -2.0f, 2.0f};
+
+    // these go a bit outside the viewport
+    // test.scale = vec3{4.0f, 4.0f, 4.0f};
+    // test.translation = vec3{-1.0f, -2.0f, 2.0f};
+
+    // to make the face fit inside teh viewport
+    test.scale = vec3{2.0f, 2.0f, 2.0f};
+    test.translation = vec3{-1.0f, -1.0f, 2.0f};
+
     test.rotation = vec3{deg2rad(0), deg2rad(45), deg2rad(0)};
     // test.printModelInfo();
     // test.dumpModel();
@@ -161,13 +168,13 @@ void newScenario()
 
     // draw the model just once
     // todo: move all to a scene that is rendered
-    // ok = minity::render(teapot, camera, light); // OK
+    ok = minity::render(teapot, camera, light); // OK
     // ok = minity::render(box, camera, light); // OK
     // ok = minity::render(bbox, camera, light); // OK
     // ok = minity::render(sphere, camera, light); // OK
     // ok = minity::render(male, camera, light); // ??? model is broken ???
     // ok = minity::render(head, camera, light); // OK
-    ok = minity::render(test, camera, light); // OK
+    // ok = minity::render(test, camera, light); // OK
     if (!ok)
     {
         std::cerr << "Trouble rendering model" << std::endl;
