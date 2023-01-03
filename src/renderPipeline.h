@@ -38,7 +38,8 @@ enum spaceType
     worldSpace = 0,
     viewSpace = 1,
     clipSpace = 2,
-    screenSpace = 3
+    screenSpace = 3,
+    ndcCoordinates = 4
 };
 
 struct renderStats
@@ -126,16 +127,14 @@ bool render(const minity::model &model, const camera &camera, const light &light
     {
         stats.faces++;
 
-        std::cout << "face #" << stats.faces << std::endl;
-
         // TODO: move color to model
         u_int32_t faceColor = yellow; // simple fallback if no texture
 
         // SEE: spaceType enum for indices
         // 0 = world, 1 = view, 2 = clip/projected space
-        vec3 vects[4][3] = {};
-        vec3 norms[4][3] = {};
-        vec2 texc[3] = {};
+        vec3 vects[5][3] = {};
+        vec3 norms[5][3] = {};
+        vec2 texc[3] = {}; // model u, v for each (model) vertice
 
         // vertex shader (works on vertices)
         for (int idx : face)
@@ -186,12 +185,17 @@ bool render(const minity::model &model, const camera &camera, const light &light
 
             // normalise into cartesian space
             vec3 vClip = vects[clipSpace][idx % 3];
-            vects[clipSpace][idx % 3] = v3Div(vClip, vClip.w);
+            vects[ndcCoordinates][idx % 3] = v3Div(vClip, vClip.w);
             if (model.hasNormals)
             {
                 vec3 nClip = norms[clipSpace][idx % 3]; // ???
-                norms[clipSpace][idx % 3] = v3Div(nClip, nClip.w); // ???
+                norms[ndcCoordinates][idx % 3] = v3Div(nClip, nClip.w); // ???
             }
+            // if (model.hasTextureCoordinates)
+            // {
+            //     texc[1][idx % 3].u = texc[idx % 3].u / vClip.w;
+            //     texc[1][idx % 3].v = texc[idx % 3].v / vClip.w;
+            // }
 
             // Here triangles are in NDC SPACE x, y, z in [-1,1]
 
@@ -213,7 +217,7 @@ bool render(const minity::model &model, const camera &camera, const light &light
             // (x=1, y=1) -> (sWidth, 0)
             // (x=1, y=-1) -> (sWidth, sHeight)
             // z=-1 -> 0 and z=1 -> 1
-            vec3 v = multiplyVec3(vects[clipSpace][idx % 3], viewMatrix);
+            vec3 v = multiplyVec3(vects[ndcCoordinates][idx % 3], viewMatrix);
             v.x = (v.x + 1.0f) * static_cast<float>(g_SDLWidth) / 2.0f;
             v.y = (1.0f - ((v.y + 1.0f) / 2.0f)) * static_cast<float>(g_SDLHeight);
             // z is retained as -1 .. 1 for z-buffering
@@ -233,17 +237,14 @@ bool render(const minity::model &model, const camera &camera, const light &light
         vec3 v1 = vects[screenSpace][0];
         vec3 v2 = vects[screenSpace][1];
         vec3 v3 = vects[screenSpace][2];
-        // vec3 v1 = vects[clipSpace][0];
-        // vec3 v2 = vects[clipSpace][1];
-        // vec3 v3 = vects[clipSpace][2];
-        vec3 nt1{};
-        vec3 nt2{};
-        vec3 nt3{};
+        vec3 n1{};
+        vec3 n2{};
+        vec3 n3{};
         if (model.hasNormals)
         {
-            nt1 = norms[viewSpace][0];
-            nt2 = norms[viewSpace][1];
-            nt3 = norms[viewSpace][2];
+            n1 = norms[viewSpace][0];
+            n2 = norms[viewSpace][1];
+            n3 = norms[viewSpace][2];
         }
 
         // TODO: if the model does not have texture and texture coordinates
@@ -318,8 +319,8 @@ bool render(const minity::model &model, const camera &camera, const light &light
         int maxY = std::max(v1.y, std::max(v2.y, v3.y));
         int minY = std::min(v1.y, std::min(v2.y, v3.y));
 
-        std::cout << "v1:" << v1.str() << " v2:" << v2.str() << " v3:" << v3.str() <<std::endl;
-        std::cout << "BB:("<<minX<<","<<minY<<") ("<<maxX<<","<<maxY<<")"<<std::endl;
+        // std::cout << "v1:" << v1.str() << " v2:" << v2.str() << " v3:" << v3.str() <<std::endl;
+        // std::cout << "BB:("<<minX<<","<<minY<<") ("<<maxX<<","<<maxY<<")"<<std::endl;
 
         // barycentric coordinates
         float u{0};
@@ -331,9 +332,11 @@ bool render(const minity::model &model, const camera &camera, const light &light
             for (int y = minY; y <= maxY; y++)
             {
 
+                // TODO: many implementations move the inspection point to center of pixel
+                //       need to compare the output and see if this helps with tears etc.
+                // vec3 point  = {static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f, 0};
                 vec3 point  = {static_cast<float>(x), static_cast<float>(y), 0}; // IS THIS 0 CORRECT ???
                 barycentricCoordinatesAt(vects[screenSpace], point, u, v, w);
-                // barycentricCoordinatesAt(vects[clipSpace], point, u, v, w);
 
                 if (u < 0 || v < 0 || w < 0)
                 {
@@ -352,11 +355,13 @@ bool render(const minity::model &model, const camera &camera, const light &light
 
                 // z-buffer (depth) check
                 // get the z value for this point using the barymetric coordinates:
-                // float z = v1.z * u + v2.z * v + v3.z * w;
+                float z = v1.z * u + v2.z * v + v3.z * w;
+
                 // we need to use 1/z because the depth cannot be interpolated linearly!
                 // see: https://gabrielgambetta.com/computer-graphics-from-scratch/12-hidden-surface-removal.html#why-1z-instead-of-z
                 // and https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/visibility-problem-depth-buffer-depth-interpolation.html
-                float inv_z = u / v1.z + v / v2.z + w / v3.z;
+                // float inv_z = u / v1.z + v / v2.z + w / v3.z;
+
                 // std::cout << "Z-buffer check: inv_z (bary) " << inv_z << " z-buffer(x,y) " << g_DepthBuffer[y * g_SDLWidth + x] << std::endl;
 
 
@@ -366,7 +371,8 @@ bool render(const minity::model &model, const camera &camera, const light &light
                 // furthest away 1/z is 1/-inf = -0 and
                 // close 1/z is e.g. 1/-10 = -0.1
                 // so we need to compare with <=
-                if (inv_z <= g_DepthBuffer[y * g_SDLWidth + x])
+                // if (inv_z <= g_DepthBuffer[y * g_SDLWidth + x])
+                if (z <= g_DepthBuffer[y * g_SDLWidth + x])
                 {
 
                     u_int32_t c = faceColor;
@@ -376,39 +382,84 @@ bool render(const minity::model &model, const camera &camera, const light &light
                     if (model.hasTextureCoordinates && model.hasTexture)
                     {
                         // get u, v and the corresponding pixel
+
+#if 0 // texture perspective correction
+                        // https://en.wikipedia.org/wiki/Texture_mapping#Perspective_correctness
+                        // https://medium.com/@aminere/software-rendering-from-scratch-f60127a7cd58
+                        // "Perspective correct interpolation"
+                        vec3 tc1 = {texc[0].u, texc[0].v, 1};
+                        vec3 tc2 = {texc[1].u, texc[1].v, 1};
+                        vec3 tc3 = {texc[2].u, texc[2].v, 1};
+                        std::cout << "model texture coordinates: " << tc1 << ", " << tc2 << ", " << tc3 << std::endl;
+                        tc1 = v3Div(tc1, vects[clipSpace][0].w);
+                        tc2 = v3Div(tc1, vects[clipSpace][1].w);
+                        tc3 = v3Div(tc1, vects[clipSpace][2].w);
+                        std::cout << "texture coordinates / clip.w: " << tc1 << ", " << tc2 << ", " << tc3 << std::endl;
+
+                        // float wt = coords.x * at.z + coords.y * bt.z + coords.z * ct.z;
+                        float wt = u * tc1.z + v * tc2.z + w * tc3.z;
+                        std::cout << "wt " << wt << std::endl;
+
+                        float uu = (tc1.x * u + tc2.x * v + tc3.x * w) / wt;
+                        float vv = (tc1.y * u + tc2.y * v + tc3.y * w) / wt;
+                        std::cout << "texture coordinates: " << uu << ", " << vv << std::endl;
+#endif // texture perspective correction
+
+#if 0 // affine texture mapping
+                        // https://en.wikipedia.org/wiki/Texture_mapping#Affine_texture_mapping
+                        // working (u,v) coordinates that have the perspective dent
+
+                        vec2 tc1 = texc[0];
+                        vec2 tc2 = texc[1];
+                        vec2 tc3 = texc[2];
+                        float uu = tc1.u * u + tc2.u * v + tc3.u * w;
+                        float vv = tc1.v * u + tc2.v * v + tc3.v * w;
+
+                        // std::cout << "v1 " << v1 << " v2 " << v2 << " v3 " << v3 << std::endl;
+                        // std::cout << "tc1 " << tc1 << " tc2 " << tc2 << " tc3 " << tc3 << std::endl;
+#endif // affine
+
+#if 1 // clip-space barycentric coordinates
+                        // https://stackoverflow.com/questions/74542222/whats-the-relationship-between-the-barycentric-coordinates-of-triangle-in-clip
+                        // and
+                        // https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation
+
+                        // std::cout << "screen space calculated  barycentric coordinates: " << u << ", " << v << ", " << w << std::endl;
+                        // assert(u >= 0 && v >= 0 && w >= 0 && u + v + w == 1);
+                        assert(u >= 0 && v >= 0 && w >= 0);
+                        assert(1.0f - (u + v + w) < 1.0e-4f);
+
+                        // model u,v texture coordinates [0,1]
                         vec2 tc1 = texc[0];
                         vec2 tc2 = texc[1];
                         vec2 tc3 = texc[2];
 
-                        std::cout << "v1 " << v1 << " v2 " << v2 << " v3 " << v3 << std::endl;
-                        std::cout << "tc1 " << tc1 << " tc2 " << tc2 << " tc3 " << tc3 << std::endl;
+                        // std::cout << "model texture coordinates: " << tc1 << ", " << tc2 << ", " << tc3 << std::endl;
 
-                        // working (u,v) coordinates that have the perspective dent
-                        float uu = tc1.u * u + tc2.u * v + tc3.u * w;
-                        float vv = tc1.v * u + tc2.v * v + tc3.v * w;
+                        /*
+                        from: https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation
 
-                        // uu *= -inv_z; // NO
-                        // vv *= -inv_z; // NO
-                        // trials to get the perspective correction to work:
-                        // float uu = u / tc1.u + v / tc2.u + w / tc3.u;
-                        // float vv = u / tc1.v + v / tc2.v + w / tc3.v;
+                        The formula that you will find in the GL specification (look on page 427;
+                        the link is the current 4.4 spec, but it has always been that way) for
+                        perspective-corrected interpolation of the attribute value in a triangle is:
 
-                        // float uu = tc1.u * u / -v1.z + tc2.u * v / -v2.z + tc3.u * w / -v3.z;
-                        // float vv = tc1.v * u / -v1.z + tc2.v * v / -v2.z + tc3.v * w / -v3.z;
-                        // float inv_z2 = u / -v1.z + v / -v2.z + w / -v3.z;
-                        // // uu *= inv_z2;
-                        // // vv *= inv_z2;
-                        // uu /= inv_z2;
-                        // vv /= inv_z2;
+                           a * f_a / w_a   +   b * f_b / w_b   +  c * f_c / w_c
+                        f=-----------------------------------------------------
+                            a / w_a      +      b / w_b      +     c / w_c
 
-                        float uup = tc1.u * u / v1.z + tc2.u * v / v2.z + tc3.u * w / v3.z;
-                        float vvp = tc1.v * u / v1.z + tc2.v * v / v2.z + tc3.v * w / v3.z;
-                        uup /= inv_z;
-                        vvp /= inv_z;
+                        where a,b,c denote the barycentric coordinates of the point in the triangle
+                        we are interpolating for (a,b,c >=0, a+b+c = 1), f_i the attribute value at
+                        vertex i, and w_i the clip space w coordinate of vertex i. Note that the
+                        barycentric coordinates are calculated only for the 2D projection of the
+                        window space coords of the triangle (so z is ignored).
+                        */
 
+                        float denominator = u / vects[clipSpace][0].w   +   v / vects[clipSpace][1].w  +   w / vects[clipSpace][2].w;
+                        float uu = ( u * tc1.u / vects[clipSpace][0].w   +   v * tc2.u / vects[clipSpace][1].w  +   w * tc3.u / vects[clipSpace][2].w ) / denominator;
+                        float vv = ( u * tc1.v / vects[clipSpace][0].w   +   v * tc2.v / vects[clipSpace][1].w  +   w * tc3.v / vects[clipSpace][2].w ) / denominator;
+                        // std::cout << "texture coordinates: " << uu << ", " << vv << std::endl;
 
-                        std::cout << "texture coordinates (affine): " << uu << ", " << vv << std::endl;
-                        std::cout << "texture coordinates (persp.): " << uup << ", " << vvp << std::endl;
+#endif // clip-space barycentric coordinates
 
                         c = model.texture->get(uu, vv);
                         // std::cout << "texture coordinates: " << uu << ", " << vv << " color: ";
@@ -418,7 +469,7 @@ bool render(const minity::model &model, const camera &camera, const light &light
 
                     if (model.hasNormals)
                     {
-                        vec3 vn =  v3Normalize(v3Add(v3Add(v3Mul(nt1, u), v3Mul(nt2, v)), v3Mul(nt3, w)));
+                        vec3 vn =  v3Normalize(v3Add(v3Add(v3Mul(n1, u), v3Mul(n2, v)), v3Mul(n3, w)));
                         float dp = std::max(0.1f, v3DotProduct(lightDirection, vn));
                         c = adjustColor(c, dp);
                         // std::cout << "barycentric normal " << vn << " dp is " << dp << std::endl;
@@ -427,7 +478,8 @@ bool render(const minity::model &model, const camera &camera, const light &light
 
                     // std::cout << "drawing to " << p << std::endl;
                     g_SDLBackBuffer[y * g_SDLWidth + x] = c;
-                    g_DepthBuffer[y * g_SDLWidth + x] = inv_z;
+                    g_DepthBuffer[y * g_SDLWidth + x] = z;
+                    // g_DepthBuffer[y * g_SDLWidth + x] = inv_z;
                     stats.drawnPoints++;
                 }
                 else

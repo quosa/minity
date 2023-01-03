@@ -45,10 +45,13 @@ void newScenario()
     assert(ok);
 
     std::shared_ptr<minity::image> boxTexture = std::make_shared<minity::image>();
+    // ok = boxTexture->load("test/materials/test_image_10x10.png", false); // flip
     // ok = boxTexture->load("test/materials/test_image_blue_100x100.png", false); // flip
     // ok = boxTexture->load("test/materials/test_image_100x100.png", false); // flip
-    // ok = boxTexture->load("test/materials/texture_uvgrid01.jpg", false); // flip
-    ok = boxTexture->load("test/materials/grid.tga", false); // flip
+    ok = boxTexture->load("test/materials/texture_uvgrid01.jpg", false); // flip
+
+    // NOTE: fine grid suffers from aliasing / Moire pattern problems due to missing mipmap
+    // ok = boxTexture->load("test/materials/grid.tga", false); // flip
     assert(ok);
 
     minity::model teapot{};
@@ -109,7 +112,6 @@ void newScenario()
 
     std::cout << "image and model imports successful" << std::endl;
 
-
     // minity::model test{};
     // test.numFaces = 1;
     // test.hasNormals = true;
@@ -137,10 +139,10 @@ void newScenario()
     test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
     test.faces = {{0, 1, 2}, {3, 4, 5}}; // [[v1_idx, v2_idx, v3_idx], [...
     test.scale = vec3{4.0f, 4.0f, 4.0f};
-    test.translation = vec3{0.0f, -2.0f, 0.0f};
+    test.translation = vec3{-1.0f, -2.0f, 2.0f};
     test.rotation = vec3{deg2rad(0), deg2rad(45), deg2rad(0)};
     // test.printModelInfo();
-    test.dumpModel();
+    // test.dumpModel();
 
     minity::init();
 
