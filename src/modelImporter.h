@@ -308,6 +308,14 @@ bool model::handleLine(const std::string &line)
         // e.g. vt 0.500 1 [0]
         vec2 v;
         s >> junk >> junk >> v.u >> v.v;
+        if (v.u > 1.0f && v.u <= 2.0f)
+            v.u -= 1.0f; // likely indicates tiling
+        if (v.v > 1.0f && v.v <= 2.0f)
+            v.v -= 1.0f; // likely indicates tiling
+        if (v.u < 0.0f && v.u >= -1.0f)
+            v.u += 1.0f; // likely indicates tiling
+        if (v.v < 0.0f && v.v >= -1.0f)
+            v.v += 1.0f; // likely indicates tiling
         textureCoordinates.push_back(v);
     }
     else if (line.rfind("f ", 0) == 0) // face
