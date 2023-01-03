@@ -28,7 +28,7 @@ Working:
  * // wireframe
  * global face color
  * [Phong-shading](https://en.wikipedia.org/wiki/Phong_shading) with normals for a smooth surface
- * textures with model texture coordinates
+ * textures with model texture coordinates with perspective correction
  * basic math tests with [Catch2](https://github.com/catchorg/Catch2)
  * z-buffer check (instead of z-sorting the vertices before rendering)
  * // simple util for generating a sphere
