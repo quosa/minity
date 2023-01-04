@@ -3,29 +3,16 @@
 #include "simpleMath.h"
 #include "modelImporter.h"
 #include "lineDraw.h"
+#include "frameTimer.h"
+#include "scene.h"
 
 namespace minity
 {
-
-const bool flatShading = false;
 
 const u_int32_t blue = 0x0000ffff;
 const u_int32_t yellow = 0xffff00ff;
 
 void barycentricCoordinatesAt(const vec3 face[3], const vec3 &point, float &u, float &v, float &w);
-
-struct camera
-{
-    float fovDegrees = 90.0f;
-    vec3 rotation{};
-    vec3 translation{};
-};
-
-struct light
-{
-    vec3 rotation{};
-    vec3 translation{};
-};
 
 void init()
 {
@@ -80,14 +67,22 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
     return os;
 }
 
-bool render(const minity::model &model, const camera &camera, const light &light)
+bool render(minity::scene scene)
 {
     renderStats stats{};
+    minity::model model = scene.model;
+    minity::camera camera = scene.camera;
+    minity::light light = scene.light;
 
-    std::cout << "rendering a model with " << model.numFaces << " faces, ";
-    std::cout << (model.hasNormals ? "" : "no ") << "normals and ";
-    std::cout << (model.hasTextureCoordinates ? "" : "no ") << "texture coordinates";
-    std::cout << "." << std::endl;
+    if (g_config->renderOnChange)
+    {
+        std::cout << "rendering a model with " << model.numFaces << " faces, ";
+        std::cout << (model.hasNormals ? "" : "no ") << "normals and ";
+        std::cout << (model.hasTextureCoordinates ? "" : "no ") << "texture coordinates";
+        std::cout << "." << std::endl;
+    }
+
+    SDLClearBuffers();
 
     mat4 scaler = scaleMatrix(model.scale.x, model.scale.y, model.scale.z);
     mat4 xRotator = rotateXMatrix(model.rotation.x);
@@ -106,23 +101,10 @@ bool render(const minity::model &model, const camera &camera, const light &light
     // TODO: near and far field to camera structure
     mat4 projector = projectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
 
-    // for basic look-at camera
-    vec3 lookAt{0.0f, 0.0f, 0.0f};
-    vec3 up{0.0f, 1.0f, 0.0f};
-    mat4 cameraMatrix = lookAtMatrixRH( camera.translation, lookAt, up);
+    mat4 viewMatrix = camera.getCameraMatrix();
 
-    mat4 viewMatrix = cameraMatrix;
-
-    // light transformations
-    mat4 lightXRotator = rotateXMatrix(light.rotation.x);
-    mat4 lightYRotator = rotateYMatrix(light.rotation.y);
-    mat4 lightZRotator = rotateZMatrix(light.rotation.z);
-    mat4 lightTranslator = translateMatrix(light.translation.x, light.translation.y, light.translation.z);
-
-    // order matters: scale > rotate > move (=translate)
-    mat4 lightTransformations = multiplyMat4(lightYRotator, lightXRotator);
-    lightTransformations = multiplyMat4(lightZRotator, lightTransformations);
-    lightTransformations = multiplyMat4(lightTranslator, lightTransformations);
+    mat4 lightMatrix = light.getLightTranslationMatrix();
+    (void)lightMatrix; // TODO: use the light for diffusion
 
     for (auto face : model.faces)
     {
@@ -310,8 +292,8 @@ bool render(const minity::model &model, const camera &camera, const light &light
             // FLAT SHADING
             float dp = std::max(0.1f, v3DotProduct(lightDirection, faceNormal));
             faceColor = adjustColor(faceColor, dp);
-            std::cout << "face normal " << faceNormal << " dp is " << dp << std::endl;
-            printColor(faceColor);
+            // std::cout << "face normal " << faceNormal << " dp is " << dp << std::endl;
+            // printColor(faceColor);
         }
 
         if (g_config->fillTriangles)
@@ -378,7 +360,7 @@ bool render(const minity::model &model, const camera &camera, const light &light
                     // so we need to compare with <=
                     // if (inv_z <= g_DepthBuffer[y * g_SDLWidth + x])
 
-                    std::cout << "z: " << z << " <= " << g_DepthBuffer[y * g_SDLWidth + x] << "?" << std::endl;
+                    // std::cout << "z: " << z << " <= " << g_DepthBuffer[y * g_SDLWidth + x] << "?" << std::endl;
 
                     if (z <= g_DepthBuffer[y * g_SDLWidth + x])
                     {
@@ -537,7 +519,10 @@ bool render(const minity::model &model, const camera &camera, const light &light
     // show the drawn buffer
     SDLSwapBuffers();
 
-    std::cout << stats << std::endl;
+    if (g_config->renderOnChange)
+    {
+        std::cout << stats << std::endl;
+    }
     return true;
 }
 
@@ -581,17 +566,44 @@ void barycentricCoordinatesAt(const vec3 face[3], const vec3 &point, float &u, f
     u = 1.0f - v - w;
 }
 
-void run()
+void run(minity::scene scene)
 {
-    // SDLFPSUpdate(ft->delta());
+    float deltaTime = 0.0f;
+    auto ft = new minity::frameTimer();
 
-    // for now this is just a busy loop
     vec3 inputTranslation{};
     vec3 inputRotation{};
+    vec3 zeroVector{};
+
     while (isRunning(&inputTranslation, &inputRotation))
     {
-        SDL_Delay(100); // some computation budget...
+        SDL_Delay(20); // some computation budget...
 
+        bool inputChange = inputTranslation != zeroVector || inputRotation != zeroVector;
+        if (g_config->renderOnChange && !inputChange)
+        {
+            continue;
+        }
+
+        if (inputChange)
+        {
+            scene.camera.translation = v3Add(scene.camera.translation, inputTranslation);
+            scene.camera.rotation = v3Add(scene.camera.rotation, inputRotation);
+            std::cout << "cam: position " << scene.camera.translation.str()
+                      << " rotation " << scene.camera.rotation.str() << std::flush << std::endl;
+        }
+
+        scene.model.rotation.y += deg2rad(deltaTime * 10.0f);
+
+        bool ok = render(scene);
+        if(!ok)
+        {
+            std::cerr << "rendering failed - exiting" << std::endl;
+            break;
+        }
+
+        SDLFPSUpdate(ft->delta());
+        deltaTime = ft->deltaTime();
         inputTranslation = vec3{};
         inputRotation = vec3{};
     }

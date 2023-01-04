@@ -9,10 +9,11 @@
 
 struct config
 {
-    bool drawNormals = true; // n key
-    bool drawWireframe = true; // l key
+    bool drawNormals = false; // n key
+    bool drawWireframe = false; // l key
     bool fillTriangles = true; // f key
-    bool show_stats_window = false; // F1 key
+    bool showStatsWindow = false; // F1 key
+    bool renderOnChange = false; // r key
 };
 config *g_config = new config();
 
@@ -202,7 +203,7 @@ void SDLSwapBuffers(/*color_t * backbuffer*/)
     SDL_RenderCopy(g_SDLRenderer, g_SDLTexture, NULL, NULL);
 
 
-    if (g_config->show_stats_window)
+    if (g_config->showStatsWindow)
     {
         ImGui_ImplSDLRenderer_NewFrame();
         ImGui_ImplSDL2_NewFrame(g_SDLWindow);
@@ -215,7 +216,7 @@ void SDLSwapBuffers(/*color_t * backbuffer*/)
         avg /= g_fpsSamples.size();
 
         ImGui::SetNextWindowPos(ImVec2(10, 10));
-        ImGui::Begin("Minity Stats Window", &g_config->show_stats_window, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Minity Stats Window", &g_config->showStatsWindow, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("Minity is running at %u fps using %s renderer.", avg, g_SDLRendererType.c_str());
         ImGui::Text("SDL compiled %s, linked %s.", g_SDLVersion.c_str(), g_SDLLinkedVersion.c_str());
         ImGui::Text("ImGui %s.", g_ImGuiVersion.c_str());
@@ -293,9 +294,13 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
             // std::cerr << " swap triangle (f)illing" << std::endl;
             g_config->fillTriangles = g_config->fillTriangles ? false : true;
             break;
+        case SDLK_r:
+            // std::cerr << " (r)ender on change" << std::endl;
+            g_config->renderOnChange = g_config->renderOnChange ? false : true;
+            break;
         case SDLK_F1:
             // std::cerr << " show/hide stats window" << std::endl;
-            g_config->show_stats_window = g_config->show_stats_window ? false : true;
+            g_config->showStatsWindow = g_config->showStatsWindow ? false : true;
             break;
         case SDLK_q:
             return false;

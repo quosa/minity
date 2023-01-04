@@ -6,12 +6,11 @@
 
 #include <iostream>
 
-// #include "originalScenario.h"
-
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "renderPipeline.h"
 #include "imageImporter.h"
 #include "modelImporter.h"
+#include "scene.h" // scene/camera/light/mesh
 
 const std::string usage = R"(
 key bindings:
@@ -21,7 +20,9 @@ key bindings:
     l key      - draw wireframe
     n key      - draw normals
     q key      - quit minity
+    r key      - render on change
     F1 key     - show stats window)";
+
 
 const std::string banner = R"(
 
@@ -165,22 +166,27 @@ void newScenario()
     // light is coming from positive z axis
     light.translation = vec3{0.0f, 0.0f, 10.0f};
 
+    // minity::scene scene{teapot, camera, light};
+    // minity::scene scene{box, camera, light};
+    minity::scene scene{bbox, camera, light};
 
-    // draw the model just once
-    // todo: move all to a scene that is rendered
-    ok = minity::render(teapot, camera, light); // OK
-    // ok = minity::render(box, camera, light); // OK
-    // ok = minity::render(bbox, camera, light); // OK
-    // ok = minity::render(sphere, camera, light); // OK
-    // ok = minity::render(male, camera, light); // ??? model is broken ???
-    // ok = minity::render(head, camera, light); // OK
-    // ok = minity::render(test, camera, light); // OK
-    if (!ok)
-    {
-        std::cerr << "Trouble rendering model" << std::endl;
-    }
+    // TODO BUG:
+    // rendering a model with 960 faces, normals and texture coordinates.
+    // Assertion failed: (0 <= x && x < width), function get, file imageImporter.h, line 48.
+    // minity::scene scene{sphere, camera, light};
 
-    minity::run();
+    // minity::scene scene{male, camera, light};
+    // minity::scene scene{head, camera, light};
+
+    // TODO BUG:
+    // rendering a model with 1 faces, normals and texture coordinates.
+    // Assertion failed: (0 <= y && y < height), function get, file imageImporter.h, line 49.
+    // minity::scene scene{test, camera, light};
+
+    minity::run(scene);
+    // minity::render(scene);
+    // vec3 tmp{};
+    // while (isRunning(&tmp, &tmp)) SDL_Delay(20);
 
     minity::shutdown();
 }
@@ -188,6 +194,5 @@ void newScenario()
 int main()
 {
     std::cout << banner << usage << std::endl;
-    // originalScenario();
     newScenario();
 }

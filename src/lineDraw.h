@@ -30,9 +30,11 @@ void setPixel(int x, int y, float depth, u_int32_t rgba_color)
     {
         g_SDLBackBuffer[y * g_SDLWidth + x] = rgba_color;
         g_DepthBuffer[y * g_SDLWidth + x] = depth;
-    } else {
-        std::cout << "Z: " << depth << " < " << g_DepthBuffer[y * g_SDLWidth + x] << "?" << std::endl;
     }
+    // else
+    // {
+    //     std::cout << "Z: " << depth << " < " << g_DepthBuffer[y * g_SDLWidth + x] << "?" << std::endl;
+    // }
 }
 
 void plotLineLow(int x0, int y0, int x1, int y1, float depth, u_int32_t rgba_color)
