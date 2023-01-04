@@ -3,6 +3,7 @@
 #include "simpleMath.h"
 #include "modelImporter.h"
 #include "lineDraw.h"
+#include "triangleFill.h" // old triangle fill algorithm
 #include "frameTimer.h"
 #include "scene.h"
 
@@ -180,6 +181,10 @@ bool render(minity::scene scene)
         vec3 norms[5][3] = {};
         vec2 texc[3] = {}; // model u, v for each (model) vertice
 
+        // TODO: consider changing this to work on all vertices of a face
+        // instead of individual vertices. Enables us to perform
+        //  back-face culling earlier
+        //
         // vertex shader (works on vertices)
         for (int idx : face)
         {
