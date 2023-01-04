@@ -18,14 +18,16 @@ Design choices:
    * faces follow LEFT-hand rule: e.g. center > up > right and LEFT-thumb points front
 
 Working:
- * object loading from a simple obj file (vertices, faces, normals and texture coordinates)
+ * simple scene object with light, camera and model (no entity hierarchy)
+ * object loading from a simple obj file (vertices, faces, normals, and texture coordinates)
  * object scaling, rotation, and movement (translation)
  * // rudimentary input handling for move ([arrow-keys](https://en.wikipedia.org/wiki/Arrow_keys), +, -) and rotate ([wasd](https://en.wikipedia.org/wiki/Arrow_keys#WASD_keys))
  * // camera rotation and move (TODO: better key mapping for exploration)
  * [orthographic](https://en.wikipedia.org/wiki/Orthographic_projection) perspective correction with fixed [FoV, field-of-view](https://en.wikipedia.org/wiki/Angle_of_view)
- * // rudimentary clipping (TODO: proper clipping)
+ * rudimentary clipping (TODO: proper clipping)
  * face normal check to discard hidden triangles (model needs to be in left-hand/clockwise winding order!)
- * // wireframe
+ * // draw wireframe (buggy still)
+ * // draw normals (buggy still)
  * global face color
  * [Phong-shading](https://en.wikipedia.org/wiki/Phong_shading) with normals for a smooth surface
  * textures with model texture coordinates with perspective correction
@@ -38,12 +40,13 @@ TODO:
  * input handling:
    * camera movement is not good for exploration
    * cannot change the target between mesh/camera/light
- * scene concept
  * wire-frame line color (done) > painting (done) > texturing > anti-aliasing
  * vertex/face color from model
  * jump from classic make to CMake
  * consider `clang-format`
  * add address/thread/memory sanitizer
+ * fix utils / sphere to work again with new model structure
+ * call model->update() or something from run loop
 
 Main influences:
  * [OneLoneCoder/Javidx9](https://github.com/OneLoneCoder): console game engine and 3d videos

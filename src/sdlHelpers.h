@@ -25,7 +25,11 @@ Uint32 *g_SDLBackBuffer;
 float *g_DepthBuffer;
 int g_SDLWidth;
 int g_SDLHeight;
+
+// stats
 std::list<uint> g_fpsSamples(100, 0);
+uint g_avg{0};
+std::string g_stats{};
 
 // runtime config info
 std::string g_SDLVersion;
@@ -209,15 +213,10 @@ void SDLSwapBuffers(/*color_t * backbuffer*/)
         ImGui_ImplSDL2_NewFrame(g_SDLWindow);
         ImGui::NewFrame();
 
-        uint avg = 0;
-        std::list<uint>::const_iterator it;
-        for (it = g_fpsSamples.begin(); it != g_fpsSamples.end(); it++)
-            avg += *it;
-        avg /= g_fpsSamples.size();
-
         ImGui::SetNextWindowPos(ImVec2(10, 10));
         ImGui::Begin("Minity Stats Window", &g_config->showStatsWindow, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("Minity is running at %u fps using %s renderer.", avg, g_SDLRendererType.c_str());
+        ImGui::Text("Minity is running at %u fps using %s renderer.", g_avg, g_SDLRendererType.c_str());
+        ImGui::Text("%s", g_stats.c_str());
         ImGui::Text("SDL compiled %s, linked %s.", g_SDLVersion.c_str(), g_SDLLinkedVersion.c_str());
         ImGui::Text("ImGui %s.", g_ImGuiVersion.c_str());
         ImGui::End();
@@ -336,12 +335,12 @@ void SDLFPSUpdate(uint fps)
     g_fpsSamples.push_front(fps);
     g_fpsSamples.pop_back();
 
-    uint avg = 0;
+    g_avg = 0;
     std::list<uint>::const_iterator it;
     for (it = g_fpsSamples.begin(); it != g_fpsSamples.end(); it++)
-        avg += *it;
-    avg /= g_fpsSamples.size();
+        g_avg += *it;
+    g_avg /= g_fpsSamples.size();
 
-    std::string fpsText = "minity - " + std::to_string(avg) + " fps";
+    std::string fpsText = "minity - " + std::to_string(g_avg) + " fps";
     SDL_SetWindowTitle(g_SDLWindow, fpsText.c_str());
 }

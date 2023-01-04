@@ -12,7 +12,66 @@ namespace minity
 const u_int32_t blue = 0x0000ffff;
 const u_int32_t yellow = 0xffff00ff;
 
-void barycentricCoordinatesAt(const vec3 face[3], const vec3 &point, float &u, float &v, float &w);
+// Barycentric:
+// https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+// http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html (2d)
+
+/* THIS IS JUST FOR REFERENCE:
+void Barycentric(Point p, Point a, Point b, Point c, float &u, float &v, float &w)
+{
+    Vector v0 = b - a, v1 = c - a, v2 = p - a;
+    float d00 = Dot(v0, v0);
+    float d01 = Dot(v0, v1);
+    float d11 = Dot(v1, v1);
+    float d20 = Dot(v2, v0);
+    float d21 = Dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    v = (d11 * d20 - d01 * d21) / denom;
+    w = (d00 * d21 - d01 * d20) / denom;
+    u = 1.0f - v - w;
+}
+*/
+struct barycentricCoordinates
+{
+public:
+    // pre-calculate everything that we can before
+    // for x, y hot-path loop
+    void prepare(const vec3 face[3])
+    {
+        v0 = v3Sub(face[1], face[0]); // b - a
+        v1 = v3Sub(face[2], face[0]); // c - a;
+        d00 = v3DotProduct(v0, v0);
+        d01 = v3DotProduct(v0, v1);
+        d11 = v3DotProduct(v1, v1);
+        invDenom = 1.0f / (d00 * d11 - d01 * d01);
+    }
+
+    // calculate only the missing elements for each x, y
+    // and return the corresponding barycentric coordinates
+    // TODO: change out parameters to return a vec3 with the coordinates
+    //       will be used as barycentric.x etc.
+    void barycentricCoordinatesAt(const vec3 face[3], const vec3 &point, float &u, float &v, float &w)
+    {
+        assert(invDenom != 0.0f);
+        v2 = v3Sub(point, face[0]); // p - a;
+        d20 = v3DotProduct(v2, v0);
+        d21 = v3DotProduct(v2, v1);
+        v = (d11 * d20 - d01 * d21) * invDenom;
+        w = (d00 * d21 - d01 * d20) * invDenom;
+        u = 1.0f - v - w;
+    }
+
+private:
+    vec3 v0{0};
+    vec3 v1{0};
+    vec3 v2{0};
+    float d00{0};
+    float d01{0};
+    float d11{0};
+    float d20{0};
+    float d21{0};
+    float invDenom;
+};
 
 void init()
 {
@@ -34,8 +93,9 @@ struct renderStats
 {
     unsigned long int vertices{0};
     unsigned long int faces{0};
-    unsigned long int culled{0};
-    unsigned long int clipped{0};
+    unsigned long int bfCulled{0};
+    unsigned long int vfCulled{0};
+    unsigned long int xyClipped{0};
     unsigned long int drawnFaces{0};
     unsigned long int outside{0};
     unsigned long int inside{0};
@@ -55,14 +115,15 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
     os << "render statistics:" << std::endl
        << "  vertices     " << stats.vertices << std::endl
        << "  faces        " << stats.faces << std::endl
-       << "  culled       " << stats.culled << std::endl
+       << "  bf-culled    " << stats.bfCulled << std::endl
+       << "  vf-culled    " << stats.vfCulled << std::endl
        << "  drawn faces  " << stats.drawnFaces << std::endl
-       << "  clipped      " << stats.clipped << std::endl
+       << "  xy-clipped   " << stats.xyClipped << std::endl
        << "  outside      " << stats.outside << std::endl
        << "  inside       " << stats.inside << std::endl
        << "  in : out     " << pixelPercentage << std::endl
        << "  drawn points " << stats.drawnPoints << std::endl
-       << "  depth       " << stats.depth << std::endl
+       << "  depth        " << stats.depth << std::endl
        << "  buffer size  " << stats.bufferSize << std::endl;
     return os;
 }
@@ -70,9 +131,9 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
 bool render(minity::scene scene)
 {
     renderStats stats{};
-    minity::model model = scene.model;
-    minity::camera camera = scene.camera;
-    minity::light light = scene.light;
+    minity::model &model = scene.model;
+    minity::camera &camera = scene.camera;
+    minity::light &light = scene.light;
 
     if (g_config->renderOnChange)
     {
@@ -140,7 +201,6 @@ bool render(minity::scene scene)
                 texc[idx % 3] = model.textureCoordinates[idx];
             }
 
-
             // Here triangles are in WORLD SPACE
             // i.e. common coordinates for all models in scene
             // only camera, no projection
@@ -174,25 +234,10 @@ bool render(minity::scene scene)
                 vec3 nClip = norms[clipSpace][idx % 3]; // ???
                 norms[ndcCoordinates][idx % 3] = v3Div(nClip, nClip.w); // ???
             }
-            // if (model.hasTextureCoordinates)
-            // {
-            //     texc[1][idx % 3].u = texc[idx % 3].u / vClip.w;
-            //     texc[1][idx % 3].v = texc[idx % 3].v / vClip.w;
-            // }
 
             // Here triangles are in NDC SPACE x, y, z in [-1,1]
 
-            // model can be outside of the view area
-            // vec3 vertice = vects[clipSpace][idx % 3];
-            // assert(vertice.x >= -1 && vertice.x <= 1
-            //     && vertice.y >= -1 && vertice.y <= 1
-            //     && vertice.z >= -1 && vertice.z <= 1);
-
-
-            // TODO: view volume culling (outside frustrum)
-
             // move all vertices to screen space for rasterization
-
             // Assumes -1 .. +1 box
             // Screen coordinates: (0,0) is top-left!
             // (x=-1, y=1) -> (0, 0)
@@ -229,6 +274,46 @@ bool render(minity::scene scene)
             n2 = norms[viewSpace][1];
             n3 = norms[viewSpace][2];
         }
+
+        // view volume culling (outside frustrum)
+        int numFacesOutside = 0;
+        for (auto &v : vects[ndcCoordinates])
+        {
+            if (!(v.x >= -1 && v.x <= 1
+             && v.y >= -1 && v.y <= 1
+             && v.z >= -1 && v.z <= 1))
+             {
+                // std::cout << "vertex outside view frustrum: " << v.str() << std::endl;
+                numFacesOutside += 1;
+             }
+        }
+        switch (numFacesOutside)
+        {
+        case 3:
+            // if all vertices are outside, this triangle can be discarded
+            // std::cout << "discarding face - view volume culling 3 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+            stats.vfCulled++;
+            continue;
+        case 2:
+            // TODO: bring the 2 vertices that are outside to screen border
+            // std::cout << "discarding face - view volume culling 2 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+            stats.vfCulled++;
+            continue;
+        case 1:
+            // TODO: split the base into 2 triangles and change the new vertices to screen border
+            // std::cout << "discarding face - view volume culling 1 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+            stats.vfCulled++;
+            continue;
+        case 0:
+            // face fully within frustrum - render normally
+            break;
+        default:
+            std::cerr << "unknown number of faces putside camera frustrum " << numFacesOutside << " - exiting" << std::endl;
+            exit(1);
+            break;
+        }
+
+        assert(numFacesOutside <= 1);
 
         // TODO: if the model does not have texture and texture coordinates
         // calculate a simple face normal
@@ -268,23 +353,24 @@ bool render(minity::scene scene)
         // TODO: decide if we should take the view or clip space face normal
         // if change: remember to adjust faceNormal and vCameraRay!
         // if I take clip space, flat shading becomes really smooth?
-        // with viewSpace, I get teh flat triangles as expected.
+        // with viewSpace, I get the flat triangles as expected.
 
         // back-face culling - polygons that face away from the camera can be culled
         // we do it in view space (=camera coordinates)
         // cannot do it in world space as we have to anyway adjust for possible camera rotation
 
         auto vCameraRay = v3Normalize(v3Sub(vec3{0}, vects[viewSpace][0])); // in view space camera is at origin, so pick one vertice and calculate direction towards it
-        auto camDot = v3DotProduct(faceNormal, vCameraRay);
+        auto faceDotCamera = v3DotProduct(faceNormal, vCameraRay);
 
-        if (camDot <= 0.0f)
+        if (faceDotCamera <= 0.0f)
         {
-            // std::cout << "CULLING face normal: " << faceNormal << " camera:" << vCameraRay << " dot: " << std::to_string(camDot) << std::endl << std::endl;
+            // std::cout << "CULLING face normal: " << faceNormal << " camera:" << vCameraRay << " dot: " << std::to_string(faceDotCamera) << std::endl << std::endl;
             // std::cout << "            face[0]: " << view.vertices[0].str() << " [1]: " << view.vertices[1].str() << " [2]: " << view.vertices[2].str() << std::endl;
-            stats.culled++;
+            stats.bfCulled++;
             continue;
         }
 
+        // super-simple global Illumination
         vec3 lightDirection = v3Normalize(light.translation);
 
         if (!model.hasNormals)
@@ -313,6 +399,11 @@ bool render(minity::scene scene)
             float u{0};
             float v{0};
             float w{0};
+            barycentricCoordinates bc{};
+
+            // minor optimization: calculate
+            // the constant parts only once
+            bc.prepare(vects[screenSpace]);
 
             for (int x = minX; x <= maxX; x++)
             {
@@ -323,7 +414,9 @@ bool render(minity::scene scene)
                     //       need to compare the output and see if this helps with tears etc.
                     // vec3 point  = {static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f, 0};
                     vec3 point  = {static_cast<float>(x), static_cast<float>(y), 0}; // IS THIS 0 CORRECT ???
-                    barycentricCoordinatesAt(vects[screenSpace], point, u, v, w);
+                    bc.barycentricCoordinatesAt(vects[screenSpace], point, u, v, w);
+
+                    // barycentricCoordinatesAt(vects[screenSpace], point, u, v, w);
 
                     if (u < 0 || v < 0 || w < 0)
                     {
@@ -336,7 +429,7 @@ bool render(minity::scene scene)
                     // clipping #3 to viewport/projection space
                     if (x < 0 || x >= g_SDLWidth || y < 0 || y >= g_SDLHeight)
                     {
-                        stats.clipped++;
+                        stats.xyClipped++;
                         continue; // we're outside the viewport
                     }
 
@@ -522,48 +615,13 @@ bool render(minity::scene scene)
     {
         std::cout << stats << std::endl;
     }
+    std::ostringstream stream;
+    stream << stats;
+    g_stats = stream.str();
+
     return true;
 }
 
-// TODO: change out parameters to return a vec3 with the coordinates
-//       will be used as barycentric.x etc.
-void barycentricCoordinatesAt(const vec3 face[3], const vec3 &point, float &u, float &v, float &w)
-{
-    // Barycentric:
-    // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
-    // http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html (2d)
-
-    /*
-    void Barycentric(Point p, Point a, Point b, Point c, float &u, float &v, float &w)
-    {
-        Vector v0 = b - a, v1 = c - a, v2 = p - a;
-        float d00 = Dot(v0, v0);
-        float d01 = Dot(v0, v1);
-        float d11 = Dot(v1, v1);
-        float d20 = Dot(v2, v0);
-        float d21 = Dot(v2, v1);
-        float denom = d00 * d11 - d01 * d01;
-        v = (d11 * d20 - d01 * d21) / denom;
-        w = (d00 * d21 - d01 * d20) / denom;
-        u = 1.0f - v - w;
-    }
-    */
-
-    // Compute barycentric coordinates (u, v, w) for
-    // point p with respect to triangle (a, b, c)
-    vec3 v0 = v3Sub(face[1], face[0]); // b - a
-    vec3 v1 = v3Sub(face[2], face[0]); // c - a;
-    vec3 v2 = v3Sub(point, face[0]); // p - a;
-    float d00 = v3DotProduct(v0, v0);
-    float d01 = v3DotProduct(v0, v1);
-    float d11 = v3DotProduct(v1, v1);
-    float d20 = v3DotProduct(v2, v0);
-    float d21 = v3DotProduct(v2, v1);
-    float denom = d00 * d11 - d01 * d01;
-    v = (d11 * d20 - d01 * d21) / denom;
-    w = (d00 * d21 - d01 * d20) / denom;
-    u = 1.0f - v - w;
-}
 
 void run(minity::scene scene)
 {
