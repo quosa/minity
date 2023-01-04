@@ -43,3 +43,7 @@ bin/*
 
 # stores imgui window positions
 imgui.ini
+
+# profiling
+instruments.memset.nodelay.trace
+llvm.*

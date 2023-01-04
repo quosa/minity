@@ -16,7 +16,7 @@ else
 
 	CXXFLAGS += -g -O0
 
-	# profiling with clang/llvm
+	# profiling with clang/llvm, see doc/profiling.md
 	# CXXFLAGS += -g -O0 -fprofile-instr-generate -fcoverage-mapping
 	# LDFLAGS += -fprofile-instr-generate
 
