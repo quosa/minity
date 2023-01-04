@@ -500,7 +500,6 @@ bool render(minity::scene scene)
 
         if (g_config->drawNormals)
         {
-            // TODO: v3Div( ... , 10.0f); ?
             vec3 projectedFaceNormal = v3Div(v3Normalize(v3CrossProduct(
                 v3Sub(vects[ndcCoordinates][1], vects[ndcCoordinates][0]),
                 v3Sub(vects[ndcCoordinates][2], vects[ndcCoordinates][0]))),

@@ -166,21 +166,12 @@ void newScenario()
     // light is coming from positive z axis
     light.translation = vec3{0.0f, 0.0f, 10.0f};
 
-    // minity::scene scene{teapot, camera, light};
+    minity::scene scene{teapot, camera, light};
     // minity::scene scene{box, camera, light};
-    minity::scene scene{bbox, camera, light};
-
-    // TODO BUG:
-    // rendering a model with 960 faces, normals and texture coordinates.
-    // Assertion failed: (0 <= x && x < width), function get, file imageImporter.h, line 48.
+    // minity::scene scene{bbox, camera, light};
     // minity::scene scene{sphere, camera, light};
-
     // minity::scene scene{male, camera, light};
     // minity::scene scene{head, camera, light};
-
-    // TODO BUG:
-    // rendering a model with 1 faces, normals and texture coordinates.
-    // Assertion failed: (0 <= y && y < height), function get, file imageImporter.h, line 49.
     // minity::scene scene{test, camera, light};
 
     minity::run(scene);

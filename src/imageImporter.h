@@ -43,8 +43,8 @@ public:
     // 1,1 = bottom-right (or top-right if flipped vertically)
     u_int32_t get(float u, float v) const
     {
-        int x = static_cast<int>(u * width); // [0,width]
-        int y = static_cast<int>(v * height); // [0, height]
+        int x = std::min(static_cast<int>(u * width), width - 1); // [0,width - 1]
+        int y = std::min(static_cast<int>(v * height), height-1); // [0, height - 1]
         assert(0 <= x && x < width);
         assert(0 <= y && y < height);
         assert(_raw_data != nullptr);

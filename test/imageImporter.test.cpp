@@ -172,3 +172,47 @@ TEST_CASE("check blue texture many (u,v) points")
         }
     }
 }
+
+// Assertion failed: (0 <= y && y < height), function get, file imageImporter.h, line 49.
+TEST_CASE("check uv static_cast for 1x1 texture")
+{
+    struct test_scenario {float u, v; int x,y; };
+    std::vector<test_scenario> tests{
+        {0.0f, 0.0f, 0, 0},
+        {1.0f, 0.0f, 0, 0},
+        {0.0f, 1.0f, 0, 0},
+        {1.0f, 1.0f, 0, 0}};
+    int width = 1;
+    int height = 1;
+    for (auto t : tests)
+    {
+        int x = std::min(static_cast<int>(t.u * width), width - 1); // [0,width-1]
+        int y = std::min(static_cast<int>(t.v * height), height-1); // [0, height-1]
+        REQUIRE(x == t.x);
+        REQUIRE(y == t.y);
+    }
+}
+
+TEST_CASE("check uv static_cast for 2x2 texture")
+{
+    struct test_scenario {float u, v; int x, y; };
+    std::vector<test_scenario> tests{
+        {0.0f, 0.0f, 0, 0},
+        {0.49f, 0.0f, 0, 0},
+        {0.49999f, 0.0f, 0, 0},
+        {0.50f, 0.0f, 1, 0}, // 0.5 * 2 = 1
+        {0.99999f, 0.0f, 1, 0},
+        {1.0f, 0.0f, 1, 0}, // 1.0 * 2 = 2 (min takes effect)
+        {1.0f, 0.0f, 1, 0},
+        {0.0f, 1.0f, 0, 1},
+        {1.0f, 1.0f, 1, 1}};
+    int width = 2;
+    int height = 2;
+    for (auto t : tests)
+    {
+        int x = std::min(static_cast<int>(t.u * width), width - 1); // [0,width-1]
+        int y = std::min(static_cast<int>(t.v * height), height-1); // [0, height-1]
+        REQUIRE(x == t.x);
+        REQUIRE(y == t.y);
+    }
+}
