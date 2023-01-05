@@ -6,11 +6,13 @@
 
 #include <iostream>
 
+// scene already imports imageimporter (until moved)
 #define IMAGEIMPORTER_IMPLEMENTATION
+#include "scene.h" // scene/camera/light/mesh
 #include "renderPipeline.h"
 #include "imageImporter.h"
 #include "modelImporter.h"
-#include "scene.h" // scene/camera/light/mesh
+
 
 const std::string usage = R"(
 key bindings:
@@ -55,59 +57,45 @@ void newScenario()
     // ok = boxTexture->load("test/materials/grid.tga", false); // flip
     assert(ok);
 
-    minity::model teapot{};
-    ok = teapot.load("test/models/teapot.obj", true); // reverse winding
-    assert(ok);
-    teapot.scale = vec3{1.0f, 1.0f, 1.0f};
-    teapot.rotation = vec3{deg2rad(30), deg2rad(-30), deg2rad(0)};
-    teapot.translation = vec3{0.0f, -1.5f, 0.0f};
+    minity::modelImporter importer{};
 
-    minity::model box{};
-    ok = box.load("models/box.obj");
-    assert(ok);
-    box.scale = vec3{2.0f, 2.0f, 2.0f};
-    box.rotation = vec3{deg2rad(0), deg2rad(30), deg2rad(0)};
-    box.translation = vec3{0.0f, 0.0f, 1.0f};
+    auto teapot = importer.load("test/models/teapot.obj", true); // reverse winding
+    teapot->scale = vec3{1.0f, 1.0f, 1.0f};
+    teapot->rotation = vec3{deg2rad(30), deg2rad(-30), deg2rad(0)};
+    teapot->translation = vec3{0.0f, -1.5f, 0.0f};
 
-    minity::model bbox{};
-    // exported as y = up, Z- = forward
-    ok = bbox.load("models/BlenderBoxMinusZ.obj", true); // counter-clockwise winding from Blender
-    // exported as y = up, Z+ = forward
-    // ok = bbox.load("models/BlenderBoxZ.obj", true); // counter-clockwise winding from Blender
-    // NO DIFFERENCE IN RENDERING, AFFECTS THE FACE ORDER
-    assert(ok);
-    bbox.scale = vec3{2.0f, 2.0f, 2.0f};
-    bbox.rotation = vec3{deg2rad(0), deg2rad(30), deg2rad(0)};
-    bbox.translation = vec3{0.0f, 0.0f, -3.0f};
+    auto box = importer.load("models/box.obj");
+    box->scale = vec3{2.0f, 2.0f, 2.0f};
+    box->rotation = vec3{deg2rad(0), deg2rad(30), deg2rad(0)};
+    box->translation = vec3{0.0f, 0.0f, 1.0f};
+
+    auto bbox = importer.load("models/BlenderBoxZ.obj", true); // counter-clockwise winding from Blender
+    bbox->scale = vec3{2.0f, 2.0f, 2.0f};
+    bbox->rotation = vec3{deg2rad(0), deg2rad(30), deg2rad(0)};
+    bbox->translation = vec3{0.0f, 0.0f, -3.0f};
     // bbox.hasNormals = false;
     // bbox.printModelInfo(true);
     // bbox.printModelInfo();
     // bbox.dumpModel();
-    bbox.addTexture(boxTexture);
+    bbox->addTexture(boxTexture);
 
-    minity::model sphere{};
-    ok = sphere.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
-    assert(ok);
-    sphere.scale = vec3{1.0f, 1.0f, 1.0f};
-    sphere.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    sphere.translation = vec3{0.0f, 0.0f, 2.0f};
+    auto sphere = importer.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
+    sphere->scale = vec3{1.0f, 1.0f, 1.0f};
+    sphere->rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    sphere->translation = vec3{0.0f, 0.0f, 2.0f};
     // sphere.hasNormals = false;
-    sphere.addTexture(boxTexture);
+    sphere->addTexture(boxTexture);
 
-    minity::model male{};
-    ok = male.load("test/models/MaleLow.obj");
-    assert(ok);
-    male.scale = vec3{0.5f, 0.5f, 0.5f};
-    male.translation = vec3{0.0f, -5.0f, -6.0f};
-    male.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    auto male = importer.load("test/models/MaleLow.obj");
+    male->scale = vec3{0.5f, 0.5f, 0.5f};
+    male->translation = vec3{0.0f, -5.0f, -6.0f};
+    male->rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 
-    minity::model head{};
-    ok = head.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
-    assert(ok);
-    head.scale = vec3{0.05f, 0.05f, 0.05f};
-    head.translation = vec3{0.0f, -2.5f, -0.8f};
-    head.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    head.addTexture(texture);
+    auto head = importer.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
+    head->scale = vec3{0.05f, 0.05f, 0.05f};
+    head->translation = vec3{0.0f, -2.5f, -0.8f};
+    head->rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    head->addTexture(texture);
     // head.addTexture(boxTexture);
     // head.hasNormals = false;
 
@@ -166,13 +154,13 @@ void newScenario()
     // light is coming from positive z axis
     light.translation = vec3{0.0f, 0.0f, 10.0f};
 
-    minity::scene scene{teapot, camera, light};
-    // minity::scene scene{box, camera, light};
-    // minity::scene scene{bbox, camera, light};
-    // minity::scene scene{sphere, camera, light};
-    // minity::scene scene{male, camera, light};
-    // minity::scene scene{head, camera, light};
-    // minity::scene scene{test, camera, light};
+    minity::scene scene{"teapot", *teapot, camera, light};
+    // minity::scene scene{"box", box, camera, light};
+    // minity::scene scene{"bbox", bbox, camera, light};
+    // minity::scene scene{"sphere", sphere, camera, light};
+    // minity::scene scene{"male", male, camera, light};
+    // minity::scene scene{"head", head, camera, light};
+    // minity::scene scene{"test", test, camera, light};
 
     minity::run(scene);
     // minity::render(scene);

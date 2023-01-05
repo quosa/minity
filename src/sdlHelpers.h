@@ -4,7 +4,8 @@
 #include <SDL.h>
 #include <list>
 
-// for vec3 and DEG :-/
+// for vec3 and deg2rad :-/
+#define MATH_TYPES_ONLY
 #include "simpleMath.h"
 
 struct config

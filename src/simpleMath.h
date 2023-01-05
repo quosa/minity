@@ -25,6 +25,15 @@ struct point
             + ")";
     };
 };
+
+// for texture coordinates (u, v)
+struct vec2
+{
+    float u = 0;
+    float v = 0;
+    friend std::ostream& operator<<(std::ostream& os, const vec2 &value);
+};
+
 struct vec3
 {
     float x = 0;
@@ -92,10 +101,42 @@ void printMat4(const mat4 &mat, std::ostream& os = std::cout);
 void printVec3(const vec3 &v);
 void printTri(const tri &t, std::string label);
 
+vec3 v3Add(const vec3 &v1, const vec3 &v2);
+vec3 v3Sub(const vec3 &v1, const vec3 &v2);
+vec3 v3Mul(const vec3 &v1, const vec3 &v2);
+vec3 v3Div(const vec3 &v1, const vec3 &v2);
+
+mat4 multiplyMat4(const mat4 &m1, const mat4 &m2);
+mat4 rotateXMatrix(const float fAngleRad);
+mat4 rotateYMatrix(const float fAngleRad);
+mat4 rotateZMatrix(float fAngleRad);
+mat4 translateMatrix(const float x, const float y, const float z);
+mat4 lookAtMatrixRH(const vec3 &eye, const vec3 &center, const vec3 &tmp);
+mat4 fpsLookAtMatrixRH(vec3 eye, float pitch, float yaw);
+
+
+constexpr float deg2rad(float degrees)
+{
+    return degrees * M_PI / 180.0f;
+}
+
+constexpr float rad2deg(float radians)
+{
+    return radians * 180.0f / M_PI;
+}
+
 
 #ifndef MATH_TYPES_ONLY
 
-// mainly for catch2 to be able to print the assertions
+std::ostream& operator<<( std::ostream &os, const vec2 &value )
+{
+    os << "("
+            + std::to_string(value.u)
+            + ", " + std::to_string(value.v)
+            + ")";
+    return os;
+}
+
 std::ostream& operator<<( std::ostream &os, const vec3 &value )
 {
     os << "("
@@ -105,7 +146,6 @@ std::ostream& operator<<( std::ostream &os, const vec3 &value )
             + ")";
     return os;
 }
-
 
 std::ostream& operator<<(std::ostream& os, const mat4 &value)
 {
@@ -122,16 +162,6 @@ float are_relatively_equal(const float a, const float b)
     // 2 multiplier is selected to get the 360/2*pi rotations to work
     return (std::fabs(a - b) <= 2 * std::numeric_limits<float>::epsilon() * std::max(1.0f, std::max(std::fabs(a), std::fabs(b))));
 };
-
-constexpr float deg2rad(float degrees)
-{
-    return degrees * M_PI / 180.0f;
-}
-
-constexpr float rad2deg(float radians)
-{
-    return radians * 180.0f / M_PI;
-}
 
 // TODO: use template
 void pSwap(point *a, point *b)

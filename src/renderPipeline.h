@@ -1,11 +1,11 @@
 #include <algorithm>
-#include "sdlHelpers.h" // full math
 #include "simpleMath.h"
+#include "scene.h"
+#include "sdlHelpers.h" // full math
 #include "modelImporter.h"
 #include "lineDraw.h"
 #include "triangleFill.h" // old triangle fill algorithm
 #include "frameTimer.h"
-#include "scene.h"
 
 namespace minity
 {
