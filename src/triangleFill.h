@@ -1,3 +1,7 @@
+#pragma once
+
+#if 0 // disabled until render interface
+
 #include <algorithm>
 #include <fstream>
 #include <strstream>
@@ -195,3 +199,4 @@ void fillTriangle(vec3 vertices[3], u_int32_t rgba_color)
         fillTopFlatTriangle(v2, v4, v3, rgba_color);
     }
 }
+#endif // disabled
