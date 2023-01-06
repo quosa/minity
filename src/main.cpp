@@ -6,11 +6,10 @@
 
 #include <iostream>
 
-// scene already imports imageimporter (until moved)
-#define IMAGEIMPORTER_IMPLEMENTATION
 #include "simpleMath.h" // full implementation here
 #include "scene.h" // scene/camera/light/mesh
 #include "renderPipeline.h"
+#define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"
 #include "modelImporter.h"
 
@@ -95,22 +94,6 @@ void newScenario()
 
     std::cout << "image and model imports successful" << std::endl;
 
-    // minity::model test{};
-    // test.numFaces = 1;
-    // test.hasNormals = true;
-    // test.hasTextureCoordinates = true;
-    // test.addTexture(boxTexture);
-    // // clockwise winding order, i.e. center > up > right (left-hand rule!!!)
-    // test.vertices = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}}; // x, y, z (w=1.0)
-    // test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
-    // test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
-    // test.faces = {{0, 1, 2}}; // [[v1_idx, v2_idx, v3_idx], [...
-    // test.scale = vec3{1.0f, 1.0f, 1.0f};
-    // test.translation = vec3{0.0f, 0.0f, 0.0f};
-    // test.rotation = vec3{deg2rad(0), deg2rad(-45), deg2rad(0)};
-    // // test.printModelInfo();
-    // // test.dumpModel();
-
     minity::model test{};
     test.numFaces = 1;
     test.hasNormals = true;
@@ -121,15 +104,8 @@ void newScenario()
     test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
     test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
     test.faces = {{0, 1, 2}, {3, 4, 5}}; // [[v1_idx, v2_idx, v3_idx], [...
-
-    // these go a bit outside the viewport
-    // test.scale = vec3{4.0f, 4.0f, 4.0f};
-    // test.translation = vec3{-1.0f, -2.0f, 2.0f};
-
-    // to make the face fit inside teh viewport
     test.scale = vec3{2.0f, 2.0f, 2.0f};
     test.translation = vec3{-1.0f, -1.0f, 2.0f};
-
     test.rotation = vec3{deg2rad(0), deg2rad(45), deg2rad(0)};
     // test.printModelInfo();
     // test.dumpModel();
@@ -148,13 +124,13 @@ void newScenario()
     // light is coming from positive z axis
     light.translation = vec3{0.0f, 0.0f, 10.0f};
 
-    // minity::scene scene{"teapot", *teapot, camera, light};
+    minity::scene scene{"teapot", *teapot, camera, light};
     // minity::scene scene{"box", *box, camera, light};
-    minity::scene scene{"bbox", *bbox, camera, light};
+    // minity::scene scene{"bbox", *bbox, camera, light};
     // minity::scene scene{"sphere", *sphere, camera, light};
     // minity::scene scene{"male", *male, camera, light};
     // minity::scene scene{"head", *head, camera, light};
-    // minity::scene scene{"test", *test, camera, light};
+    // minity::scene scene{"test", test, camera, light};
 
     minity::run(scene);
     // minity::render(scene);
