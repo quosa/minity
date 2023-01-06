@@ -1,5 +1,7 @@
 #include <catch2/catch.hpp>
-// #include "imageImporter.h"
+
+// full implementation comes from imageImporter tests
+#define MINITY_SCENE_TYPES_ONLY
 #include "scene.h"
 #include "modelImporter.h"
 

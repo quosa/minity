@@ -8,6 +8,7 @@
 
 // scene already imports imageimporter (until moved)
 #define IMAGEIMPORTER_IMPLEMENTATION
+#include "simpleMath.h" // full implementation here
 #include "scene.h" // scene/camera/light/mesh
 #include "renderPipeline.h"
 #include "imageImporter.h"
@@ -36,26 +37,19 @@ const std::string banner = R"(
 
 void newScenario()
 {
-    bool ok = false;
+    minity::imageImporter imgImporter{};
+    auto img = imgImporter.load("test/materials/newell_teapot.jpg");
 
-    minity::image img{};
-    ok = img.load("test/materials/newell_teapot.jpg");
-    assert(ok); // just to test loading...
+    auto texture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
+    // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", true); // flip
 
-    std::shared_ptr<minity::image> texture = std::make_shared<minity::image>();
-    ok = texture->load("test/models/Model_D0606058/CS.JPG", true); // flip
-    // ok = texture->load("test/materials/texture_uvgrid01.jpg", true); // flip
-    assert(ok);
-
-    std::shared_ptr<minity::image> boxTexture = std::make_shared<minity::image>();
-    // ok = boxTexture->load("test/materials/test_image_10x10.png", false); // flip
-    // ok = boxTexture->load("test/materials/test_image_blue_100x100.png", false); // flip
-    // ok = boxTexture->load("test/materials/test_image_100x100.png", false); // flip
-    ok = boxTexture->load("test/materials/texture_uvgrid01.jpg", false); // flip
+    // auto boxTexture = imgImporter.load("test/materials/test_image_10x10.png", false); // flip
+    // auto boxTexture = imgImporter.load("test/materials/test_image_blue_100x100.png", false); // flip
+    // auto boxTexture = imgImporter.load("test/materials/test_image_100x100.png", false); // flip
+    auto boxTexture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
 
     // NOTE: fine grid suffers from aliasing / Moire pattern problems due to missing mipmap
-    // ok = boxTexture->load("test/materials/grid.tga", false); // flip
-    assert(ok);
+    // auto boxTexture = imgImporter.load("test/materials/grid.tga", false); // flip
 
     minity::modelImporter importer{};
 
@@ -154,13 +148,13 @@ void newScenario()
     // light is coming from positive z axis
     light.translation = vec3{0.0f, 0.0f, 10.0f};
 
-    minity::scene scene{"teapot", *teapot, camera, light};
-    // minity::scene scene{"box", box, camera, light};
-    // minity::scene scene{"bbox", bbox, camera, light};
-    // minity::scene scene{"sphere", sphere, camera, light};
-    // minity::scene scene{"male", male, camera, light};
-    // minity::scene scene{"head", head, camera, light};
-    // minity::scene scene{"test", test, camera, light};
+    // minity::scene scene{"teapot", *teapot, camera, light};
+    // minity::scene scene{"box", *box, camera, light};
+    minity::scene scene{"bbox", *bbox, camera, light};
+    // minity::scene scene{"sphere", *sphere, camera, light};
+    // minity::scene scene{"male", *male, camera, light};
+    // minity::scene scene{"head", *head, camera, light};
+    // minity::scene scene{"test", *test, camera, light};
 
     minity::run(scene);
     // minity::render(scene);
