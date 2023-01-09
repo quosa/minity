@@ -110,6 +110,15 @@ $(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp
 clean:
 	${RM} $(BUILD_DIR)/* $(BIN_DIR)/* *~.
 
+#
+# Linter Section
+#
+#    brew install bear # for compile_commands.json
+#    brew install cppcheck
+
+check: clean
+	bear -- make minity
+	@cppcheck --project=compile_commands.json --std=c++17 --language=c++ -i external --suppress=*:include* --suppress=*:external* --enable=style,unusedFunction,missingInclude
 
 # from https://stackoverflow.com/questions/31093462/simple-makefile-for-c
 # from https://stackoverflow.com/questions/52034997/how-to-make-makefile-recompile-when-a-header-file-is-changed
