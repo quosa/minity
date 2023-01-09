@@ -14,11 +14,26 @@ ifeq ($(mode),release)
 else
 	mode = debug
 
-	CXXFLAGS += -g -O0
+	# CXXFLAGS += -g -O0
+
+ifdef coverage
+	# coverage https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
+
+	CXXFLAGS += -g -O0 -fprofile-instr-generate -fcoverage-mapping
+	LDFLAGS += -fprofile-instr-generate
+
+	# make clean test
+	# LLVM_PROFILE_FILE="foo.profraw" ./bin/test
+	# xcrun llvm-profdata merge -sparse foo.profraw -o foo.profdata
+	# xcrun llvm-cov show ./bin/test -instr-profile=foo.profdata
+	# xcrun llvm-cov report ./bin/test -instr-profile=foo.profdata
+
+endif
 
 	# profiling with clang/llvm, see doc/profiling.md
 	# CXXFLAGS += -g -O0 -fprofile-instr-generate -fcoverage-mapping
 	# LDFLAGS += -fprofile-instr-generate
+
 
 	# what takes so long?
 	# CXXFLAGS += -g -O0 -v -ftime-report
@@ -64,7 +79,7 @@ DEPS += $(patsubst $(TEST_DIR)/%,$(BUILD_DIR)/%,${TEST_SRCS:.cpp=.d})
 
 # .PHONY means these rules get executed even if
 # files of those names exist.
-.PHONY: clean all
+.PHONY: clean check coverage profile all
 
 MAIN = minity
 TEST = test
@@ -97,7 +112,7 @@ ${TEST}: ${TEST_OBJS}
 ifdef filter
 	@echo using filter $(filter) for tests
 endif
-	${CXX} ${TEST_OBJS} -o ${BIN_DIR}/${TEST} \
+	${CXX} ${LDFLAGS} ${TEST_OBJS} -o ${BIN_DIR}/${TEST} \
 	&& ./${BIN_DIR}/${TEST} --reporter compact --success "$(filter)"
 
 # add src for private headers
@@ -119,6 +134,12 @@ clean:
 check: clean
 	bear -- make minity
 	@cppcheck --project=compile_commands.json --std=c++17 --language=c++ -i external --suppress=*:include* --suppress=*:external* --enable=style,unusedFunction,missingInclude
+
+coverage: clean
+	./tools/coverage/coverage.sh
+
+profile: clean
+	./tools/profile/profile.sh
 
 # from https://stackoverflow.com/questions/31093462/simple-makefile-for-c
 # from https://stackoverflow.com/questions/52034997/how-to-make-makefile-recompile-when-a-header-file-is-changed
