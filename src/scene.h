@@ -4,6 +4,7 @@
 #include "simpleMath.h" // mesh etc. for now
 
 #include <iomanip>
+#include <cassert>
 
 namespace minity
 {
@@ -37,7 +38,7 @@ struct image
     int components{0}; // typically rgb = 3 or rgba = 4
     u_int32_t get(float u, float v) const;
     void set(unsigned char *_raw_data);
-    ~image() { delete[] _raw_data; }
+    ~image() { free(_raw_data); } // stbi_image_free is free by default
 private:
     unsigned char *_raw_data{nullptr};
 };

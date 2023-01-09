@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <cassert>
 #include <string>
 #include <vector>
 #include <iostream> // << overload for catch2

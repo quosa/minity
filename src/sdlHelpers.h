@@ -227,88 +227,93 @@ void SDLSwapBuffers(/*color_t * backbuffer*/)
     SDL_RenderPresent(g_SDLRenderer);
 }
 
-bool isRunning(vec3 *inputTranslation, vec3 *inputRotation)
+bool isRunning(vec3 *inputTranslation, vec3 *inputRotation, bool *inputChange)
 {
     SDL_Event sEvent;
 
-    SDL_PollEvent(&sEvent);
-    ImGui_ImplSDL2_ProcessEvent(&sEvent);
-
-    switch (sEvent.type)
+    *inputChange = false;
+    while (SDL_PollEvent(&sEvent))
     {
-    case SDL_QUIT:
-        return false;
-        break;
-    case SDL_KEYDOWN:
-        switch (sEvent.key.keysym.sym)
+        ImGui_ImplSDL2_ProcessEvent(&sEvent);
+
+        switch (sEvent.type)
         {
-        case SDLK_LEFT:
-            // std::cerr << " LEFT" << std::endl;
-            inputTranslation->x -= 0.5;
-            break;
-        case SDLK_RIGHT:
-            // std::cerr << " RIGHT" << std::endl;
-            inputTranslation->x += 0.5;
-            break;
-        case SDLK_UP:
-            // std::cerr << " UP" << std::endl;
-            inputTranslation->y += 0.5;
-            break;
-        case SDLK_DOWN:
-            // std::cerr << " DOWN" << std::endl;
-            inputTranslation->y -= 0.5;
-            break;
-        case SDLK_PLUS:
-            // std::cerr << " IN" << std::endl;
-            inputTranslation->z -= 0.5;
-            break;
-        case SDLK_MINUS:
-            // std::cerr << " OUT" << std::endl;
-            inputTranslation->z += 0.5;
-            break;
-        case SDLK_a:
-            // std::cerr << " LookLeft" << std::endl;
-            inputRotation->y += deg2rad(5);
-            break;
-        case SDLK_d:
-            // std::cerr << " LookRight" << std::endl;
-            inputRotation->y -= deg2rad(5);
-            break;
-        case SDLK_w:
-            // std::cerr << " LookUp" << std::endl;
-            inputRotation->x += deg2rad(5);
-            break;
-        case SDLK_s:
-            // std::cerr << " LookDown" << std::endl;
-            inputRotation->x -= deg2rad(5);
-            break;
-        case SDLK_n:
-            // std::cerr << " swap (n)ormals" << std::endl;
-            g_config->drawNormals = g_config->drawNormals ? false : true;
-            break;
-        case SDLK_l:
-            // std::cerr << " swap wireframe (l)ines" << std::endl;
-            g_config->drawWireframe = g_config->drawWireframe ? false : true;
-            break;
-        case SDLK_f:
-            // std::cerr << " swap triangle (f)illing" << std::endl;
-            g_config->fillTriangles = g_config->fillTriangles ? false : true;
-            break;
-        case SDLK_r:
-            // std::cerr << " (r)ender on change" << std::endl;
-            g_config->renderOnChange = g_config->renderOnChange ? false : true;
-            break;
-        case SDLK_F1:
-            // std::cerr << " show/hide stats window" << std::endl;
-            g_config->showStatsWindow = g_config->showStatsWindow ? false : true;
-            break;
-        case SDLK_q:
+        case SDL_QUIT:
             return false;
             break;
-        default:
+        case SDL_KEYDOWN:
+            *inputChange = true;
+            switch (sEvent.key.keysym.sym)
+            {
+            case SDLK_LEFT:
+                // std::cerr << " LEFT" << std::endl;
+                inputTranslation->x -= 0.5;
+                break;
+            case SDLK_RIGHT:
+                // std::cerr << " RIGHT" << std::endl;
+                inputTranslation->x += 0.5;
+                break;
+            case SDLK_UP:
+                // std::cerr << " UP" << std::endl;
+                inputTranslation->y += 0.5;
+                break;
+            case SDLK_DOWN:
+                // std::cerr << " DOWN" << std::endl;
+                inputTranslation->y -= 0.5;
+                break;
+            case SDLK_PLUS:
+                // std::cerr << " IN" << std::endl;
+                inputTranslation->z -= 0.5;
+                break;
+            case SDLK_MINUS:
+                // std::cerr << " OUT" << std::endl;
+                inputTranslation->z += 0.5;
+                break;
+            case SDLK_a:
+                // std::cerr << " LookLeft" << std::endl;
+                inputRotation->y += deg2rad(5);
+                break;
+            case SDLK_d:
+                // std::cerr << " LookRight" << std::endl;
+                inputRotation->y -= deg2rad(5);
+                break;
+            case SDLK_w:
+                // std::cerr << " LookUp" << std::endl;
+                inputRotation->x += deg2rad(5);
+                break;
+            case SDLK_s:
+                // std::cerr << " LookDown" << std::endl;
+                inputRotation->x -= deg2rad(5);
+                break;
+            case SDLK_n:
+                // std::cerr << " swap (n)ormals" << std::endl;
+                g_config->drawNormals = g_config->drawNormals ? false : true;
+                break;
+            case SDLK_l:
+                // std::cerr << " swap wireframe (l)ines" << std::endl;
+                g_config->drawWireframe = g_config->drawWireframe ? false : true;
+                break;
+            case SDLK_f:
+                // std::cerr << " swap triangle (f)illing" << std::endl;
+                g_config->fillTriangles = g_config->fillTriangles ? false : true;
+                break;
+            case SDLK_r:
+                // std::cerr << " (r)ender on change" << std::endl;
+                g_config->renderOnChange = g_config->renderOnChange ? false : true;
+                break;
+            case SDLK_F1:
+                // std::cerr << " show/hide stats window" << std::endl;
+                g_config->showStatsWindow = g_config->showStatsWindow ? false : true;
+                break;
+            case SDLK_q:
+                return false;
+                break;
+            default:
+                break;
+            }
             break;
         }
-        break;
+
     }
     return true;
 }

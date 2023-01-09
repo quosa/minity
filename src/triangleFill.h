@@ -3,6 +3,7 @@
 #if 0 // disabled until render interface
 
 #include <algorithm>
+#include <cassert>
 #include <fstream>
 #include <strstream>
 #include <iostream>

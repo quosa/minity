@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cassert>
+
 #include "simpleMath.h"
 #include "scene.h"
 #include "sdlHelpers.h" // full math
@@ -339,7 +341,7 @@ bool render(minity::scene scene)
 
 
 
-        // Print rendering debug info from each face at each stage
+        // // Print rendering debug info from each face at each stage
         // char n[4] = {'w', 'v', 'c', 's'};
         // std::cout << "face #" << stats.faces << std::endl;
         // for (spaceType s : {worldSpace, viewSpace, clipSpace, screenSpace})
@@ -370,7 +372,7 @@ bool render(minity::scene scene)
         if (faceDotCamera <= 0.0f)
         {
             // std::cout << "CULLING face normal: " << faceNormal << " camera:" << vCameraRay << " dot: " << std::to_string(faceDotCamera) << std::endl << std::endl;
-            // std::cout << "            face[0]: " << view.vertices[0].str() << " [1]: " << view.vertices[1].str() << " [2]: " << view.vertices[2].str() << std::endl;
+            // std::cout << "            face[0]: " << vects[viewSpace][0] << " [1]: " << vects[viewSpace][1] << " [2]: " << vects[viewSpace][2] << std::endl;
             stats.bfCulled++;
             continue;
         }
@@ -620,6 +622,7 @@ bool render(minity::scene scene)
     {
         std::cout << stats << std::endl;
     }
+
     std::ostringstream stream;
     stream << stats;
     g_stats = stream.str();
@@ -637,33 +640,31 @@ void run(minity::scene scene)
     vec3 inputRotation{};
     vec3 zeroVector{};
 
-    while (isRunning(&inputTranslation, &inputRotation))
+    bool inputChange{false};
+    while (isRunning(&inputTranslation, &inputRotation, &inputChange))
     {
         SDL_Delay(20); // some computation budget...
 
-        bool inputChange = inputTranslation != zeroVector || inputRotation != zeroVector;
-        if (g_config->renderOnChange && !inputChange)
+        if (!(g_config->renderOnChange && !inputChange))
         {
-            continue;
+            bool translateChange = inputTranslation != zeroVector || inputRotation != zeroVector;
+            if (translateChange)
+            {
+                scene.camera.translation = v3Add(scene.camera.translation, inputTranslation);
+                scene.camera.rotation = v3Add(scene.camera.rotation, inputRotation);
+                std::cout << "cam: position " << scene.camera.translation.str()
+                        << " rotation " << scene.camera.rotation.str() << std::flush << std::endl;
+            }
+
+            scene.model.rotation.y += deg2rad(deltaTime * 10.0f);
+
+            bool ok = render(scene);
+            if(!ok)
+            {
+                std::cerr << "rendering failed - exiting" << std::endl;
+                break;
+            }
         }
-
-        if (inputChange)
-        {
-            scene.camera.translation = v3Add(scene.camera.translation, inputTranslation);
-            scene.camera.rotation = v3Add(scene.camera.rotation, inputRotation);
-            std::cout << "cam: position " << scene.camera.translation.str()
-                      << " rotation " << scene.camera.rotation.str() << std::flush << std::endl;
-        }
-
-        scene.model.rotation.y += deg2rad(deltaTime * 10.0f);
-
-        bool ok = render(scene);
-        if(!ok)
-        {
-            std::cerr << "rendering failed - exiting" << std::endl;
-            break;
-        }
-
         SDLFPSUpdate(ft->delta());
         deltaTime = ft->deltaTime();
         inputTranslation = vec3{};

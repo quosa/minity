@@ -1,7 +1,14 @@
+#pragma once
+
+#include "scene.h"
 
 #include <cmath>
+#include <cassert>
 #include <vector>
 
+
+namespace minity
+{
 // todo: sort out include order (vec3, tri and mesh from simpleMath.h)
 
 // adapted from https://github.com/caosdoar/spheres/blob/master/src/spheres.cpp
@@ -70,3 +77,92 @@ void sphere(size_t meridians, size_t parallels, u_int32_t color, mesh &mesh)
             {vertices[vertices.size() - 1], vertices[b], vertices[a]}, color});
     }
 }
+
+model square()
+{
+    model mdl{};
+    mdl.numFaces = 12;
+    mdl.hasNormals = true;
+    mdl.hasTextureCoordinates = true;
+
+    // clockwise winding order, i.e. center > up > right (left-hand rule!!!)
+    std::vector<vec3> vertices{
+        {-0.5f, -0.5f, 0.5f},
+        {-0.5f,  0.5f, 0.5f},
+        { 0.5f,  0.5f, 0.5f},
+        { 0.5f, -0.5f, 0.5f}, // end of front corners (z = 0.5)
+        {-0.5f, -0.5f, -0.5f},
+        {-0.5f, 0.5f, -0.5f},
+        {0.5f, 0.5f, -0.5f},
+        {0.5f, -0.5f, -0.5f}, // end of back corners (z = -0.5)
+    }; // x, y, z (w=1.0)
+    std::vector<std::vector<int>> faces{
+        {0, 1, 2}, {0, 2, 3}, // front
+        {7, 6, 5}, {7, 5, 4}, // back
+        {4, 5, 1}, {4, 1, 0}, // left
+        {3, 2, 6}, {3, 6, 7}, // right
+        {1, 5, 6}, {1, 6, 2}, // top
+        {4, 0, 3}, {4, 3, 7}, // bottom
+    }; // [[v1_idx, v2_idx, v3_idx], [...
+
+    std::vector<std::vector<int>> faceTextureCoordinates{
+        {0, 1, 2}, {0, 2, 3}, // front
+        {0, 1, 2}, {0, 2, 3}, // back
+        {0, 1, 2}, {0, 2, 3}, // left
+        {0, 1, 2}, {0, 2, 3}, // right
+        {0, 1, 2}, {0, 2, 3}, // top
+        {0, 1, 2}, {0, 2, 3}, // bottom
+    };
+
+    std::vector<vec3> faceNormals{
+        {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, // f
+        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, // b
+        {-1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, // l
+        {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, // r
+        {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, // t
+        {0.0f, -1.0f, 1.0f}, {0.0f, -1.0f, 1.0f} // b
+    }; // x, y, z (w=1.0)
+
+    std::vector<vec2> textureCoordinates{
+        {0.0f, 0.0f}, // 0 = BL
+        {0.0f, 1.0f}, // 1 = TL
+        {1.0f, 1.0}, // 2 = TR
+        {1.0f, 0.0f} // 3 = BR
+    }; // u, v (w ignored)
+
+    int i = 0;
+    std::vector<int> face{0};
+    assert (faces.size() == faceNormals.size());
+    int nIdx = 0;
+    for (auto f = faces.begin(), tc = faceTextureCoordinates.begin();
+        f != faces.end() && tc != faceTextureCoordinates.end();
+        ++f, ++tc)
+    {
+        mdl.vertices.insert( mdl.vertices.end(), {
+            vertices[(*f)[0]],
+            vertices[(*f)[1]],
+            vertices[(*f)[2]]
+        });
+        face.clear();
+        face = {
+            i,
+            (i+1),
+            (i+2)
+        };
+        mdl.faces.push_back(face);
+        auto n = faceNormals[nIdx];
+        mdl.normals.insert( mdl.normals.end(), {n , n, n});
+        mdl.textureCoordinates.insert( mdl.textureCoordinates.end(), {
+            textureCoordinates[(*tc)[0]],
+            textureCoordinates[(*tc)[1]],
+            textureCoordinates[(*tc)[2]]
+        });
+
+        i += 3;
+        ++nIdx;
+    }
+
+    return mdl;
+}
+
+} // minity

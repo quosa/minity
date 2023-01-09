@@ -13,6 +13,7 @@
 #include "imageImporter.h"
 #include "modelImporter.h"
 
+#include "utils.h"
 
 const std::string usage = R"(
 key bindings:
@@ -49,6 +50,9 @@ void newScenario()
 
     // NOTE: fine grid suffers from aliasing / Moire pattern problems due to missing mipmap
     // auto boxTexture = imgImporter.load("test/materials/grid.tga", false); // flip
+    // auto tTexture = imgImporter.load("test/materials/grid.tga", true); // flip
+    // auto tTexture = imgImporter.load("test/materials/test_image_10x10.png", false); // flip
+    auto tTexture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
 
     minity::modelImporter importer{};
 
@@ -110,6 +114,14 @@ void newScenario()
     // test.printModelInfo();
     // test.dumpModel();
 
+    minity::model t = minity::square();
+    t.addTexture(tTexture);
+    t.scale = vec3{2.0f, 2.0f, 2.0f};
+    // t.translation = vec3{0.0f, 0.0f, 0.0f};
+    // t.rotation = vec3{deg2rad(0), deg2rad(45), deg2rad(0)};
+    t.printModelInfo();
+    t.dumpModel();
+
     minity::init();
 
     minity::camera camera{};
@@ -124,18 +136,17 @@ void newScenario()
     // light is coming from positive z axis
     light.translation = vec3{0.0f, 0.0f, 10.0f};
 
-    minity::scene scene{"teapot", *teapot, camera, light};
+    // minity::scene scene{"teapot", *teapot, camera, light};
     // minity::scene scene{"box", *box, camera, light};
     // minity::scene scene{"bbox", *bbox, camera, light};
     // minity::scene scene{"sphere", *sphere, camera, light};
     // minity::scene scene{"male", *male, camera, light};
     // minity::scene scene{"head", *head, camera, light};
     // minity::scene scene{"test", test, camera, light};
+    minity::scene scene{"test square", t, camera, light};
 
+    // g_config->renderOnChange = true;
     minity::run(scene);
-    // minity::render(scene);
-    // vec3 tmp{};
-    // while (isRunning(&tmp, &tmp)) SDL_Delay(20);
 
     minity::shutdown();
 }
