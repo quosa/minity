@@ -235,9 +235,9 @@ void modelImporter::handleLine(const std::string &line)
 
         // pack the scattered indices to each face in v1, n1, t1, v2, n2, t2...
         std::vector<int> face;
-        for (int i : {0, 1, 2})
+        for (int j : {0, 1, 2})
         {
-            face.insert( face.end(), { vrt[i] - 1, nrm[i] - 1, tex[i] -1} );
+            face.insert( face.end(), { vrt[j] - 1, nrm[j] - 1, tex[j] -1} );
         }
         model_->faces.push_back(face);
         model_->numFaces++;
@@ -247,9 +247,9 @@ void modelImporter::handleLine(const std::string &line)
             // Break the 4 vertex manually
             // TODO: this is fragile!
             face.clear();
-            for (int i : {0, 2, 3})
+            for (int k : {0, 2, 3})
             {
-                face.insert( face.end(), { vrt[i] - 1, nrm[i] - 1, tex[i] -1} );
+                face.insert( face.end(), { vrt[k] - 1, nrm[k] - 1, tex[k] -1} );
             }
             model_->faces.push_back(face);
             model_->numFaces++;

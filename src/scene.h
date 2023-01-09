@@ -3,6 +3,7 @@
 #define MATH_TYPES_ONLY
 #include "simpleMath.h" // mesh etc. for now
 
+#include <memory>
 #include <iomanip>
 #include <cassert>
 
@@ -139,10 +140,10 @@ mat4 light::getLightTranslationMatrix()
 
 bool model::addTexture(std::shared_ptr<minity::image> pTextureImage)
 {
-    if (texture != nullptr)
-    {
-        texture = nullptr;
-    }
+    // if (texture != nullptr)
+    // {
+    //     texture = nullptr;
+    // }
     texture = pTextureImage;
     hasTexture = true;
     return true;

@@ -4,7 +4,8 @@
  * https://github.com/Kayzaks/StupidGL (gamasutra game engine from scratch)
  */
 
-#include <iostream>
+#include <iostream> //cout
+#include <memory> // shared_ptr
 
 #include "simpleMath.h" // full implementation here
 #include "scene.h" // scene/camera/light/mesh
@@ -13,7 +14,7 @@
 #include "imageImporter.h"
 #include "modelImporter.h"
 
-#include "utils.h"
+#include "utils.h" // box, sphere...
 
 const std::string usage = R"(
 key bindings:
@@ -47,12 +48,13 @@ void newScenario()
     // auto boxTexture = imgImporter.load("test/materials/test_image_blue_100x100.png", false); // flip
     // auto boxTexture = imgImporter.load("test/materials/test_image_100x100.png", false); // flip
     auto boxTexture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
-
     // NOTE: fine grid suffers from aliasing / Moire pattern problems due to missing mipmap
     // auto boxTexture = imgImporter.load("test/materials/grid.tga", false); // flip
+
     // auto tTexture = imgImporter.load("test/materials/grid.tga", true); // flip
-    // auto tTexture = imgImporter.load("test/materials/test_image_10x10.png", false); // flip
-    auto tTexture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
+    auto tTexture = imgImporter.load("test/materials/test_image_10x10.png", false); // flip
+    // auto tTexture = imgImporter.load("test/materials/test_image_100x100.png", true); // flip
+    // auto tTexture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
 
     minity::modelImporter importer{};
 
@@ -119,8 +121,8 @@ void newScenario()
     t.scale = vec3{2.0f, 2.0f, 2.0f};
     // t.translation = vec3{0.0f, 0.0f, 0.0f};
     // t.rotation = vec3{deg2rad(0), deg2rad(45), deg2rad(0)};
-    t.printModelInfo();
-    t.dumpModel();
+    // t.printModelInfo();
+    // t.dumpModel();
 
     minity::init();
 
