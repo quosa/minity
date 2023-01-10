@@ -106,6 +106,10 @@ vec3 v3Add(const vec3 &v1, const vec3 &v2);
 vec3 v3Sub(const vec3 &v1, const vec3 &v2);
 vec3 v3Mul(const vec3 &v1, const vec3 &v2);
 vec3 v3Div(const vec3 &v1, const vec3 &v2);
+float v3DotProduct(const vec3 &v1, const vec3 &v2);
+vec3 v3CrossProduct(const vec3 &v1, const vec3 &v2);
+float v3Length(const vec3 &v);
+vec3 v3Normalize(const vec3 &v);
 
 mat4 multiplyMat4(const mat4 &m1, const mat4 &m2);
 mat4 rotateXMatrix(const float fAngleRad);

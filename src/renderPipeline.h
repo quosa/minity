@@ -5,15 +5,13 @@
 #include "scene.h"
 #include "sdlHelpers.h" // full math
 #include "modelImporter.h"
-#include "lineDraw.h"
-#include "triangleFill.h" // old triangle fill algorithm
+// #include "lineDraw.h"
+// #include "triangleFill.h" // old triangle fill algorithm
 #include "frameTimer.h"
+#include "rasterizer.h"
 
 namespace minity
 {
-
-const u_int32_t blue = 0x0000ffff;
-const u_int32_t yellow = 0xffff00ff;
 
 // Barycentric:
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
@@ -34,47 +32,47 @@ void Barycentric(Point p, Point a, Point b, Point c, float &u, float &v, float &
     u = 1.0f - v - w;
 }
 */
-struct barycentricCoordinates
-{
-public:
-    // pre-calculate everything that we can before
-    // for x, y hot-path loop
-    void prepare(const vec3 face[3])
-    {
-        v0 = v3Sub(face[1], face[0]); // b - a
-        v1 = v3Sub(face[2], face[0]); // c - a;
-        d00 = v3DotProduct(v0, v0);
-        d01 = v3DotProduct(v0, v1);
-        d11 = v3DotProduct(v1, v1);
-        invDenom = 1.0f / (d00 * d11 - d01 * d01);
-    }
+// struct barycentricCoordinates
+// {
+// public:
+//     // pre-calculate everything that we can before
+//     // for x, y hot-path loop
+//     void prepare(const vec3 face[3])
+//     {
+//         v0 = v3Sub(face[1], face[0]); // b - a
+//         v1 = v3Sub(face[2], face[0]); // c - a;
+//         d00 = v3DotProduct(v0, v0);
+//         d01 = v3DotProduct(v0, v1);
+//         d11 = v3DotProduct(v1, v1);
+//         invDenom = 1.0f / (d00 * d11 - d01 * d01);
+//     }
 
-    // calculate only the missing elements for each x, y
-    // and return the corresponding barycentric coordinates
-    // TODO: change out parameters to return a vec3 with the coordinates
-    //       will be used as barycentric.x etc.
-    void barycentricCoordinatesAt(const vec3 face[3], const vec3 &point, float &u, float &v, float &w)
-    {
-        assert(invDenom != 0.0f);
-        v2 = v3Sub(point, face[0]); // p - a;
-        d20 = v3DotProduct(v2, v0);
-        d21 = v3DotProduct(v2, v1);
-        v = (d11 * d20 - d01 * d21) * invDenom;
-        w = (d00 * d21 - d01 * d20) * invDenom;
-        u = 1.0f - v - w;
-    }
+//     // calculate only the missing elements for each x, y
+//     // and return the corresponding barycentric coordinates
+//     // TODO: change out parameters to return a vec3 with the coordinates
+//     //       will be used as barycentric.x etc.
+//     void barycentricCoordinatesAt(const vec3 face[3], const vec3 &point, float &u, float &v, float &w)
+//     {
+//         assert(invDenom != 0.0f);
+//         v2 = v3Sub(point, face[0]); // p - a;
+//         d20 = v3DotProduct(v2, v0);
+//         d21 = v3DotProduct(v2, v1);
+//         v = (d11 * d20 - d01 * d21) * invDenom;
+//         w = (d00 * d21 - d01 * d20) * invDenom;
+//         u = 1.0f - v - w;
+//     }
 
-private:
-    vec3 v0{0};
-    vec3 v1{0};
-    vec3 v2{0};
-    float d00{0};
-    float d01{0};
-    float d11{0};
-    float d20{0};
-    float d21{0};
-    float invDenom;
-};
+// private:
+//     vec3 v0{0};
+//     vec3 v1{0};
+//     vec3 v2{0};
+//     float d00{0};
+//     float d01{0};
+//     float d11{0};
+//     float d20{0};
+//     float d21{0};
+//     float invDenom;
+// };
 
 void init()
 {
@@ -131,9 +129,10 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
     return os;
 }
 
-bool render(minity::scene scene)
+bool render(minity::scene scene, minity::rasterizer &rasterizer)
 {
     renderStats stats{};
+    // minity::rasterizer rasterizer{(uint)g_SDLWidth, (uint)g_SDLHeight};
     minity::model &model = scene.model;
     minity::camera &camera = scene.camera;
     minity::light &light = scene.light;
@@ -174,8 +173,8 @@ bool render(minity::scene scene)
     {
         stats.faces++;
 
-        // TODO: move color to model
-        u_int32_t faceColor = yellow; // simple fallback if no texture
+        // TODO: move color to model and use minity::yellow
+        u_int32_t faceColor{0xffff00ff}; // simple fallback to yellow if no texture
 
         // SEE: spaceType enum for indices
         // 0 = world, 1 = view, 2 = clip/projected space
@@ -252,7 +251,11 @@ bool render(minity::scene scene)
             // (x=1, y=1) -> (sWidth, 0)
             // (x=1, y=-1) -> (sWidth, sHeight)
             // z=-1 -> 0 and z=1 -> 1
-            vec3 v = multiplyVec3(vects[ndcCoordinates][idx % 3], viewMatrix);
+
+            // TODO: FIGURE OUT WHY THIS VIEW MATRIX WAS HERE???
+            // vec3 v = multiplyVec3(vects[ndcCoordinates][idx % 3], viewMatrix);
+            // TODO: THIS NOW LEAVES A GAP TO CENTER???
+            vec3 v = vects[ndcCoordinates][idx % 3];
             v.x = (v.x + 1.0f) * static_cast<float>(g_SDLWidth) / 2.0f;
             v.y = (1.0f - ((v.y + 1.0f) / 2.0f)) * static_cast<float>(g_SDLHeight);
             // z is retained as -1 .. 1 for z-buffering
@@ -269,9 +272,9 @@ bool render(minity::scene scene)
         // Begin rasterization, working in screen space
 
         // fragment shader (works on triangles)
-        vec3 v1 = vects[screenSpace][0];
-        vec3 v2 = vects[screenSpace][1];
-        vec3 v3 = vects[screenSpace][2];
+        // vec3 v1 = vects[screenSpace][0];
+        // vec3 v2 = vects[screenSpace][1];
+        // vec3 v3 = vects[screenSpace][2];
         vec3 n1{};
         vec3 n2{};
         vec3 n3{};
@@ -388,7 +391,7 @@ bool render(minity::scene scene)
             // std::cout << "face normal " << faceNormal << " dp is " << dp << std::endl;
             // printColor(faceColor);
         }
-
+#if 0
         if (g_config->fillTriangles)
         {
 
@@ -509,7 +512,7 @@ bool render(minity::scene scene)
                             // std::cout << "tc1 " << tc1 << " tc2 " << tc2 << " tc3 " << tc3 << std::endl;
     #endif // affine
 
-    #if 1 // clip-space barycentric coordinates
+    #if 1 // clip-space barycentric texture coordinates
                             // https://stackoverflow.com/questions/74542222/whats-the-relationship-between-the-barycentric-coordinates-of-triangle-in-clip
                             // and
                             // https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation
@@ -611,7 +614,42 @@ bool render(minity::scene scene)
 
             drawLine(middle, v3Add(middle, projectedFaceNormal), 0xffffffff); // faceNormal sticking out from the face
         }
+#endif
 
+        if (g_config->fillTriangles)
+        {
+            std::cout << "fillTriangles" << std::endl;
+            rasterizer.drawTriangle(vects[screenSpace], faceColor); // minity::white);
+        }
+        if (g_config->drawWireframe)
+        {
+            std::cout << "drawWireframe" << std::endl;
+
+            // cheat the z-buffer to actually draw the line
+            // RH coordinates, so add just a bit because
+            // line drawing truncates z to integer
+            vects[screenSpace][0].z -= 1.0f;
+            vects[screenSpace][1].z -= 1.0f;
+            vects[screenSpace][2].z -= 1.0f;
+
+            rasterizer.drawLine(vects[screenSpace][0], vects[screenSpace][1], minity::red);
+            rasterizer.drawLine(vects[screenSpace][1], vects[screenSpace][2], minity::red);
+            rasterizer.drawLine(vects[screenSpace][2], vects[screenSpace][0], minity::red);
+        }
+        if (g_config->drawNormals)
+        {
+            std::cout << "drawNormals" << std::endl;
+            vec3 projectedFaceNormal = v3Div(v3Normalize(v3CrossProduct(
+                v3Sub(vects[ndcCoordinates][1], vects[ndcCoordinates][0]),
+                v3Sub(vects[ndcCoordinates][2], vects[ndcCoordinates][0]))),
+                10.0f);
+
+            vec3 middle = v3Div(
+                v3Add(vects[ndcCoordinates][2], v3Add(vects[ndcCoordinates][1], vects[ndcCoordinates][0])),
+                3);
+
+            rasterizer.drawLine(middle, v3Add(middle, projectedFaceNormal), minity::yellow); // faceNormal sticking out from the face
+        }
         stats.drawnFaces++;
     }
 
@@ -633,6 +671,10 @@ bool render(minity::scene scene)
 
 void run(minity::scene scene)
 {
+    const unsigned int width{640};
+    const unsigned int height{480};
+    minity::rasterizer rasterizer(width, height);
+
     float deltaTime = 0.0f;
     auto ft = new minity::frameTimer();
 
@@ -658,7 +700,7 @@ void run(minity::scene scene)
 
             scene.model.rotation.y += deg2rad(deltaTime * 10.0f);
 
-            bool ok = render(scene);
+            bool ok = render(scene, rasterizer);
             if(!ok)
             {
                 std::cerr << "rendering failed - exiting" << std::endl;

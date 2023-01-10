@@ -14,6 +14,9 @@
 #include "imageImporter.h"
 #include "modelImporter.h"
 
+#include <SDL2/SDL.h>
+#include "rasterizer.h"
+
 #include "utils.h" // box, sphere...
 
 const std::string usage = R"(
@@ -153,8 +156,168 @@ void newScenario()
     minity::shutdown();
 }
 
+void newRasterizerScene()
+{
+    const unsigned int width{640};
+    const unsigned int height{480};
+    minity::rasterizer rasterizer(width, height);
+
+    minity::init(); // todo: w, h ?
+
+    minity::modelImporter importer{};
+
+    auto teapot = importer.load("test/models/teapot.obj", true); // reverse winding
+    teapot->scale = vec3{1.0f, 1.0f, 1.0f};
+    teapot->rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    teapot->translation = vec3{0.0f, -1.5f, 0.0f};
+
+    minity::camera camera{};
+    minity::light light{};
+
+    camera.fovDegrees = 60.0f;
+    camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    camera.translation = vec3{0.0f, 0.0f, 5.0f};
+
+    // light direction is ignored for now (only global illumination)
+    // light.rotation = vec3{deg2rad(45), deg2rad(-45), deg2rad(0)};
+    // light is coming from positive z axis
+    light.translation = vec3{0.0f, 0.0f, 10.0f};
+
+    minity::scene scene{"teapot", *teapot, camera, light};
+
+    g_config->fillTriangles = true;
+    g_config->drawWireframe = false;
+    g_config->drawNormals = false;
+    bool ok = minity::render(scene, rasterizer);
+    if (!ok)
+    {
+        std::cerr << "rendering failed!" << std::endl;
+    }
+
+    {
+        // SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
+        SDL_UpdateTexture(
+            g_SDLTexture,
+            NULL,
+            (void *)rasterizer.getFramebuffer(),
+            rasterizer.getViewportWidth() * sizeof(minity::color)
+        );
+        SDL_RenderClear(g_SDLRenderer);
+        SDL_RenderCopy(g_SDLRenderer, g_SDLTexture, NULL, NULL);
+        SDL_RenderPresent(g_SDLRenderer);
+    }
+
+    vec3 inputTranslation{};
+    vec3 inputRotation{};
+    // vec3 zeroVector{};
+
+    bool inputChange{false};
+    while (isRunning(&inputTranslation, &inputRotation, &inputChange))
+    {
+        SDL_Delay(20); // some computation budget...
+        inputTranslation = vec3{};
+        inputRotation = vec3{};
+    }
+    minity::shutdown();
+}
+
+void newRasterizer()
+{
+    const unsigned int width{640};
+    const unsigned int height{480};
+    minity::rasterizer rasterizer(width, height);
+    minity::init(); // todo: w, h ?
+
+
+    // SDLClearBuffers(); // todo: rasterizer.clearBuffers() etc.
+
+    // draw a snap-grid like point cloud
+    for (unsigned int x = 10; x < width; x += 10 )
+    {
+        for (unsigned int y = 10; y < height; y += 10 )
+        {
+            rasterizer.drawPoint(vec3{(float)x, (float)y, 0.0f}, minity::yellow);
+        }
+    }
+    // rasterizer.drawLine(vec3{}, vec3{640.0f, 480.0f, 0.0f}, minity::red);
+    // rasterizer.drawLine(vec3{0.0f, 480.0f, 0.0f}, vec3{640.0f, 0.0f, 0.0f}, minity::green);
+
+    vec3 blueVertices[3]{
+        {100.0f, 200.0f, 0.0f},
+        {100.0f, 100.0f, 0.0f},
+        {200.0f, 200.0f, 0.0f},
+    };
+    vec3 yellowVertices[3]{
+        {70.0f, 220.0f, 1.0f},
+        {70.0f, 120.0f, 1.0f},
+        {170.0f, 220.0f, 1.0f},
+    };
+    rasterizer.drawTriangle(blueVertices, minity::blue);
+    rasterizer.drawTriangle(yellowVertices, minity::yellow);
+
+
+    vec3 whiteVertices[3]{
+        {400.0f, 400.0f, 1.0f},
+        {400.0f, 200.0f, 1.0f},
+        {600.0f, 400.0f, -1.0f},
+    };
+    vec3 greenVertices[3]{
+        {400.0f, 400.0f, -1.0f},
+        {600.0f, 200.0f, 1.0f},
+        {600.0f, 400.0f, 1.0f},
+    };
+    rasterizer.drawTriangle(whiteVertices, minity::white);
+    rasterizer.drawTriangle(greenVertices, minity::green);
+
+    rasterizer.drawLine(vec3{}, vec3{640.0f, 480.0f, 0.0f}, minity::red);
+    rasterizer.drawLine(vec3{0.0f, 480.0f, 0.0f}, vec3{640.0f, 0.0f, 0.0f}, minity::green);
+
+    vec3 whiteVertices2[3]{
+        {200.0f, 100.0f, 1.0f},
+        {400.0f, 100.0f, 1.0f},
+        {300.0f, 200.0f, 1.0f},
+    };
+    vec3 blackVertices[3]{
+        {200.0f, 100.0f, 1.00001f},
+        {400.0f, 100.0f, 1.00001f},
+        {300.0f, 200.0f, 1.00001f},
+    };
+    rasterizer.drawTriangle(whiteVertices2, minity::white);
+    rasterizer.drawTriangle(blackVertices, minity::black);
+
+    // show the drawn buffer
+    // SDLSwapBuffers();
+    {
+        // SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
+        SDL_UpdateTexture(
+            g_SDLTexture,
+            NULL,
+            (void *)rasterizer.getFramebuffer(),
+            rasterizer.getViewportWidth() * sizeof(minity::color)
+        );
+        SDL_RenderClear(g_SDLRenderer);
+        SDL_RenderCopy(g_SDLRenderer, g_SDLTexture, NULL, NULL);
+        SDL_RenderPresent(g_SDLRenderer);
+    }
+
+    vec3 inputTranslation{};
+    vec3 inputRotation{};
+    // vec3 zeroVector{};
+
+    bool inputChange{false};
+    while (isRunning(&inputTranslation, &inputRotation, &inputChange))
+    {
+        SDL_Delay(20); // some computation budget...
+        inputTranslation = vec3{};
+        inputRotation = vec3{};
+    }
+    minity::shutdown();
+}
+
 int main()
 {
     std::cout << banner << usage << std::endl;
-    newScenario();
+    // newScenario();
+    // newRasterizer();
+    newRasterizerScene();
 }
