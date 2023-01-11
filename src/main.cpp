@@ -26,6 +26,8 @@ key bindings:
     f key      - flat shade triangles
     l key      - draw wireframe
     n key      - draw normals
+    p key      - draw point cloud
+    x key      - draw axes
     q key      - quit minity
     r key      - render on change
     F1 key     - show stats window)";
@@ -146,9 +148,9 @@ void newScenario()
     // minity::scene scene{"bbox", *bbox, camera, light};
     // minity::scene scene{"sphere", *sphere, camera, light};
     // minity::scene scene{"male", *male, camera, light};
-    // minity::scene scene{"head", *head, camera, light};
+    minity::scene scene{"head", *head, camera, light};
     // minity::scene scene{"test", test, camera, light};
-    minity::scene scene{"test square", t, camera, light};
+    // minity::scene scene{"test square", t, camera, light};
 
     // g_config->renderOnChange = true;
     minity::run(scene);
@@ -317,7 +319,7 @@ void newRasterizer()
 int main()
 {
     std::cout << banner << usage << std::endl;
-    // newScenario();
+    newScenario();
     // newRasterizer();
-    newRasterizerScene();
+    // newRasterizerScene();
 }

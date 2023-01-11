@@ -7,11 +7,14 @@
 // for vec3 and deg2rad :-/
 #define MATH_TYPES_ONLY
 #include "simpleMath.h"
+#include "rasterizer.h"
 
 struct config
 {
     bool drawNormals = false; // n key
     bool drawWireframe = false; // l key
+    bool drawPointCloud = false; // p key
+    bool drawAxes = false; // x key
     bool fillTriangles = true; // f key
     bool showStatsWindow = false; // F1 key
     bool renderOnChange = false; // r key
@@ -201,12 +204,17 @@ void SDLClearBuffers()
     // memset_pattern4(g_DepthBuffer, &invNegInf, g_SDLWidth * g_SDLHeight * sizeof(float));
 }
 
-void SDLSwapBuffers(/*color_t * backbuffer*/)
+void SDLSwapBuffers(minity::rasterizer &rasterizer)
 {
-    SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
+    // SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
+    SDL_UpdateTexture(
+        g_SDLTexture,
+        NULL,
+        (void *)rasterizer.getFramebuffer(),
+        rasterizer.getViewportWidth() * sizeof(minity::color)
+    );
     SDL_RenderClear(g_SDLRenderer);
     SDL_RenderCopy(g_SDLRenderer, g_SDLTexture, NULL, NULL);
-
 
     if (g_config->showStatsWindow)
     {
@@ -293,6 +301,10 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation, bool *inputChange)
                 // std::cerr << " swap wireframe (l)ines" << std::endl;
                 g_config->drawWireframe = g_config->drawWireframe ? false : true;
                 break;
+            case SDLK_p:
+                // std::cerr << " swap (p)oint cloud" << std::endl;
+                g_config->drawPointCloud = g_config->drawPointCloud ? false : true;
+                break;
             case SDLK_f:
                 // std::cerr << " swap triangle (f)illing" << std::endl;
                 g_config->fillTriangles = g_config->fillTriangles ? false : true;
@@ -300,6 +312,10 @@ bool isRunning(vec3 *inputTranslation, vec3 *inputRotation, bool *inputChange)
             case SDLK_r:
                 // std::cerr << " (r)ender on change" << std::endl;
                 g_config->renderOnChange = g_config->renderOnChange ? false : true;
+                break;
+            case SDLK_x:
+                // std::cerr << " swap a(x)is" << std::endl;
+                g_config->drawAxes = g_config->drawAxes ? false : true;
                 break;
             case SDLK_F1:
                 // std::cerr << " show/hide stats window" << std::endl;

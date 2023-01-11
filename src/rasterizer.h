@@ -16,7 +16,9 @@ const color red{0xff0000ff};
 const color green{0x00ff00ff};
 const color blue{0x0000ffff};
 const color yellow{0xffff00ff};
+const color gray50{0x7f7f7fff};
 
+const bool debugRasterizer{false};
 class rasterizer
 {
 public:
@@ -34,6 +36,7 @@ public:
     float *getDepthbuffer();
     unsigned int getViewportWidth();
     unsigned int getViewportHeight();
+    void clearBuffers();
 
 private:
     unsigned int viewportWidth{0};
@@ -47,18 +50,25 @@ private:
 void plotLine(const vec3 &from, const vec3 &to, const color rgba_color, rasterizer *rasterizer);
 void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer *rasterizer);
 
+void rasterizer::clearBuffers()
+{
+    std::fill(frameBuffer.begin(), frameBuffer.end(), black);
+    std::fill(depthBuffer.begin(), depthBuffer.end(), std::numeric_limits<float>::infinity());
+};
 // method implementations
 void rasterizer::drawTriangle(const vec3 (&vertices)[3], const color rgba_color)
 {
     // (void)vertices;
     // (void)rgba_color;
-    std::cout << "drawTriangle: " << vertices[0] << " " << vertices[1] << " " << vertices[2] << std::endl;
+    if (debugRasterizer)
+        std::cout << "drawTriangle: " << vertices[0] << " " << vertices[1] << " " << vertices[2] << std::endl;
     plotTriangle(vertices, rgba_color, this);
 };
 void rasterizer::drawLine(const vec3 &from, const vec3 &to, const color rgba_color)
 {
     // clipping #3 to viewport/projection space
-    std::cout << "drawLine: " << from << "->" << to << std::endl;
+    if (debugRasterizer)
+        std::cout << "drawLine: " << from << "->" << to << std::endl;
     if (from.x < 0 || from.x >= viewportWidth || from.y < 0 || from.y >= viewportHeight
         || to.x < 0 || to.x >= viewportWidth || to.y < 0 || to.y >= viewportHeight)
     {
@@ -73,25 +83,33 @@ void rasterizer::drawPoint(const vec3 &point, color rgba_color)
     // assert(0 <= point.x && point.x <= viewportWidth);
     // assert(0 <= point.y && point.y <= viewportHeight);
 
-    std::cout << "drawPoint: " << point;
+    int x = (int)point.x;
+    int y = (int)point.y;
+
+    if (debugRasterizer)
+        std::cout << "drawPoint: " << point << " (" << x << "," << y << ") ";
+
     // clipping #3 to viewport/projection space
-    if (point.x < 0 || point.x >= viewportWidth || point.y < 0 || point.y >= viewportHeight)
+    if (x < 0 || x >= (int)viewportWidth || y < 0 || y >= (int)viewportHeight)
     {
         // stats.xyClipped++;
-        std::cout << " clipped" << std::endl;
+        if (debugRasterizer)
+            std::cout << "clipped" << std::endl;
         return; // we're outside the viewport
     }
 
     // z-check
-    if (point.z <= depthBuffer[point.x + point.y * viewportWidth])
+    if (point.z <= depthBuffer[x + y * viewportWidth])
     {
-        frameBuffer[point.x + point.y * viewportWidth] = rgba_color;
-        depthBuffer[point.x + point.y * viewportWidth] = point.z;
-        std::cout << " drawn" << std::endl;
+        frameBuffer[x + y * viewportWidth] = rgba_color;
+        depthBuffer[x + y * viewportWidth] = point.z;
+        if (debugRasterizer)
+            std::cout << "drawn" << std::endl;
     }
     else
     {
-        std::cout << " z-clipped" << std::endl;
+        if (debugRasterizer)
+            std::cout << "z-clipped" << std::endl;
     }
 };
 color *rasterizer::getFramebuffer() { return (color *)frameBuffer.data(); };
@@ -123,6 +141,9 @@ void plotLine(const vec3 &from, const vec3 &to, const color rgba_color, rasteriz
 
     int x = from.x;
     int y = from.y;
+    // TODO: this is not good, it squashes the Z-buffer quite a lot
+    // we can lose precision and depth order can be reversed
+    // for z1=1.2 and z2=1.4, the deeper z2 will still be drawn :-(
     int z = from.z;
     rasterizer->drawPoint(vec3{(float)x, (float)y, (float)z}, rgba_color);
 
@@ -194,6 +215,25 @@ void plotLine(const vec3 &from, const vec3 &to, const color rgba_color, rasteriz
     }
 }
 
+// Barycentric:
+// https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+// http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html (2d)
+
+/* THIS IS JUST FOR REFERENCE:
+void Barycentric(Point p, Point a, Point b, Point c, float &u, float &v, float &w)
+{
+    Vector v0 = b - a, v1 = c - a, v2 = p - a;
+    float d00 = Dot(v0, v0);
+    float d01 = Dot(v0, v1);
+    float d11 = Dot(v1, v1);
+    float d20 = Dot(v2, v0);
+    float d21 = Dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    v = (d11 * d20 - d01 * d21) / denom;
+    w = (d00 * d21 - d01 * d20) / denom;
+    u = 1.0f - v - w;
+}
+*/
 struct barycentricCoordinates
 {
 public:

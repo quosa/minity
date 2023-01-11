@@ -13,66 +13,12 @@
 namespace minity
 {
 
-// Barycentric:
-// https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
-// http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html (2d)
-
-/* THIS IS JUST FOR REFERENCE:
-void Barycentric(Point p, Point a, Point b, Point c, float &u, float &v, float &w)
+inline vec3 &toScreenXY(vec3 &point, unsigned int screenWidth, unsigned int screenHeight)
 {
-    Vector v0 = b - a, v1 = c - a, v2 = p - a;
-    float d00 = Dot(v0, v0);
-    float d01 = Dot(v0, v1);
-    float d11 = Dot(v1, v1);
-    float d20 = Dot(v2, v0);
-    float d21 = Dot(v2, v1);
-    float denom = d00 * d11 - d01 * d01;
-    v = (d11 * d20 - d01 * d21) / denom;
-    w = (d00 * d21 - d01 * d20) / denom;
-    u = 1.0f - v - w;
+    point.x = (point.x + 1.0f) * static_cast<float>(screenWidth) / 2.0f;
+    point.y = (1.0f - ((point.y + 1.0f) / 2.0f)) * static_cast<float>(screenHeight);
+    return point;
 }
-*/
-// struct barycentricCoordinates
-// {
-// public:
-//     // pre-calculate everything that we can before
-//     // for x, y hot-path loop
-//     void prepare(const vec3 face[3])
-//     {
-//         v0 = v3Sub(face[1], face[0]); // b - a
-//         v1 = v3Sub(face[2], face[0]); // c - a;
-//         d00 = v3DotProduct(v0, v0);
-//         d01 = v3DotProduct(v0, v1);
-//         d11 = v3DotProduct(v1, v1);
-//         invDenom = 1.0f / (d00 * d11 - d01 * d01);
-//     }
-
-//     // calculate only the missing elements for each x, y
-//     // and return the corresponding barycentric coordinates
-//     // TODO: change out parameters to return a vec3 with the coordinates
-//     //       will be used as barycentric.x etc.
-//     void barycentricCoordinatesAt(const vec3 face[3], const vec3 &point, float &u, float &v, float &w)
-//     {
-//         assert(invDenom != 0.0f);
-//         v2 = v3Sub(point, face[0]); // p - a;
-//         d20 = v3DotProduct(v2, v0);
-//         d21 = v3DotProduct(v2, v1);
-//         v = (d11 * d20 - d01 * d21) * invDenom;
-//         w = (d00 * d21 - d01 * d20) * invDenom;
-//         u = 1.0f - v - w;
-//     }
-
-// private:
-//     vec3 v0{0};
-//     vec3 v1{0};
-//     vec3 v2{0};
-//     float d00{0};
-//     float d01{0};
-//     float d11{0};
-//     float d20{0};
-//     float d21{0};
-//     float invDenom;
-// };
 
 void init()
 {
@@ -132,7 +78,7 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
 bool render(minity::scene scene, minity::rasterizer &rasterizer)
 {
     renderStats stats{};
-    // minity::rasterizer rasterizer{(uint)g_SDLWidth, (uint)g_SDLHeight};
+
     minity::model &model = scene.model;
     minity::camera &camera = scene.camera;
     minity::light &light = scene.light;
@@ -145,7 +91,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         std::cout << "." << std::endl;
     }
 
-    SDLClearBuffers();
+    rasterizer.clearBuffers();
 
     mat4 scaler = scaleMatrix(model.scale.x, model.scale.y, model.scale.z);
     mat4 xRotator = rotateXMatrix(model.rotation.x);
@@ -186,7 +132,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         // instead of individual vertices. Enables us to perform
         //  back-face culling earlier
         //
-        // vertex shader (works on vertices)
+        // VERTEX PROCESSING (model to clip space)
         for (int idx : face)
         {
             stats.vertices++;
@@ -269,9 +215,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
 
         } // end of vertex shader (space transformations)
 
-        // Begin rasterization, working in screen space
 
-        // fragment shader (works on triangles)
         // vec3 v1 = vects[screenSpace][0];
         // vec3 v2 = vects[screenSpace][1];
         // vec3 v3 = vects[screenSpace][2];
@@ -285,7 +229,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
             n3 = norms[viewSpace][2];
         }
 
-        // view volume culling (outside frustrum)
+        // CLIPPING faces to within the clip-space volume
         int numFacesOutside = 0;
         for (auto &v : vects[ndcCoordinates])
         {
@@ -301,17 +245,17 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         {
         case 3:
             // if all vertices are outside, this triangle can be discarded
-            // std::cout << "discarding face - view volume culling 3 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+            // std::cout << "CLIPPING - discarding face, 3 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
             stats.vfCulled++;
             continue;
         case 2:
             // TODO: bring the 2 vertices that are outside to screen border
-            // std::cout << "discarding face - view volume culling 2 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+            // std::cout << "CLIPPING - discarding face, 2 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
             stats.vfCulled++;
             continue;
         case 1:
             // TODO: split the base into 2 triangles and change the new vertices to screen border
-            // std::cout << "discarding face - view volume culling 1 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+            // std::cout << "CLIPPING - discarding face, 1 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
             stats.vfCulled++;
             continue;
         case 0:
@@ -616,30 +560,30 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         }
 #endif
 
+        // RASTERIZATION, working in screen space
+
+
         if (g_config->fillTriangles)
         {
-            std::cout << "fillTriangles" << std::endl;
-            rasterizer.drawTriangle(vects[screenSpace], faceColor); // minity::white);
+            rasterizer.drawTriangle(vects[screenSpace], faceColor);
         }
         if (g_config->drawWireframe)
         {
-            std::cout << "drawWireframe" << std::endl;
-
-            // cheat the z-buffer to actually draw the line
-            // RH coordinates, so add just a bit because
-            // line drawing truncates z to integer
-            vects[screenSpace][0].z -= 1.0f;
-            vects[screenSpace][1].z -= 1.0f;
-            vects[screenSpace][2].z -= 1.0f;
-
-            rasterizer.drawLine(vects[screenSpace][0], vects[screenSpace][1], minity::red);
-            rasterizer.drawLine(vects[screenSpace][1], vects[screenSpace][2], minity::red);
-            rasterizer.drawLine(vects[screenSpace][2], vects[screenSpace][0], minity::red);
+            for (int i = 0; i < 3; ++i)
+            {
+                rasterizer.drawLine(vects[screenSpace][i], vects[screenSpace][(i+1) % 3], minity::gray50);
+            }
+        }
+        if (g_config->drawPointCloud)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                rasterizer.drawPoint(vects[screenSpace][i], minity::white);
+            }
         }
         if (g_config->drawNormals)
         {
-            std::cout << "drawNormals" << std::endl;
-            vec3 projectedFaceNormal = v3Div(v3Normalize(v3CrossProduct(
+            vec3 normal = v3Div(v3Normalize(v3CrossProduct(
                 v3Sub(vects[ndcCoordinates][1], vects[ndcCoordinates][0]),
                 v3Sub(vects[ndcCoordinates][2], vects[ndcCoordinates][0]))),
                 10.0f);
@@ -648,13 +592,36 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
                 v3Add(vects[ndcCoordinates][2], v3Add(vects[ndcCoordinates][1], vects[ndcCoordinates][0])),
                 3);
 
-            rasterizer.drawLine(middle, v3Add(middle, projectedFaceNormal), minity::yellow); // faceNormal sticking out from the face
+            vec3 tip = v3Add(middle, normal);
+
+            middle = toScreenXY(middle, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
+            tip = toScreenXY(tip, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
+
+            rasterizer.drawLine(middle, tip, minity::white);
+        }
+        if (g_config->drawAxes)
+        {
+            auto transformWorldToScreenSpace = [&](vec3 point) {
+                // no model, only world transforms
+                vec3 tmp = multiplyVec3(multiplyVec3(point, viewMatrix), projector);
+                tmp = v3Div(tmp, tmp.w); // in clip space
+                tmp = toScreenXY(tmp, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
+                return tmp;
+            };
+
+            vec3 origin = transformWorldToScreenSpace(vec3{0.0f, 0.0f, 0.0f});
+            vec3 oneX = transformWorldToScreenSpace(vec3{1.0f, 0.0f, 0.0f});
+            vec3 oneY = transformWorldToScreenSpace(vec3{0.0f, 1.0f, 0.0f});
+            vec3 oneZ = transformWorldToScreenSpace(vec3{0.0f, 0.0f, 1.0f});
+            rasterizer.drawLine(origin, oneX, minity::red);
+            rasterizer.drawLine(origin, oneY, minity::green);
+            rasterizer.drawLine(origin, oneZ, minity::blue);
         }
         stats.drawnFaces++;
     }
 
     // show the drawn buffer
-    SDLSwapBuffers();
+    SDLSwapBuffers(rasterizer);
 
     if (g_config->renderOnChange)
     {
