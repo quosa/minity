@@ -75,6 +75,52 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
     return os;
 }
 
+// TODO: add new faces if clipped
+bool clippingFunction(vec3 (&ndcVertices)[3], renderStats &stats)
+{
+    // CLIPPING faces to within the clip-space volume
+    int numFacesOutside = 0;
+    for (auto &v : ndcVertices) // vects[ndcCoordinates])
+    {
+        if (!(v.x >= -1 && v.x <= 1
+            && v.y >= -1 && v.y <= 1
+            && v.z >= -1 && v.z <= 1))
+        {
+        // std::cout << "vertex outside view frustrum: " << v.str() << std::endl;
+        numFacesOutside += 1;
+        }
+    }
+    switch (numFacesOutside)
+    {
+    case 3:
+        // if all vertices are outside, this triangle can be discarded
+        // std::cout << "CLIPPING - discarding face, 3 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+        stats.vfCulled++;
+        return false;
+    case 2:
+        // TODO: bring the 2 vertices that are outside to screen border
+        // std::cout << "CLIPPING - discarding face, 2 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+        stats.vfCulled++;
+        return false;
+    case 1:
+        // TODO: split the base into 2 triangles and change the new vertices to screen border
+        // std::cout << "CLIPPING - discarding face, 1 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
+        stats.vfCulled++;
+        return false;
+    case 0:
+        // face fully within frustrum - render normally
+        break;
+    default:
+        std::cerr << "unknown number of faces putside camera frustrum " << numFacesOutside << " - exiting" << std::endl;
+        exit(1);
+        break;
+    }
+
+    assert(numFacesOutside <= 1);
+    return true;
+};
+
+
 bool render(minity::scene scene, minity::rasterizer &rasterizer)
 {
     renderStats stats{};
@@ -229,45 +275,9 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
             n3 = norms[viewSpace][2];
         }
 
-        // CLIPPING faces to within the clip-space volume
-        int numFacesOutside = 0;
-        for (auto &v : vects[ndcCoordinates])
-        {
-            if (!(v.x >= -1 && v.x <= 1
-             && v.y >= -1 && v.y <= 1
-             && v.z >= -1 && v.z <= 1))
-             {
-                // std::cout << "vertex outside view frustrum: " << v.str() << std::endl;
-                numFacesOutside += 1;
-             }
-        }
-        switch (numFacesOutside)
-        {
-        case 3:
-            // if all vertices are outside, this triangle can be discarded
-            // std::cout << "CLIPPING - discarding face, 3 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
-            stats.vfCulled++;
-            continue;
-        case 2:
-            // TODO: bring the 2 vertices that are outside to screen border
-            // std::cout << "CLIPPING - discarding face, 2 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
-            stats.vfCulled++;
-            continue;
-        case 1:
-            // TODO: split the base into 2 triangles and change the new vertices to screen border
-            // std::cout << "CLIPPING - discarding face, 1 outside " << vects[ndcCoordinates][0].str() << " " << vects[ndcCoordinates][1].str() << " " << vects[ndcCoordinates][2].str() << std::endl;
-            stats.vfCulled++;
-            continue;
-        case 0:
-            // face fully within frustrum - render normally
-            break;
-        default:
-            std::cerr << "unknown number of faces putside camera frustrum " << numFacesOutside << " - exiting" << std::endl;
-            exit(1);
-            break;
-        }
-
-        assert(numFacesOutside <= 1);
+        if (! clippingFunction(vects[ndcCoordinates], stats)) {
+            continue; // ditch this face
+        };
 
         // TODO: if the model does not have texture and texture coordinates
         // calculate a simple face normal
@@ -564,6 +574,80 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
 
 
         // FRAGMENT SHADER (or pixel shader)
+        // we capture the model and texture from this scope and
+        // pass the shader as a lambda to the renderer
+        auto fragmentShader = [&](float &u, float &v, float &w, minity::color color)
+        {
+            // std::cout << "fragment shader with barycentric coordinates: " << u << ", " << v << ", " << w << std::endl;
+            u_int32_t adjustedColor = color;
+            // calculate normal at (x, y) and adjust face color
+            // Phong shading?
+
+            if (model.hasTextureCoordinates && model.hasTexture)
+            {
+                // get u, v and the corresponding pixel
+
+                // https://stackoverflow.com/questions/74542222/whats-the-relationship-between-the-barycentric-coordinates-of-triangle-in-clip
+                // and
+                // https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation
+
+                // std::cout << "screen space calculated  barycentric coordinates: " << u << ", " << v << ", " << w << std::endl;
+                // assert(u >= 0 && v >= 0 && w >= 0 && u + v + w == 1);
+                assert(u >= 0 && v >= 0 && w >= 0);
+                assert(1.0f - (u + v + w) < 1.0e-4f);
+
+                // model u,v texture coordinates [0,1]
+                vec2 tc1 = texc[0];
+                vec2 tc2 = texc[1];
+                vec2 tc3 = texc[2];
+
+                // trivial affine texture maping (produces a dent in the texture)
+                // float uu = tc1.u * u + tc2.u * v + tc3.u * w;
+                // float vv = tc1.v * u + tc2.v * v + tc3.v * w;
+
+                // std::cout << "model texture coordinates: " << tc1 << ", " << tc2 << ", " << tc3 << std::endl;
+
+                /*
+                from: https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation
+
+                The formula that you will find in the GL specification (look on page 427;
+                the link is the current 4.4 spec, but it has always been that way) for
+                perspective-corrected interpolation of the attribute value in a triangle is:
+
+                a * f_a / w_a   +   b * f_b / w_b   +  c * f_c / w_c
+                f=-----------------------------------------------------
+                    a / w_a      +      b / w_b      +     c / w_c
+
+                where a,b,c denote the barycentric coordinates of the point in the triangle
+                we are interpolating for (a,b,c >=0, a+b+c = 1), f_i the attribute value at
+                vertex i, and w_i the clip space w coordinate of vertex i. Note that the
+                barycentric coordinates are calculated only for the 2D projection of the
+                window space coords of the triangle (so z is ignored).
+                */
+
+                float denominator = u / vects[clipSpace][0].w   +   v / vects[clipSpace][1].w  +   w / vects[clipSpace][2].w;
+                float uu = ( u * tc1.u / vects[clipSpace][0].w   +   v * tc2.u / vects[clipSpace][1].w  +   w * tc3.u / vects[clipSpace][2].w ) / denominator;
+                float vv = ( u * tc1.v / vects[clipSpace][0].w   +   v * tc2.v / vects[clipSpace][1].w  +   w * tc3.v / vects[clipSpace][2].w ) / denominator;
+                // std::cout << "texture coordinates: " << uu << ", " << vv << std::endl;
+
+                adjustedColor = model.texture->get(uu, vv);
+                // std::cout << "texture coordinates: " << uu << ", " << vv << " color: ";
+                // printColor(adjustedColor);
+                // std::cout << std::endl;
+            }
+
+            if (model.hasNormals)
+            {
+                vec3 vn =  v3Normalize(v3Add(v3Add(v3Mul(n1, u), v3Mul(n2, v)), v3Mul(n3, w)));
+                float dp = std::max(0.1f, v3DotProduct(lightDirection, vn));
+                adjustedColor = adjustColor(adjustedColor, dp);
+                // std::cout << "barycentric normal " << vn << " dp is " << dp << std::endl;
+                // printColor(adjustedColor);
+            }
+
+            return adjustedColor;
+        };
+
         if (g_config->fillTriangles)
         {
             rasterizer.drawTriangle(vects[screenSpace], faceColor, fragmentShader);
