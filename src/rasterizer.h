@@ -110,6 +110,7 @@ void rasterizer::drawPoint(const vec3 &point, color rgba_color)
     {
         frameBuffer[x + y * viewportWidth] = rgba_color;
         depthBuffer[x + y * viewportWidth] = point.z;
+        // TODO: add stats and stats.drawnPoints++;
         if (debugRasterizer)
             std::cout << "drawn" << std::endl;
     }
@@ -290,14 +291,13 @@ private:
  * @param rgba_color minity::color with 0xrrggbbaa format
  * @param rasterizer pointer to the rasterizer instance to use (facilitate easier testing)
  */
+// TODO: re-add render stats
 void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer *rasterizer, lambdaShader fragmentShader)
 {
     const vec3 &v1 = vertices[0];
     const vec3 &v2 = vertices[1];
     const vec3 &v3 = vertices[2];
 
-    (void)vertices;
-    (void)rgba_color;
     rasterizer->getViewportHeight();
     int maxX = std::max(v1.x, std::max(v2.x, v3.x));
     int minX = std::min(v1.x, std::min(v2.x, v3.x));
@@ -344,6 +344,27 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
             // z-buffer (depth) check
             // get the z value for this point using the barymetric coordinates:
             float z = v1.z * u + v2.z * v + v3.z * w;
+
+            // TODO: use 1/z in depth check?
+            // we need to use 1/z because the depth cannot be interpolated linearly!
+            // see: https://gabrielgambetta.com/computer-graphics-from-scratch/12-hidden-surface-removal.html#why-1z-instead-of-z
+            // and https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/visibility-problem-depth-buffer-depth-interpolation.html
+            // float inv_z = u / v1.z + v / v2.z + w / v3.z;
+
+            // std::cout << "Z-buffer check: inv_z (bary) " << inv_z << " z-buffer(x,y) " << g_DepthBuffer[y * g_SDLWidth + x] << std::endl;
+
+
+            // std::cout << x << " " << y << " " << z << " vs (" << g_DepthBuffer[y * g_SDLWidth + x] << ")" << std::endl;
+            // TODO: < or <= here? Do we draw the new pixel if x, y, z are the same?
+            // camera looks at Z- so
+            // furthest away 1/z is 1/-inf = -0 and
+            // close 1/z is e.g. 1/-10 = -0.1
+            // so we need to compare with <=
+            // if (inv_z <= g_DepthBuffer[y * g_SDLWidth + x])
+
+            // std::cout << "z: " << z << " <= " << g_DepthBuffer[y * g_SDLWidth + x] << "?" << std::endl;
+
+            // TODO: pre-z-test to avoid fragment/pixel shader and stats.depth++; if dropped
 
             // (void)fragmentShader;
             minity::color adjustedColor = fragmentShader(u, v, w, rgba_color);
