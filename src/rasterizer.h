@@ -6,6 +6,7 @@
 #define MINITY_SCENE_TYPES_ONLY
 #include "scene.h"
 #include "simpleMath.h"
+#include "stats.h"
 
 namespace minity
 {
@@ -28,6 +29,10 @@ auto nullShader = [](float &u, float &v, float &w, minity::color color) -> minit
 class rasterizer
 {
 public:
+    void drawTriangle(const vec3 (&vertices)[3], const color rgba_color, lambdaShader fragmentShader=nullShader);
+    void drawLine(const vec3 &from, const vec3 &to, const color rgba_color);
+    void drawPoint(const vec3 &point, const color rgba_color);
+
     rasterizer(unsigned int width, unsigned int height)
         : viewportWidth(width), viewportHeight(height)
     {
@@ -35,14 +40,14 @@ public:
         frameBuffer = std::vector<color>(viewportWidth * viewportHeight, black);
         depthBuffer = std::vector<float>(viewportWidth * viewportHeight, std::numeric_limits<float>::infinity());
     };
-    void drawTriangle(const vec3 (&vertices)[3], const color rgba_color, lambdaShader fragmentShader=nullShader);
-    void drawLine(const vec3 &from, const vec3 &to, const color rgba_color);
-    void drawPoint(const vec3 &point, const color rgba_color);
+
     color *getFramebuffer();
     float *getDepthbuffer();
     unsigned int getViewportWidth();
     unsigned int getViewportHeight();
     void clearBuffers();
+
+    rasterizerStats stats{0};
 
 private:
     unsigned int viewportWidth{0};
@@ -62,14 +67,14 @@ void rasterizer::clearBuffers()
 {
     std::fill(frameBuffer.begin(), frameBuffer.end(), black);
     std::fill(depthBuffer.begin(), depthBuffer.end(), std::numeric_limits<float>::infinity());
+    stats = rasterizerStats{};
 };
 void rasterizer::drawTriangle(const vec3 (&vertices)[3], const color rgba_color, lambdaShader fragmentShader)
 {
-    // (void)vertices;
-    // (void)rgba_color;
     if (debugRasterizer)
         std::cout << "drawTriangle: " << vertices[0] << " " << vertices[1] << " " << vertices[2] << std::endl;
     plotTriangle(vertices, rgba_color, this, fragmentShader);
+    stats.triangles++;
 };
 void rasterizer::drawLine(const vec3 &from, const vec3 &to, const color rgba_color)
 {
@@ -79,11 +84,12 @@ void rasterizer::drawLine(const vec3 &from, const vec3 &to, const color rgba_col
     if (from.x < 0 || from.x >= viewportWidth || from.y < 0 || from.y >= viewportHeight
         || to.x < 0 || to.x >= viewportWidth || to.y < 0 || to.y >= viewportHeight)
     {
-        // stats.xyClipped++;
+        stats.xyClipped++;
         return; // we're outside the viewport
     }
 
     plotLine(from, to, rgba_color, this);
+    stats.lines++;
 };
 void rasterizer::drawPoint(const vec3 &point, color rgba_color)
 {
@@ -99,7 +105,7 @@ void rasterizer::drawPoint(const vec3 &point, color rgba_color)
     // clipping #3 to viewport/projection space
     if (x < 0 || x >= (int)viewportWidth || y < 0 || y >= (int)viewportHeight)
     {
-        // stats.xyClipped++;
+        stats.xyClipped++;
         if (debugRasterizer)
             std::cout << "clipped" << std::endl;
         return; // we're outside the viewport
@@ -110,12 +116,13 @@ void rasterizer::drawPoint(const vec3 &point, color rgba_color)
     {
         frameBuffer[x + y * viewportWidth] = rgba_color;
         depthBuffer[x + y * viewportWidth] = point.z;
-        // TODO: add stats and stats.drawnPoints++;
+        stats.points++;
         if (debugRasterizer)
             std::cout << "drawn" << std::endl;
     }
     else
     {
+        stats.depth++;
         if (debugRasterizer)
             std::cout << "z-clipped" << std::endl;
     }
@@ -291,7 +298,6 @@ private:
  * @param rgba_color minity::color with 0xrrggbbaa format
  * @param rasterizer pointer to the rasterizer instance to use (facilitate easier testing)
  */
-// TODO: re-add render stats
 void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer *rasterizer, lambdaShader fragmentShader)
 {
     const vec3 &v1 = vertices[0];
@@ -329,15 +335,15 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
 
             if (u < 0 || v < 0 || w < 0)
             {
-                // stats.outside++;
+                rasterizer->stats.outside++;
                 continue; // we're outside the triangle
             }
-            // stats.inside++;
+            rasterizer->stats.inside++;
 
             // clipping #3 to viewport/projection space
             if (x < 0 || x >= width || y < 0 || y >= height)
             {
-                // stats.xyClipped++;
+                rasterizer->stats.xyClipped++;
                 continue; // we're outside the viewport
             }
 

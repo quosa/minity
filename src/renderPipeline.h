@@ -9,6 +9,7 @@
 // #include "triangleFill.h" // old triangle fill algorithm
 #include "frameTimer.h"
 #include "rasterizer.h"
+#include "stats.h"
 
 namespace minity
 {
@@ -36,46 +37,7 @@ enum spaceType
     ndcCoordinates = 4
 };
 
-struct renderStats
-{
-    unsigned long int vertices{0};
-    unsigned long int faces{0};
-    unsigned long int bfCulled{0};
-    unsigned long int vfCulled{0};
-    unsigned long int xyClipped{0};
-    unsigned long int drawnFaces{0};
-    unsigned long int outside{0};
-    unsigned long int inside{0};
-    unsigned long int drawnPoints{0};
-    unsigned long int depth{0};
-    const unsigned long int bufferSize{
-        static_cast<unsigned long int>(g_SDLWidth)
-        * static_cast<unsigned long int>(g_SDLHeight)
-    };
-    friend std::ostream& operator<<(std::ostream& os, const renderStats &stats);
-};
-
-// for std::cout << myRenderStats;
-std::ostream& operator<<( std::ostream &os, const renderStats &stats )
-{
-    float pixelPercentage = 100.0f * stats.inside / (stats.inside + stats.outside);
-    os << "render statistics:" << std::endl
-       << "  vertices     " << stats.vertices << std::endl
-       << "  faces        " << stats.faces << std::endl
-       << "  bf-culled    " << stats.bfCulled << std::endl
-       << "  vf-culled    " << stats.vfCulled << std::endl
-       << "  drawn faces  " << stats.drawnFaces << std::endl
-       << "  xy-clipped   " << stats.xyClipped << std::endl
-       << "  outside      " << stats.outside << std::endl
-       << "  inside       " << stats.inside << std::endl
-       << "  in : out     " << pixelPercentage << std::endl
-       << "  drawn points " << stats.drawnPoints << std::endl
-       << "  depth        " << stats.depth << std::endl
-       << "  buffer size  " << stats.bufferSize << std::endl;
-    return os;
-}
-
-// TODO: mode matrices to come from model getters
+// TODO: make matrices come from model getters
 // TODO: figure out if we need to add some encapsulation for vects/norms/texc
 void processVertices(
     minity::model &model,
@@ -476,25 +438,27 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
 
             rasterizer.drawLine(middle, tip, minity::white);
         }
-        if (g_config->drawAxes)
-        {
-            auto transformWorldToScreenSpace = [&](vec3 point) {
-                // no model, only world transforms
-                vec3 tmp = multiplyVec3(multiplyVec3(point, viewMatrix), projector);
-                tmp = v3Div(tmp, tmp.w); // in clip space
-                tmp = toScreenXY(tmp, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
-                return tmp;
-            };
-
-            vec3 origin = transformWorldToScreenSpace(vec3{0.0f, 0.0f, 0.0f});
-            vec3 oneX = transformWorldToScreenSpace(vec3{1.0f, 0.0f, 0.0f});
-            vec3 oneY = transformWorldToScreenSpace(vec3{0.0f, 1.0f, 0.0f});
-            vec3 oneZ = transformWorldToScreenSpace(vec3{0.0f, 0.0f, 1.0f});
-            rasterizer.drawLine(origin, oneX, minity::red);
-            rasterizer.drawLine(origin, oneY, minity::green);
-            rasterizer.drawLine(origin, oneZ, minity::blue);
-        }
         stats.drawnFaces++;
+    }
+
+    if (g_config->drawAxes)
+    {
+        auto transformWorldToScreenSpace = [&](vec3 point) {
+            // no model, only world transforms
+            vec3 tmp = multiplyVec3(multiplyVec3(point, viewMatrix), projector);
+            tmp = v3Div(tmp, tmp.w); // in clip space
+            tmp = toScreenXY(tmp, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
+            return tmp;
+        };
+
+        vec3 origin = transformWorldToScreenSpace(vec3{0.0f, 0.0f, 0.0f});
+        vec3 oneX = transformWorldToScreenSpace(vec3{1.0f, 0.0f, 0.0f});
+        vec3 oneY = transformWorldToScreenSpace(vec3{0.0f, 1.0f, 0.0f});
+        vec3 oneZ = transformWorldToScreenSpace(vec3{0.0f, 0.0f, 1.0f});
+        std::cout << "axes" << std::endl;
+        rasterizer.drawLine(origin, oneX, minity::red);
+        rasterizer.drawLine(origin, oneY, minity::green);
+        rasterizer.drawLine(origin, oneZ, minity::blue);
     }
 
     // show the drawn buffer
@@ -503,6 +467,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
     if (g_config->renderOnChange)
     {
         std::cout << stats << std::endl;
+        std::cout << rasterizer.stats << std::endl;
     }
 
     std::ostringstream stream;
