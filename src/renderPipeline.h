@@ -75,6 +75,93 @@ std::ostream& operator<<( std::ostream &os, const renderStats &stats )
     return os;
 }
 
+// TODO: mode matrices to come from model getters
+// TODO: figure out if we need to add some encapsulation for vects/norms/texc
+void processVertices(
+    minity::model &model,
+    const int idx, vec3 (&vects)[5][3], vec3 (&norms)[5][3], vec2 (&texc)[3],
+    const mat4 &worldTransformations, const mat4 &viewMatrix, const mat4 &projector,
+    renderStats &stats)
+{
+    stats.vertices++;
+
+    // Here triangles are still in MODEL/LOCAL SPACE
+    // i.e. coordinates coming from the modeling software (and .obj file)
+
+    vects[worldSpace][idx % 3] = multiplyVec3(model.vertices[idx], worldTransformations);
+    if (model.hasNormals)
+    {
+        // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
+        auto mn = model.normals[idx];
+        mn.w = 0;
+        norms[worldSpace][idx % 3] = multiplyVec3(mn, transposeMat4(invertMat4(worldTransformations)));
+    }
+    if (model.hasTextureCoordinates)
+    {
+        texc[idx % 3] = model.textureCoordinates[idx];
+    }
+
+    // Here triangles are in WORLD SPACE
+    // i.e. common coordinates for all models in scene
+    // only camera, no projection
+
+    vects[viewSpace][idx % 3] = multiplyVec3(vects[worldSpace][idx % 3], viewMatrix);
+    if (model.hasNormals)
+    {
+        // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
+        norms[viewSpace][idx % 3] = multiplyVec3(norms[worldSpace][idx % 3], transposeMat4(invertMat4(viewMatrix)));
+    }
+
+    // Here triangles are in VIEW SPACE
+    // i.e. coordinates looking from camera
+    // so a point at world space camera coordinates is (0,0,0)
+
+    vects[clipSpace][idx % 3] = multiplyVec3(vects[viewSpace][idx % 3], projector);
+    if (model.hasNormals)
+    {
+        // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
+        norms[clipSpace][idx % 3] = multiplyVec3(norms[viewSpace][idx % 3], transposeMat4(invertMat4(projector)));
+    }
+
+    // Here triangles are in CLIP SPACE in homogeneous coordinates
+    // https://en.wikipedia.org/wiki/Homogeneous_coordinates
+
+    // normalise into cartesian space
+    vec3 vClip = vects[clipSpace][idx % 3];
+    vects[ndcCoordinates][idx % 3] = v3Div(vClip, vClip.w);
+    if (model.hasNormals)
+    {
+        vec3 nClip = norms[clipSpace][idx % 3]; // ???
+        norms[ndcCoordinates][idx % 3] = v3Div(nClip, nClip.w); // ???
+    }
+
+    // Here triangles are in NDC SPACE x, y, z in [-1,1]
+
+    // move all vertices to screen space for rasterization
+    // Assumes -1 .. +1 box
+    // Screen coordinates: (0,0) is top-left!
+    // (x=-1, y=1) -> (0, 0)
+    // (x=-1, y=-1) -> (0, sHeight)
+    // (x=1, y=1) -> (sWidth, 0)
+    // (x=1, y=-1) -> (sWidth, sHeight)
+    // z=-1 -> 0 and z=1 -> 1
+
+    // TODO: FIGURE OUT WHY THIS VIEW MATRIX WAS HERE???
+    // vec3 v = multiplyVec3(vects[ndcCoordinates][idx % 3], viewMatrix);
+    // TODO: THIS NOW LEAVES A GAP TO CENTER???
+    vec3 v = vects[ndcCoordinates][idx % 3];
+    v.x = (v.x + 1.0f) * static_cast<float>(g_SDLWidth) / 2.0f;
+    v.y = (1.0f - ((v.y + 1.0f) / 2.0f)) * static_cast<float>(g_SDLHeight);
+    // z is retained as -1 .. 1 for z-buffering
+    vects[screenSpace][idx % 3] = v;
+
+    // we don't need normals in screenspace???
+    // if (model.hasNormals)
+    //     norms[screenSpace][idx % 3] = multiplyVec3(norms[clipSpace][idx % 3], viewMatrix);
+
+    // Here triangles are all in screen space (0,0) -> (screenWidth, screenHeight)
+};
+
 // TODO: add new faces if clipped
 bool clippingFunction(vec3 (&ndcVertices)[3], renderStats &stats)
 {
@@ -181,84 +268,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         // VERTEX PROCESSING (model to clip space)
         for (int idx : face)
         {
-            stats.vertices++;
-
-            // Here triangles are still in MODEL/LOCAL SPACE
-            // i.e. coordinates coming from the modeling software (and .obj file)
-
-            vects[worldSpace][idx % 3] = multiplyVec3(model.vertices[idx], worldTransformations);
-            if (model.hasNormals)
-            {
-                // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
-                auto mn = model.normals[idx];
-                mn.w = 0;
-                norms[worldSpace][idx % 3] = multiplyVec3(mn, transposeMat4(invertMat4(worldTransformations)));
-            }
-            if (model.hasTextureCoordinates)
-            {
-                texc[idx % 3] = model.textureCoordinates[idx];
-            }
-
-            // Here triangles are in WORLD SPACE
-            // i.e. common coordinates for all models in scene
-            // only camera, no projection
-
-            vects[viewSpace][idx % 3] = multiplyVec3(vects[worldSpace][idx % 3], viewMatrix);
-            if (model.hasNormals)
-            {
-                // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
-                norms[viewSpace][idx % 3] = multiplyVec3(norms[worldSpace][idx % 3], transposeMat4(invertMat4(viewMatrix)));
-            }
-
-            // Here triangles are in VIEW SPACE
-            // i.e. coordinates looking from camera
-            // so a point at world space camera coordinates is (0,0,0)
-
-            vects[clipSpace][idx % 3] = multiplyVec3(vects[viewSpace][idx % 3], projector);
-            if (model.hasNormals)
-            {
-                // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
-                norms[clipSpace][idx % 3] = multiplyVec3(norms[viewSpace][idx % 3], transposeMat4(invertMat4(projector)));
-            }
-
-            // Here triangles are in CLIP SPACE in homogeneous coordinates
-            // https://en.wikipedia.org/wiki/Homogeneous_coordinates
-
-            // normalise into cartesian space
-            vec3 vClip = vects[clipSpace][idx % 3];
-            vects[ndcCoordinates][idx % 3] = v3Div(vClip, vClip.w);
-            if (model.hasNormals)
-            {
-                vec3 nClip = norms[clipSpace][idx % 3]; // ???
-                norms[ndcCoordinates][idx % 3] = v3Div(nClip, nClip.w); // ???
-            }
-
-            // Here triangles are in NDC SPACE x, y, z in [-1,1]
-
-            // move all vertices to screen space for rasterization
-            // Assumes -1 .. +1 box
-            // Screen coordinates: (0,0) is top-left!
-            // (x=-1, y=1) -> (0, 0)
-            // (x=-1, y=-1) -> (0, sHeight)
-            // (x=1, y=1) -> (sWidth, 0)
-            // (x=1, y=-1) -> (sWidth, sHeight)
-            // z=-1 -> 0 and z=1 -> 1
-
-            // TODO: FIGURE OUT WHY THIS VIEW MATRIX WAS HERE???
-            // vec3 v = multiplyVec3(vects[ndcCoordinates][idx % 3], viewMatrix);
-            // TODO: THIS NOW LEAVES A GAP TO CENTER???
-            vec3 v = vects[ndcCoordinates][idx % 3];
-            v.x = (v.x + 1.0f) * static_cast<float>(g_SDLWidth) / 2.0f;
-            v.y = (1.0f - ((v.y + 1.0f) / 2.0f)) * static_cast<float>(g_SDLHeight);
-            // z is retained as -1 .. 1 for z-buffering
-            vects[screenSpace][idx % 3] = v;
-
-            // we don't need normals in screenspace???
-            // if (model.hasNormals)
-            //     norms[screenSpace][idx % 3] = multiplyVec3(norms[clipSpace][idx % 3], viewMatrix);
-
-            // Here triangles are all in screen space (0,0) -> (screenWidth, screenHeight)
-
+            processVertices(model, idx, vects, norms, texc, worldTransformations, viewMatrix, projector, stats);
         } // end of vertex shader (space transformations)
 
 
