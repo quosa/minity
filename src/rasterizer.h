@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <functional>
 
 #define MINITY_SCENE_TYPES_ONLY
 #include "scene.h"
@@ -19,6 +20,11 @@ const color yellow{0xffff00ff};
 const color gray50{0x7f7f7fff};
 
 const bool debugRasterizer{false};
+
+
+typedef std::function< minity::color(float&, float&, float&, minity::color) > lambdaShader;
+auto nullShader = [](float &u, float &v, float &w, minity::color color) -> minity::color { (void)u; (void)v; (void)w; return color; };
+
 class rasterizer
 {
 public:
@@ -29,7 +35,7 @@ public:
         frameBuffer = std::vector<color>(viewportWidth * viewportHeight, black);
         depthBuffer = std::vector<float>(viewportWidth * viewportHeight, std::numeric_limits<float>::infinity());
     };
-    void drawTriangle(const vec3 (&vertices)[3], const color rgba_color);
+    void drawTriangle(const vec3 (&vertices)[3], const color rgba_color, lambdaShader fragmentShader=nullShader);
     void drawLine(const vec3 &from, const vec3 &to, const color rgba_color);
     void drawPoint(const vec3 &point, const color rgba_color);
     color *getFramebuffer();
@@ -48,21 +54,22 @@ private:
 
 // fwd decl
 void plotLine(const vec3 &from, const vec3 &to, const color rgba_color, rasterizer *rasterizer);
-void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer *rasterizer);
+void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer *rasterizer, lambdaShader fragmentShader);
+
+// method implementations
 
 void rasterizer::clearBuffers()
 {
     std::fill(frameBuffer.begin(), frameBuffer.end(), black);
     std::fill(depthBuffer.begin(), depthBuffer.end(), std::numeric_limits<float>::infinity());
 };
-// method implementations
-void rasterizer::drawTriangle(const vec3 (&vertices)[3], const color rgba_color)
+void rasterizer::drawTriangle(const vec3 (&vertices)[3], const color rgba_color, lambdaShader fragmentShader)
 {
     // (void)vertices;
     // (void)rgba_color;
     if (debugRasterizer)
         std::cout << "drawTriangle: " << vertices[0] << " " << vertices[1] << " " << vertices[2] << std::endl;
-    plotTriangle(vertices, rgba_color, this);
+    plotTriangle(vertices, rgba_color, this, fragmentShader);
 };
 void rasterizer::drawLine(const vec3 &from, const vec3 &to, const color rgba_color)
 {
@@ -283,7 +290,7 @@ private:
  * @param rgba_color minity::color with 0xrrggbbaa format
  * @param rasterizer pointer to the rasterizer instance to use (facilitate easier testing)
  */
-void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer *rasterizer)
+void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer *rasterizer, lambdaShader fragmentShader)
 {
     const vec3 &v1 = vertices[0];
     const vec3 &v2 = vertices[1];
@@ -337,7 +344,11 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
             // z-buffer (depth) check
             // get the z value for this point using the barymetric coordinates:
             float z = v1.z * u + v2.z * v + v3.z * w;
-            rasterizer->drawPoint(vec3{(float)x, (float)y, z}, rgba_color);
+
+            // (void)fragmentShader;
+            minity::color adjustedColor = fragmentShader(u, v, w, rgba_color);
+
+            rasterizer->drawPoint(vec3{(float)x, (float)y, z}, adjustedColor);
         }
     }
 }

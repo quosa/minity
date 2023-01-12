@@ -563,9 +563,10 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         // RASTERIZATION, working in screen space
 
 
+        // FRAGMENT SHADER (or pixel shader)
         if (g_config->fillTriangles)
         {
-            rasterizer.drawTriangle(vects[screenSpace], faceColor);
+            rasterizer.drawTriangle(vects[screenSpace], faceColor, fragmentShader);
         }
         if (g_config->drawWireframe)
         {
