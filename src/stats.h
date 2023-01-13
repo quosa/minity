@@ -30,6 +30,7 @@ struct rasterizerStats
     unsigned long int lines{0};
     unsigned long int points{0};
     unsigned long int xyClipped{0};
+    unsigned long int degenerate{0};
     unsigned long int outside{0};
     unsigned long int inside{0};
     unsigned long int depth{0};
@@ -45,6 +46,7 @@ std::ostream& operator<<( std::ostream &os, const rasterizerStats &stats )
        << "  lines        " << stats.lines << std::endl
        << "  points       " << stats.points << std::endl
        << "  xy-clipped   " << stats.xyClipped << std::endl
+       << "  degenerate   " << stats.degenerate << std::endl
        << "  outside      " << stats.outside << std::endl
        << "  inside       " << stats.inside << std::endl
        << "  in : out     " << pixelPercentage << std::endl

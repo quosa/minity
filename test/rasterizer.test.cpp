@@ -203,3 +203,40 @@ TEST_CASE("draw line bug - drawing does not stop")
     REQUIRE_THAT(db[429 + 168*800], Catch::Matchers::WithinRel(-4.0f, 0.0000001f) );
     REQUIRE_THAT(db[427 + 165*800], Catch::Matchers::WithinRel(-4.0f, 0.0000001f) );
 }
+
+// WARNING: nan nan nan
+//  x, y: 277,362
+// (277.000000, 362.000000, 0.000000) // point
+// (275.483643, 368.956848, 0.967554) // vertices
+// (277.948761, 359.778381, 0.967689)
+// (277.619690, 361.007660, 0.967300)
+
+// in this case, the triangle is so thin that due to rounding
+// the barycentric coordinates are nan/inf because
+// the triangle area is zero and the denominator becomes zero.
+// We'll discard and stat these cases separately
+TEST_CASE("barycentric coordinates bug - degenerate triangle")
+{
+    float u{0};
+    float v{0};
+    float w{0};
+    vec3 vertices[3]{
+        vec3{275.483643, 368.956848, 0.967554},
+        vec3{277.948761, 359.778381, 0.967689},
+        vec3{277.619690, 361.007660, 0.967300}};
+    vec3 point{277.000000, 362.000000, 0.000000};
+    minity::barycentricCoordinates bc{};
+    bc.prepare(vertices);
+    bc.barycentricCoordinatesAt(vertices, point, u, v, w);
+
+    std::cout << "v0 " << bc.v0 << " v1 " << bc.v1 << std::endl;
+    std::cout << "v0 x v1 " << v3CrossProduct(bc.v0, bc.v1) << std::endl;
+    std::cout << "inv denom " << bc.invDenom << std::endl;
+    std::cout << "d00 * d11 " << bc.d00 * bc.d11 << std::endl;
+    std::cout << "d01 * d01 " << bc.d01 * bc.d01 << std::endl;
+    std::cout << "d00 * d11 - d01 * d01 " << bc.d00 * bc.d11 - bc.d01 * bc.d01 << std::endl;
+    std::cout << "d00 " << bc.d00 << " d01 " << bc.d01 << " d11 " << bc.d11 << " d20 " << bc.d20 << " d21 " << bc.d21  << std::endl;
+    REQUIRE(!std::isfinite(u)); // denominator becomes zero
+    REQUIRE(!std::isfinite(v)); // denominator becomes zero
+    REQUIRE(!std::isfinite(w)); // denominator becomes zero
+}

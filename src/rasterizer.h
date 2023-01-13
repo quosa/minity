@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <limits>
 #include <functional>
 
@@ -279,7 +280,9 @@ public:
         u = 1.0f - v - w;
     }
 
-private:
+// leave the components public as
+// there's no real reason to hide them
+// private:
     vec3 v0{0};
     vec3 v1{0};
     vec3 v2{0};
@@ -333,6 +336,15 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
             vec3 point = {static_cast<float>(x), static_cast<float>(y), 0}; // IS THIS 0 CORRECT ???
             bc.barycentricCoordinatesAt(vertices, point, u, v, w);
 
+            // likely a degenerate triangle (due to rounding the denominator becomes zero)
+            if (!std::isfinite(u) || !std::isfinite(v) || !std::isfinite(w))
+            {
+                // std::cerr << "WARNING: non-finite barycentric coordinates!!!" << std::endl;
+                // std::cerr << "WARNING: " << u << " " << v << " " << w << std::endl;
+                rasterizer->stats.degenerate++;
+                continue;
+            }
+
             if (u < 0 || v < 0 || w < 0)
             {
                 rasterizer->stats.outside++;
@@ -373,6 +385,14 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
             // TODO: pre-z-test to avoid fragment/pixel shader and stats.depth++; if dropped
 
             // (void)fragmentShader;
+            // if(! (u >= 0.0f && v >= 0.0f && w >= 0.0f))
+            // {
+            //     std::cout << "WARNING: " << u << " " << v << " " << w << std::endl;
+            //     std::cout << " x, y: " << x << "," << y << std::endl;
+            //     std::cout << point << std::endl;
+            //     for (auto v : vertices)
+            //         std::cout << v << std::endl;
+            // }
             minity::color adjustedColor = fragmentShader(u, v, w, rgba_color);
 
             rasterizer->drawPoint(vec3{(float)x, (float)y, z}, adjustedColor);
