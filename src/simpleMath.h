@@ -102,6 +102,9 @@ void printMat4(const mat4 &mat, std::ostream& os = std::cout);
 void printVec3(const vec3 &v);
 void printTri(const tri &t, std::string label);
 
+void printColor(u_int32_t color);
+u_int32_t adjustColor(u_int32_t color, float multiplier);
+
 vec3 v3Add(const vec3 &v1, const vec3 &v2);
 vec3 v3Sub(const vec3 &v1, const vec3 &v2);
 vec3 v3Mul(const vec3 &v1, const vec3 &v2);
@@ -111,6 +114,8 @@ vec3 v3CrossProduct(const vec3 &v1, const vec3 &v2);
 float v3Length(const vec3 &v);
 vec3 v3Normalize(const vec3 &v);
 
+vec3 multiplyVec3(const vec3 &i, const float f);
+vec3 multiplyVec3(const vec3 &i, const mat4 &m);
 mat4 multiplyMat4(const mat4 &m1, const mat4 &m2);
 mat4 rotateXMatrix(const float fAngleRad);
 mat4 rotateYMatrix(const float fAngleRad);
@@ -118,7 +123,6 @@ mat4 rotateZMatrix(float fAngleRad);
 mat4 translateMatrix(const float x, const float y, const float z);
 mat4 lookAtMatrixRH(const vec3 &eye, const vec3 &center, const vec3 &tmp);
 mat4 fpsLookAtMatrixRH(vec3 eye, float pitch, float yaw);
-
 
 constexpr float deg2rad(float degrees)
 {
@@ -342,29 +346,6 @@ mat4 multiplyMat4(const mat4 &m1, const mat4 &m2)
     return out;
 }
 
-// http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html
-mat4 inverseMatrixSimple(const mat4 &m) // Only for Rotation/Translation Matrices
-{
-    mat4 out;
-    // row order: matrix[row][col]
-    // The basic idea is that the scaling/rotation combination of the transformation matrix
-    // (first 3x3 sub-matrix) is an orthonormal matrix
-    // and inverse of on orthonormal matrix is equal to the the transpose.
-    out.m[0][0] = m.m[0][0];  out.m[0][1] = m.m[1][0];  out.m[0][2] = m.m[2][0];
-    out.m[1][0] = m.m[0][1];  out.m[1][1] = m.m[1][1];  out.m[1][2] = m.m[2][1];
-    out.m[2][0] = m.m[0][2];  out.m[2][1] = m.m[1][2];  out.m[2][2] = m.m[2][2];
-    out.m[3][0] = 0.0f;       out.m[3][1] = 0.0f;       out.m[3][2] = 0.0f;
-
-    float tx = m.m[0][3];
-    float ty = m.m[1][3];
-    float tz = m.m[2][3];
-    out.m[0][3] = -(m.m[0][0] * tx + m.m[0][1] * ty + m.m[0][2] * tz);
-    out.m[1][3] = -(m.m[1][0] * tx + m.m[1][1] * ty + m.m[1][2] * tz);
-    out.m[2][3] = -(m.m[2][0] * tx + m.m[2][1] * ty + m.m[2][2] * tz);
-    out.m[3][3] = 1.0f;
-    return out;
-}
-
 // TODO: check if these are still valid references/notes
 // https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/lookat-function (looks flaky)
 // https://github.com/g-truc/glm/blob/master/glm/ext/matrix_transform.inl#L99 (lookAtRH)
@@ -501,6 +482,7 @@ void printMat4(const mat4 &mat, std::ostream& os)
         os << std::endl;
     }
 }
+
 void printVec3(const vec3 &v)
 {
     std::cout << "( " << v.x << " " << v.y << " " << v.z << " " << v.w << " )" << std::endl;
