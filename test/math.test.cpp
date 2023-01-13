@@ -10,7 +10,7 @@
 
 // for hiding std::cout
 // auto old_buffer = std::cout.rdbuf(nullptr);
-auto old_buffer = std::cerr.rdbuf(nullptr);
+// auto old_buffer = std::cerr.rdbuf(nullptr);
 
 const vec3 v0{};
 const vec3 v1{1.0f, 1.0f, 1.0f};
@@ -54,6 +54,16 @@ TEST_CASE("zero-vec * 1 = zero-vec")
 TEST_CASE("1-vec * 2 = 2-vec")
 {
     REQUIRE(multiplyVec3(v1, 2.0f) == vec3{2.0f, 2.0f, 2.0f});
+}
+
+TEST_CASE("vec3 multiplication by two")
+{
+    REQUIRE(v3Mul(v1, 2.0f) == vec3{2.0f, 2.0f, 2.0f});
+}
+
+TEST_CASE("vec3 multiplication by one")
+{
+    REQUIRE(v3Mul(v1, 1.0f) == v1);
 }
 
 TEST_CASE("dot products - orthogonal all quadrants")
@@ -933,4 +943,16 @@ TEST_CASE("calculate face normal - facing down")
         v3Sub(back, v0) // v1 - v0
     ));
     REQUIRE(faceNormal == down);
+}
+
+TEST_CASE("adjust color by one")
+{
+    u_int32_t color{0x11223344};
+    REQUIRE(adjustColor(color, 1.0f) == color);
+}
+
+TEST_CASE("adjust color by zero")
+{
+    u_int32_t color{0x11223344};
+    REQUIRE(adjustColor(color, 0.0f) == 0x00000044); // alpha is not touched
 }
