@@ -43,6 +43,7 @@ void processVertices(
     minity::model &model,
     const int idx, vec3 (&vects)[5][3], vec3 (&norms)[5][3], vec2 (&texc)[3],
     const mat4 &worldTransformations, const mat4 &viewMatrix, const mat4 &projector,
+    const mat4 &inverseWorldTransformations, const mat4 &inverseViewMatrix, const mat4 &inverseProjector,
     renderStats &stats)
 {
     stats.vertices++;
@@ -56,7 +57,7 @@ void processVertices(
         // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
         auto mn = model.normals[idx];
         mn.w = 0;
-        norms[worldSpace][idx % 3] = multiplyVec3(mn, transposeMat4(invertMat4(worldTransformations)));
+        norms[worldSpace][idx % 3] = multiplyVec3(mn, transposeMat4(inverseWorldTransformations));
     }
     if (model.hasTextureCoordinates)
     {
@@ -71,7 +72,7 @@ void processVertices(
     if (model.hasNormals)
     {
         // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
-        norms[viewSpace][idx % 3] = multiplyVec3(norms[worldSpace][idx % 3], transposeMat4(invertMat4(viewMatrix)));
+        norms[viewSpace][idx % 3] = multiplyVec3(norms[worldSpace][idx % 3], transposeMat4(inverseViewMatrix));
     }
 
     // Here triangles are in VIEW SPACE
@@ -82,7 +83,7 @@ void processVertices(
     if (model.hasNormals)
     {
         // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
-        norms[clipSpace][idx % 3] = multiplyVec3(norms[viewSpace][idx % 3], transposeMat4(invertMat4(projector)));
+        norms[clipSpace][idx % 3] = multiplyVec3(norms[viewSpace][idx % 3], transposeMat4(inverseProjector));
     }
 
     // Here triangles are in CLIP SPACE in homogeneous coordinates
@@ -199,13 +200,16 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
     worldTransformations = multiplyMat4(yRotator, worldTransformations);
     worldTransformations = multiplyMat4(zRotator, worldTransformations);
     worldTransformations = multiplyMat4(translator, worldTransformations);
+    mat4 inverseWorldTransformations = invertMat4(worldTransformations);
 
     // perspective
     float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
     // TODO: near and far field to camera structure
     mat4 projector = projectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
+    mat4 inverseProjector = invertMat4(projector);
 
     mat4 viewMatrix = camera.getCameraMatrix();
+    mat4 inverseViewMatrix = invertMat4(viewMatrix);
 
     mat4 lightMatrix = light.getLightTranslationMatrix();
     (void)lightMatrix; // TODO: use the light for diffusion
@@ -230,7 +234,10 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         // VERTEX PROCESSING (model to clip space)
         for (int idx : face)
         {
-            processVertices(model, idx, vects, norms, texc, worldTransformations, viewMatrix, projector, stats);
+            processVertices(model, idx, vects, norms, texc,
+                worldTransformations, viewMatrix, projector,
+                inverseWorldTransformations, inverseViewMatrix, inverseProjector,
+                stats);
         } // end of vertex shader (space transformations)
 
 
@@ -455,7 +462,6 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         vec3 oneX = transformWorldToScreenSpace(vec3{1.0f, 0.0f, 0.0f});
         vec3 oneY = transformWorldToScreenSpace(vec3{0.0f, 1.0f, 0.0f});
         vec3 oneZ = transformWorldToScreenSpace(vec3{0.0f, 0.0f, 1.0f});
-        std::cout << "axes" << std::endl;
         rasterizer.drawLine(origin, oneX, minity::red);
         rasterizer.drawLine(origin, oneY, minity::green);
         rasterizer.drawLine(origin, oneZ, minity::blue);
@@ -471,7 +477,8 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
     }
 
     std::ostringstream stream;
-    stream << stats;
+    stream << stats
+        << rasterizer.stats;
     g_stats = stream.str();
 
     return true;
