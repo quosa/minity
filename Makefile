@@ -14,12 +14,13 @@ ifeq ($(mode),release)
 else
 	mode = debug
 
-	# CXXFLAGS += -g -O0
+	CXXFLAGS += -g -O0
 
 ifdef coverage
 	# coverage https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
+	# SEE: tools/coverage/coverage.sh
 
-	CXXFLAGS += -g -O0 -fprofile-instr-generate -fcoverage-mapping
+	CXXFLAGS += -fprofile-instr-generate -fcoverage-mapping
 	LDFLAGS += -fprofile-instr-generate
 
 	# make clean test
@@ -27,10 +28,11 @@ ifdef coverage
 	# xcrun llvm-profdata merge -sparse foo.profraw -o foo.profdata
 	# xcrun llvm-cov show ./bin/test -instr-profile=foo.profdata
 	# xcrun llvm-cov report ./bin/test -instr-profile=foo.profdata
-
 endif
 
-	# profiling with clang/llvm, see doc/profiling.md
+	# profiling with clang/llvm
+	# SEE: doc/profiling.md
+	# SEE: tools/profile/profile.sh
 	# CXXFLAGS += -g -O0 -fprofile-instr-generate -fcoverage-mapping
 	# LDFLAGS += -fprofile-instr-generate
 
