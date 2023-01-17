@@ -19,6 +19,20 @@
 
 #include "utils.h" // box, sphere...
 
+// METAL
+#define NS_PRIVATE_IMPLEMENTATION
+#define CA_PRIVATE_IMPLEMENTATION
+#define MTL_PRIVATE_IMPLEMENTATION
+#include <Foundation/Foundation.hpp>
+#include <Metal/Metal.hpp>
+#include <QuartzCore/QuartzCore.hpp>
+
+#include <simd/simd.h> // vector_uintN
+#include "metal_scene.h"
+#include "renderer.h"
+#include "shader_types.h"
+
+
 const std::string usage = R"(
 key bindings:
     wasd keys  - look up/left/down/right
@@ -316,10 +330,128 @@ void newRasterizer()
     minity::shutdown();
 }
 
+// https://developer.apple.com/library/archive/documentation/Miscellaneous/Conceptual/MetalProgrammingGuide/Dev-Technique/Dev-Technique.html
+// https://developer.apple.com/documentation/metal/shader_libraries/building_a_library_with_metal_s_command-line_tools?language=objc
+// xcrun -sdk macosx metal -c renderer.metal -o renderer.air
+// xcrun -sdk macosx metallib renderer.air -o renderer.metallib
+// xxd -i renderer.metallib renderer_metallib.h
+// clang++ -std=c++17 -I /usr/local/include -I ../metal-cpp main.cpp -l SDL2 -framework Foundation -framework QuartzCore -framework Metal && ./a.out
+void metalRenderer()
+{
+    const vector_uint2 viewport = {
+        640, 480
+    };
+
+    const float s = 0.5f;
+
+    VertexData vertexData[] = {
+        //                                         Texture
+        //   Positions           Normals         Coordinates
+        { { -s, -s, +s }, {  0.f,  0.f,  1.f }, { 0.f, 1.f } },
+        { { +s, -s, +s }, {  0.f,  0.f,  1.f }, { 1.f, 1.f } },
+        { { +s, +s, +s }, {  0.f,  0.f,  1.f }, { 1.f, 0.f } },
+        { { -s, +s, +s }, {  0.f,  0.f,  1.f }, { 0.f, 0.f } },
+
+        { { +s, -s, +s }, {  1.f,  0.f,  0.f }, { 0.f, 1.f } },
+        { { +s, -s, -s }, {  1.f,  0.f,  0.f }, { 1.f, 1.f } },
+        { { +s, +s, -s }, {  1.f,  0.f,  0.f }, { 1.f, 0.f } },
+        { { +s, +s, +s }, {  1.f,  0.f,  0.f }, { 0.f, 0.f } },
+
+        { { +s, -s, -s }, {  0.f,  0.f, -1.f }, { 0.f, 1.f } },
+        { { -s, -s, -s }, {  0.f,  0.f, -1.f }, { 1.f, 1.f } },
+        { { -s, +s, -s }, {  0.f,  0.f, -1.f }, { 1.f, 0.f } },
+        { { +s, +s, -s }, {  0.f,  0.f, -1.f }, { 0.f, 0.f } },
+
+        { { -s, -s, -s }, { -1.f,  0.f,  0.f }, { 0.f, 1.f } },
+        { { -s, -s, +s }, { -1.f,  0.f,  0.f }, { 1.f, 1.f } },
+        { { -s, +s, +s }, { -1.f,  0.f,  0.f }, { 1.f, 0.f } },
+        { { -s, +s, -s }, { -1.f,  0.f,  0.f }, { 0.f, 0.f } },
+
+        { { -s, +s, +s }, {  0.f,  1.f,  0.f }, { 0.f, 1.f } },
+        { { +s, +s, +s }, {  0.f,  1.f,  0.f }, { 1.f, 1.f } },
+        { { +s, +s, -s }, {  0.f,  1.f,  0.f }, { 1.f, 0.f } },
+        { { -s, +s, -s }, {  0.f,  1.f,  0.f }, { 0.f, 0.f } },
+
+        { { -s, -s, -s }, {  0.f, -1.f,  0.f }, { 0.f, 1.f } },
+        { { +s, -s, -s }, {  0.f, -1.f,  0.f }, { 1.f, 1.f } },
+        { { +s, -s, +s }, {  0.f, -1.f,  0.f }, { 1.f, 0.f } },
+        { { -s, -s, +s }, {  0.f, -1.f,  0.f }, { 0.f, 0.f } }
+    };
+
+    uint16_t indexData[] = {
+        0,  1,  2,  2,  3,  0, /* front */
+        4,  5,  6,  6,  7,  4, /* right */
+        8,  9, 10, 10, 11,  8, /* back */
+        12, 13, 14, 14, 15, 12, /* left */
+        16, 17, 18, 18, 19, 16, /* top */
+        20, 21, 22, 22, 23, 20, /* bottom */
+    };
+
+    const size_t vertexDataSize = sizeof( vertexData );
+    const size_t indexDataSize = sizeof( indexData );
+
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
+    SDL_InitSubSystem(SDL_INIT_VIDEO);
+
+    SDL_Window *window = SDL_CreateWindow("SDL Metal", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, viewport[0], viewport[1], SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+    auto layer = (CA::MetalLayer*)SDL_RenderGetMetalLayer(renderer);
+
+    Scene cubeScene{vertexData, vertexDataSize, indexData, indexDataSize};
+
+    Renderer metalRenderer = Renderer(layer, cubeScene);
+
+    std::cout << vertexDataSize << " " << indexDataSize << std::endl;
+
+    std::cout << "hello, sdl metal" << std::endl;
+
+    bool quit = false;
+    SDL_Event e;
+
+    // cube parameters
+    float angle = 0.0f;
+    simd::float3 scale{ 1.0f, 1.0f, 1.0f };
+    simd::float3 position{ 0.f, 0.f, -5.f };
+    simd::float4 color{ 1.0f, 1.0f, 0.0f, 1.0f };
+
+    while (!quit) {
+        while (SDL_PollEvent(&e) != 0) {
+            switch (e.type) {
+                case SDL_QUIT: {
+                    quit = true;
+                } break;
+                case SDL_KEYDOWN:
+                switch (e.key.keysym.sym)
+                {
+                    case SDLK_SPACE:
+                        std::cout << "hello" << std::endl;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+
+        // cube translation parameters
+        angle += 0.01f;
+
+        metalRenderer.renderModel(position, scale, angle, color);
+
+    } // end of rendering loop
+
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+
+    SDL_Quit();
+}
+
 int main()
 {
     std::cout << banner << usage << std::endl;
-    newScenario();
+    // newScenario();
     // newRasterizer();
     // newRasterizerScene();
+    metalRenderer();
 }
