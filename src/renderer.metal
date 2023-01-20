@@ -40,8 +40,8 @@ half4 fragment fragmentMain( v2f in [[stage_in]], texture2d< half, access::sampl
     constexpr sampler s( address::repeat, filter::linear );
     half3 texel = tex.sample( s, in.texcoord ).rgb;
 
-    // assume light coming from (front-top-right)
-    float3 l = normalize(float3( 1.0, 1.0, 0.8 ));
+    // assume light coming from (front-top-right) - 1.0, 1.0, 0.8
+    float3 l = normalize(float3( 0.0, 0.0, 1.0 ));
     float3 n = normalize( in.normal );
 
     half ndotl = half( saturate( dot( n, l ) ) );
