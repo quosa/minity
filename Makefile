@@ -2,10 +2,8 @@ RM = rm -f
 # CXX = g++
 CC = clang
 CXX = clang++
-#CFLAGS = -Wall -Wextra -pedantic-errors -Werror
-CFLAGS =
-#CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic-errors -Werror `sdl2-config --cflags`
-CXXFLAGS = -std=c++17 `sdl2-config --cflags`
+CFLAGS = -Wall -Wextra -pedantic-errors -Werror
+CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic-errors -Werror `sdl2-config --cflags`
 CPPFLAGS = -I /usr/local/include/SDL2 -I include -I ${IMGUI_DIR} -I external/metal-cpp
 LDFLAGS = -L /usr/local/lib
 LDLIBS = -l SDL2 -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -framework Foundation -framework QuartzCore -framework Metal `sdl2-config --libs`

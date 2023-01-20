@@ -19,6 +19,11 @@
 static constexpr size_t kMaxFramesInFlight = 3;
 
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc99-extensions"
+// ignore the warnings from metal-cpp :-/
+// src/renderer.h:49:16: error: compound literals are a C99-specific feature [-Werror,-Wc99-extensions]
+//         return (simd_float4x4){ (float4){ 1.f, 0.f, 0.f, 0.f },
 namespace math
 {
     constexpr simd::float3 add( const simd::float3& a, const simd::float3& b );
@@ -116,6 +121,7 @@ namespace math
     }
 
 }
+#pragma clang diagnostic pop
 
 class Renderer
 {
@@ -132,7 +138,6 @@ private:
     void initBuffers(Scene &scene);
 
     CA::MetalLayer *layer;
-    Scene scene;
     MTL::Device *device{nullptr};
 
     dispatch_semaphore_t semaphore;
@@ -153,7 +158,7 @@ private:
 
 };
 
-Renderer::Renderer(CA::MetalLayer *layer, Scene &scene) : layer(layer), scene(scene)
+Renderer::Renderer(CA::MetalLayer *layer, Scene &scene) : layer(layer)
 {
     device = layer->device();
 
@@ -345,7 +350,8 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
 
     MTL::CommandBuffer* buffer = queue->commandBuffer();
     dispatch_semaphore_wait( semaphore, DISPATCH_TIME_FOREVER );
-    buffer->addCompletedHandler( ^void( MTL::CommandBuffer* buffer ){
+    buffer->addCompletedHandler( ^void(  MTL::CommandBuffer* buffer ){
+        (void)buffer; // silence linter
         dispatch_semaphore_signal( semaphore );
     });
 
