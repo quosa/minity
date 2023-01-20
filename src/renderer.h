@@ -23,7 +23,7 @@ namespace math
 {
     constexpr simd::float3 add( const simd::float3& a, const simd::float3& b );
     constexpr simd_float4x4 makeIdentity();
-    simd::float4x4 makePerspective();
+    simd::float4x4 makePerspective( float fovRadians, float aspect, float znear, float zfar );
     simd::float4x4 makeXRotate( float angleRadians );
     simd::float4x4 makeYRotate( float angleRadians );
     simd::float4x4 makeZRotate( float angleRadians );
@@ -126,6 +126,7 @@ public:
     void renderModel(const simd::float3 &position, const simd::float3 &scale, const float &angle, const simd::float4 &color);
 private:
     void initPipeline();
+    void initDepthTexture();
     void initDepthStencil();
     void initTexture();
     void initBuffers(Scene &scene);
@@ -138,9 +139,12 @@ private:
     MTL::RenderPipelineState *pipeline{nullptr};
     MTL::DepthStencilState *depth_stencil{nullptr};
     MTL::Texture *pTexture{nullptr};
+    MTL::Texture *pDepthTexture{nullptr};
+
 
     MTL::Buffer* vertex_data_buffer;
     MTL::Buffer* index_buffer;
+    unsigned int indexBufferCount{0};
     MTL::Buffer* instace_data_buffer[kMaxFramesInFlight];
     MTL::Buffer* camera_data_buffer[kMaxFramesInFlight];
     MTL::CommandQueue *queue{nullptr};
@@ -158,6 +162,7 @@ Renderer::Renderer(CA::MetalLayer *layer, Scene &scene) : layer(layer), scene(sc
 
     semaphore = dispatch_semaphore_create( kMaxFramesInFlight );
     initPipeline();
+    initDepthTexture();
     initDepthStencil();
     initTexture();
     initBuffers(scene);
@@ -201,7 +206,8 @@ void Renderer::initPipeline()
     pipeline_descriptor->setFragmentFunction(fragment_function);
 
     pipeline_descriptor->colorAttachments()->object(0)->setPixelFormat( MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB );
-    pipeline_descriptor->setDepthAttachmentPixelFormat( MTL::PixelFormat::PixelFormatDepth16Unorm );
+    pipeline_descriptor->setDepthAttachmentPixelFormat( MTL::PixelFormat::PixelFormatDepth32Float_Stencil8 );
+    pipeline_descriptor->setStencilAttachmentPixelFormat(MTL::PixelFormat::PixelFormatDepth32Float_Stencil8);
 
     vertex_function->release();
     fragment_function->release();
@@ -217,6 +223,21 @@ void Renderer::initPipeline()
         std::cerr << "Failed to create pipeline" << std::endl;
         std::exit(-1);
     }
+}
+
+// https://stackoverflow.com/questions/42637659/trouble-getting-depth-testing-to-work-with-apples-metal-graphics-api
+void Renderer::initDepthTexture()
+{
+    auto drawableSize = layer->drawableSize();
+    auto depthTextureDesc = MTL::TextureDescriptor::texture2DDescriptor(
+        MTL::PixelFormat::PixelFormatDepth32Float_Stencil8, // was: PixelFormatDepth16Unorm,
+        drawableSize.width,
+        drawableSize.height,
+        false
+    );
+    depthTextureDesc->setStorageMode(MTL::StorageModePrivate);
+    depthTextureDesc->setUsage(MTL::TextureUsageRenderTarget);
+    pDepthTexture = device->newTexture( depthTextureDesc );
 }
 
 void Renderer::initDepthStencil()
@@ -265,6 +286,7 @@ void Renderer::initTexture()
         {
             bool isWhite = (x^y) & 0b1000000;
             uint8_t c = isWhite ? 0xFF : 0xA;
+            // uint8_t c = 0xFF;
 
             size_t i = y * tw + x;
 
@@ -285,7 +307,6 @@ void Renderer::initBuffers(Scene &scene)
     ///////////////////////////////////////////////////////////////////////////////////////
     // buffers
 
-    std::cout << scene.vertexDataSize << " " << scene.indexDataSize << std::endl;
     vertex_data_buffer = device->newBuffer( scene.vertexDataSize, MTL::ResourceStorageModeManaged );
     memcpy( vertex_data_buffer->contents(), scene.vertexData, scene.vertexDataSize );
     vertex_data_buffer->didModifyRange( NS::Range::Make( 0, vertex_data_buffer->length() ) );
@@ -293,6 +314,7 @@ void Renderer::initBuffers(Scene &scene)
     index_buffer = device->newBuffer( scene.indexDataSize, MTL::ResourceStorageModeManaged );
     memcpy( index_buffer->contents(), scene.indexData, scene.indexDataSize );
     index_buffer->didModifyRange( NS::Range::Make( 0, index_buffer->length() ) );
+    indexBufferCount = scene.indexDataSize / sizeof(u_int32_t);
 
     const size_t instanceDataSize = kMaxFramesInFlight * sizeof( InstanceData );
     for ( size_t i = 0; i < kMaxFramesInFlight; ++i )
@@ -348,7 +370,10 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
 
     MTL::Buffer* pCameraDataBuffer = camera_data_buffer[ _frame ];
     CameraData* pCameraData = reinterpret_cast< CameraData *>( pCameraDataBuffer->contents() );
-    pCameraData->perspectiveTransform = math::makePerspective( 45.f * M_PI / 180.f, 1.f, 0.03f, 500.0f ) ;
+    // pCameraData->perspectiveTransform = math::makePerspective( 45.f * M_PI / 180.f, 1.f, 0.03f, 500.0f ) ;
+    auto drawableSize = layer->drawableSize();
+    float aspectRatio = (float) (drawableSize.width / drawableSize.height);
+    pCameraData->perspectiveTransform = math::makePerspective( 60.0f * M_PI / 180.f, aspectRatio, 0.1f, 500.0f ) ;
     pCameraData->worldTransform = math::makeIdentity();
     pCameraData->worldNormalTransform = math::discardTranslation( pCameraData->worldTransform );
     pCameraDataBuffer->didModifyRange( NS::Range::Make( 0, sizeof( CameraData ) ) );
@@ -361,11 +386,28 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
 
     auto pass = MTL::RenderPassDescriptor::renderPassDescriptor();
 
+    // https://stackoverflow.com/questions/29495380/ios-metal-how-to-clear-depth-buffer-similar-to-glcleargl-depth-buffer-bit-i
     // load and store actions (~clear buffer and store results for display)
-    auto color_attachment = pass->colorAttachments()->object(0);
-    color_attachment->setLoadAction(MTL::LoadAction::LoadActionClear);
-    color_attachment->setStoreAction(MTL::StoreAction::StoreActionStore);
-    color_attachment->setTexture(drawable->texture());
+    auto colorAttachment = pass->colorAttachments()->object(0);
+    colorAttachment->setClearColor(MTL::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    colorAttachment->setLoadAction(MTL::LoadAction::LoadActionClear);
+    colorAttachment->setStoreAction(MTL::StoreAction::StoreActionStore);
+    colorAttachment->setTexture(drawable->texture());
+
+    // depth buffer
+    auto depthAttachment = pass->depthAttachment();
+    depthAttachment->setTexture(pDepthTexture);
+    depthAttachment->setClearDepth(1.0f);
+    // we will not use the depth buffer (e.g. for saving in a file) so discard it
+    depthAttachment->setStoreAction(MTL::StoreAction::StoreActionDontCare);
+    depthAttachment->setLoadAction(MTL::LoadAction::LoadActionClear);
+
+    // stencil attachment
+    auto stencilAttachment = pass->stencilAttachment();
+    stencilAttachment->setTexture(depthAttachment->texture());
+    stencilAttachment->setStoreAction(MTL::StoreAction::StoreActionDontCare);
+    stencilAttachment->setLoadAction(MTL::LoadAction::LoadActionClear);
+
 
     auto encoder = buffer->renderCommandEncoder(pass);
 
@@ -380,8 +422,8 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     //     0.0f, 1.0f // near, far
     // });
 
-    encoder->setRenderPipelineState( pipeline );
     encoder->setDepthStencilState( depth_stencil );
+    encoder->setRenderPipelineState( pipeline );
 
     encoder->setVertexBuffer( vertex_data_buffer, /* offset */ 0, /* index */ 0 );
     encoder->setVertexBuffer( pInstanceDataBuffer, /* offset */ 0, /* index */ 1 );
@@ -390,12 +432,12 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     encoder->setFragmentTexture( pTexture, /* index */ 0 );
 
     encoder->setCullMode( MTL::CullModeBack ); // none/front/back
-    encoder->setFrontFacingWinding( MTL::Winding::WindingCounterClockwise ); // (counter)clockwise
+    encoder->setFrontFacingWinding( MTL::Winding::WindingClockwise ); // (counter)clockwise WindingCounterClockwise
     // encoder->setDepthClipMode( MTL::DepthClipMode::DepthClipModeClip ); // clip/clamp
     encoder->setTriangleFillMode( MTL::TriangleFillMode::TriangleFillModeFill ); // fill/lines TriangleFillModeFill/TriangleFillModeLines
 
     encoder->drawIndexedPrimitives( MTL::PrimitiveType::PrimitiveTypeTriangle,
-                                6 * 6, MTL::IndexType::IndexTypeUInt16,
+                                indexBufferCount, MTL::IndexType::IndexTypeUInt32,
                                 index_buffer,
                                 0, // offset
                                 1 ); // instance count

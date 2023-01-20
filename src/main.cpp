@@ -330,65 +330,71 @@ void newRasterizer()
     minity::shutdown();
 }
 
+// utils to print vertices...
+std::string sf3(simd::float3 sf3) { return std::to_string(sf3[0]) + " " + std::to_string(sf3[1]) + " " + std::to_string(sf3[2]); };
+std::string sf2(simd::float2 sf2) { return std::to_string(sf2[0]) + " " + std::to_string(sf2[1]); };
+
+/**
+ * @brief convert a minity::model for use with metal renderer
+ *
+ * @param path to model obj file
+ * @param reverseWinding default true = load as counter clockwise (e.g. from Blender)
+ * @return Scene TODO: change to a metal mesh as that is what is in reality returned
+ */
+inline Scene loadModelAndConvert(const std::string path, bool reverseWinding=true)
+{
+    minity::modelImporter importer{};
+    auto model = importer.load(path, reverseWinding);
+
+    assert(model->faces.size() == model->numFaces);
+    assert(model->vertices.size() == model->normals.size());
+    assert(model->vertices.size() == model->textureCoordinates.size());
+
+    // number of bytes in the vertexData buffer
+    size_t vertexDataSize = model->numFaces * 3 * sizeof(VertexData);
+    // vertex buffer: 1 * VertexData per vertex * 3 vertices per face * N faces
+    VertexData *vertexData = new VertexData[vertexDataSize];
+    // number of bytes in the indexData buffer
+    size_t indexDataSize = model->numFaces * 3 * sizeof(u_int32_t);
+    // index buffer: one 32-bit index per vertex * 3 vertices per face * N faces
+    u_int32_t *indexData = new u_int32_t[indexDataSize];
+
+    size_t vIdx = 0;
+    for (auto f : model->faces)
+    {
+        assert(f.size() == 3); // we support only triangles
+        for (auto idx : f)
+        {
+            VertexData tmp{};
+            vec3 v = model->vertices[idx];
+            vec3 n = model->normals[idx];
+            vec2 t = model->textureCoordinates[idx];
+            tmp.position = simd::float3{v.x, v.y, v.z};
+            tmp.normal = simd::float3{n.x, n.y, n.z};
+            tmp.texcoord = simd::float2{t.u, t.v};
+
+            vertexData[vIdx] = tmp;
+            indexData[vIdx] = (u_int32_t)vIdx;
+            vIdx++;
+        }
+    }
+    return Scene{vertexData, vertexDataSize, indexData, indexDataSize};
+}
+
 // https://developer.apple.com/library/archive/documentation/Miscellaneous/Conceptual/MetalProgrammingGuide/Dev-Technique/Dev-Technique.html
 // https://developer.apple.com/documentation/metal/shader_libraries/building_a_library_with_metal_s_command-line_tools?language=objc
-// xcrun -sdk macosx metal -c renderer.metal -o renderer.air
+//
+// NOTE: -gline-tables-only -frecord-sources add debug info to shader if you want to use xcode metal debugger
+//
+// xcrun -sdk macosx metal -gline-tables-only -frecord-sources -c renderer.metal -o renderer.air
 // xcrun -sdk macosx metallib renderer.air -o renderer.metallib
 // xxd -i renderer.metallib renderer_metallib.h
 // clang++ -std=c++17 -I /usr/local/include -I ../metal-cpp main.cpp -l SDL2 -framework Foundation -framework QuartzCore -framework Metal && ./a.out
-void metalRenderer()
+void metalRendererScenario()
 {
     const vector_uint2 viewport = {
         640, 480
     };
-
-    const float s = 0.5f;
-
-    VertexData vertexData[] = {
-        //                                         Texture
-        //   Positions           Normals         Coordinates
-        { { -s, -s, +s }, {  0.f,  0.f,  1.f }, { 0.f, 1.f } },
-        { { +s, -s, +s }, {  0.f,  0.f,  1.f }, { 1.f, 1.f } },
-        { { +s, +s, +s }, {  0.f,  0.f,  1.f }, { 1.f, 0.f } },
-        { { -s, +s, +s }, {  0.f,  0.f,  1.f }, { 0.f, 0.f } },
-
-        { { +s, -s, +s }, {  1.f,  0.f,  0.f }, { 0.f, 1.f } },
-        { { +s, -s, -s }, {  1.f,  0.f,  0.f }, { 1.f, 1.f } },
-        { { +s, +s, -s }, {  1.f,  0.f,  0.f }, { 1.f, 0.f } },
-        { { +s, +s, +s }, {  1.f,  0.f,  0.f }, { 0.f, 0.f } },
-
-        { { +s, -s, -s }, {  0.f,  0.f, -1.f }, { 0.f, 1.f } },
-        { { -s, -s, -s }, {  0.f,  0.f, -1.f }, { 1.f, 1.f } },
-        { { -s, +s, -s }, {  0.f,  0.f, -1.f }, { 1.f, 0.f } },
-        { { +s, +s, -s }, {  0.f,  0.f, -1.f }, { 0.f, 0.f } },
-
-        { { -s, -s, -s }, { -1.f,  0.f,  0.f }, { 0.f, 1.f } },
-        { { -s, -s, +s }, { -1.f,  0.f,  0.f }, { 1.f, 1.f } },
-        { { -s, +s, +s }, { -1.f,  0.f,  0.f }, { 1.f, 0.f } },
-        { { -s, +s, -s }, { -1.f,  0.f,  0.f }, { 0.f, 0.f } },
-
-        { { -s, +s, +s }, {  0.f,  1.f,  0.f }, { 0.f, 1.f } },
-        { { +s, +s, +s }, {  0.f,  1.f,  0.f }, { 1.f, 1.f } },
-        { { +s, +s, -s }, {  0.f,  1.f,  0.f }, { 1.f, 0.f } },
-        { { -s, +s, -s }, {  0.f,  1.f,  0.f }, { 0.f, 0.f } },
-
-        { { -s, -s, -s }, {  0.f, -1.f,  0.f }, { 0.f, 1.f } },
-        { { +s, -s, -s }, {  0.f, -1.f,  0.f }, { 1.f, 1.f } },
-        { { +s, -s, +s }, {  0.f, -1.f,  0.f }, { 1.f, 0.f } },
-        { { -s, -s, +s }, {  0.f, -1.f,  0.f }, { 0.f, 0.f } }
-    };
-
-    uint16_t indexData[] = {
-        0,  1,  2,  2,  3,  0, /* front */
-        4,  5,  6,  6,  7,  4, /* right */
-        8,  9, 10, 10, 11,  8, /* back */
-        12, 13, 14, 14, 15, 12, /* left */
-        16, 17, 18, 18, 19, 16, /* top */
-        20, 21, 22, 22, 23, 20, /* bottom */
-    };
-
-    const size_t vertexDataSize = sizeof( vertexData );
-    const size_t indexDataSize = sizeof( indexData );
 
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
     SDL_InitSubSystem(SDL_INIT_VIDEO);
@@ -398,22 +404,39 @@ void metalRenderer()
 
     auto layer = (CA::MetalLayer*)SDL_RenderGetMetalLayer(renderer);
 
-    Scene cubeScene{vertexData, vertexDataSize, indexData, indexDataSize};
+    // Scene bboxScene = loadModelAndConvert("models/BlenderBoxZ.obj");
+    // Scene sphereScene = loadModelAndConvert("models/BlenderSmoothSphere.obj");
+    Scene headScene = loadModelAndConvert("test/models/Model_D0606058/head.obj");
 
-    Renderer metalRenderer = Renderer(layer, cubeScene);
+    // Scene scene = *GetSingleFaceScene(); // only 1 face
+    // Scene scene = *GetCubeScene(); // TODO: needs MTL::Winding::WindingCounterClockwise (right-hand winding)
+    // Scene &scene = bboxScene;
+    // Scene &scene = sphereScene;
+    Scene &scene = headScene;
 
-    std::cout << vertexDataSize << " " << indexDataSize << std::endl;
+    Renderer metalRenderer = Renderer(layer, scene);
 
     std::cout << "hello, sdl metal" << std::endl;
 
     bool quit = false;
     SDL_Event e;
 
-    // cube parameters
     float angle = 0.0f;
-    simd::float3 scale{ 1.0f, 1.0f, 1.0f };
-    simd::float3 position{ 0.f, 0.f, -5.f };
+
+    // cube parameters
+    // simd::float3 scale{ 1.0f, 1.0f, 1.0f };
+    // simd::float3 position{ 0.0f, 0.0f, -2.0f };
+
+    // Blender box and sphere parameters
+    // simd::float3 scale{ 1.0f, 1.0f, 1.0f };
+    // simd::float3 position{ 0.0f, 0.0f, -5.0f };
+
+    // head scene parameters
+    simd::float3 scale{ 0.1f, 0.1f, 0.1f };
+    simd::float3 position{ 0.0f, -5.0f, -12.0f };
+
     simd::float4 color{ 1.0f, 1.0f, 0.0f, 1.0f };
+
 
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
@@ -426,6 +449,10 @@ void metalRenderer()
                 {
                     case SDLK_SPACE:
                         std::cout << "hello" << std::endl;
+                        break;
+                    case SDLK_q:
+                        std::cout << "bye" << std::endl;
+                        quit = true;
                         break;
                     default:
                         break;
@@ -453,5 +480,5 @@ int main()
     // newScenario();
     // newRasterizer();
     // newRasterizerScene();
-    metalRenderer();
+    metalRendererScenario();
 }
