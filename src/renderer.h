@@ -423,7 +423,12 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     encoder->setCullMode( MTL::CullModeBack ); // none/front/back
     encoder->setFrontFacingWinding( MTL::Winding::WindingClockwise ); // (counter)clockwise WindingCounterClockwise
     // encoder->setDepthClipMode( MTL::DepthClipMode::DepthClipModeClip ); // clip/clamp
-    encoder->setTriangleFillMode( MTL::TriangleFillMode::TriangleFillModeFill ); // fill/lines TriangleFillModeFill/TriangleFillModeLines
+    auto fillMode = MTL::TriangleFillMode::TriangleFillModeFill;
+    if (g_config->drawWireframe)
+    {
+        fillMode = MTL::TriangleFillMode::TriangleFillModeLines;
+    }
+    encoder->setTriangleFillMode( fillMode ); // fill/lines TriangleFillModeFill/TriangleFillModeLines
 
     encoder->drawIndexedPrimitives( MTL::PrimitiveType::PrimitiveTypeTriangle,
                                 indexBufferCount, MTL::IndexType::IndexTypeUInt32,
@@ -436,6 +441,8 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     // Show the dignostics window
     if (g_config->showStatsWindow)
     {
+        encoder->setTriangleFillMode(MTL::TriangleFillMode::TriangleFillModeFill);
+
         ImGui_ImplMetal_NewFrame(pass);
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();

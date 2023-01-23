@@ -492,6 +492,9 @@ void metalRendererScenario()
                     case SDLK_SPACE:
                         std::cout << "hello" << std::endl;
                         break;
+                    case SDLK_l:
+                        g_config->drawWireframe = g_config->drawWireframe ? false : true;
+                        break;
                     case SDLK_F1:
                         g_config->showStatsWindow = g_config->showStatsWindow ? false : true;
                         break;
