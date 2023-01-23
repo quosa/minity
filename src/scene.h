@@ -39,6 +39,7 @@ struct image
     int components{0}; // typically rgb = 3 or rgba = 4
     u_int32_t get(float u, float v) const;
     void set(unsigned char *_raw_data);
+    void *_getRawData();
     ~image() { free(_raw_data); } // stbi_image_free is free by default
 private:
     unsigned char *_raw_data{nullptr};
@@ -237,6 +238,12 @@ u_int32_t image::get(float u, float v) const
 void image::set(unsigned char *data)
 {
     _raw_data = data;
+}
+// get raw data pointer for metal texture copy
+// TODO: this is horrible...
+void *image::_getRawData()
+{
+    return (void *)_raw_data;
 }
 
 #endif //  MINITY_SCENE_TYPES_ONLY

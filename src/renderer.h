@@ -13,6 +13,7 @@
 #include <iostream>
 
 #include "shader_types.h"
+#include "scene.h"
 #include "metal_scene.h"
 #include "renderer_metallib.h"
 
@@ -126,7 +127,7 @@ namespace math
 class Renderer
 {
 public:
-    Renderer(CA::MetalLayer *layer, Scene &scene);
+    Renderer(CA::MetalLayer *layer, Scene &scene, minity::image& texture);
     ~Renderer();
     // one render pass
     void renderModel(const simd::float3 &position, const simd::float3 &scale, const float &angle, const simd::float4 &color);
@@ -134,7 +135,7 @@ private:
     void initPipeline();
     void initDepthTexture();
     void initDepthStencil();
-    void initTexture();
+    void initTexture(minity::image& texture);
     void initBuffers(Scene &scene);
 
     CA::MetalLayer *layer;
@@ -158,7 +159,7 @@ private:
 
 };
 
-Renderer::Renderer(CA::MetalLayer *layer, Scene &scene) : layer(layer)
+Renderer::Renderer(CA::MetalLayer *layer, Scene &scene, minity::image& texture) : layer(layer)
 {
     device = layer->device();
 
@@ -169,7 +170,7 @@ Renderer::Renderer(CA::MetalLayer *layer, Scene &scene) : layer(layer)
     initPipeline();
     initDepthTexture();
     initDepthStencil();
-    initTexture();
+    initTexture(texture);
     initBuffers(scene);
 };
 
@@ -263,13 +264,13 @@ void Renderer::initDepthStencil()
     }
 }
 
-void Renderer::initTexture()
+void Renderer::initTexture(minity::image& texture)
 {
     ///////////////////////////////////////////////////////////////////////////////////////
     // Textures
 
-    const uint32_t tw = 128;
-    const uint32_t th = 128;
+    const uint32_t tw = texture.width;
+    const uint32_t th = texture.height;
 
     MTL::TextureDescriptor* pTextureDesc = MTL::TextureDescriptor::alloc()->init();
     pTextureDesc->setWidth( tw );
@@ -279,30 +280,9 @@ void Renderer::initTexture()
     pTextureDesc->setStorageMode( MTL::StorageModeManaged );
     pTextureDesc->setUsage( MTL::ResourceUsageSample | MTL::ResourceUsageRead );
 
-    // MTL::Texture *pTexture = device->newTexture( pTextureDesc );
-    // pTexture = pTexture;
-
     pTexture = device->newTexture( pTextureDesc );
 
-    uint8_t* pTextureData = (uint8_t *)alloca( tw * th * 4 );
-    for ( size_t y = 0; y < th; ++y )
-    {
-        for ( size_t x = 0; x < tw; ++x )
-        {
-            bool isWhite = (x^y) & 0b1000000;
-            uint8_t c = isWhite ? 0xFF : 0xA;
-            // uint8_t c = 0xFF;
-
-            size_t i = y * tw + x;
-
-            pTextureData[ i * 4 + 0 ] = c;
-            pTextureData[ i * 4 + 1 ] = c;
-            pTextureData[ i * 4 + 2 ] = c;
-            pTextureData[ i * 4 + 3 ] = 0xFF;
-        }
-    }
-
-    pTexture->replaceRegion( MTL::Region( 0, 0, 0, tw, th, 1 ), 0, pTextureData, tw * 4 );
+    pTexture->replaceRegion( MTL::Region( 0, 0, 0, tw, th, 1 ), 0, texture._getRawData(), texture.width * 4 );
 
     pTextureDesc->release();
 }
@@ -363,8 +343,8 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     // Use the tiny math library to apply a 3D transformation to the instance.
     float4x4 translate = math::makeTranslate( position );
     float4x4 scaler = math::makeScale( scale );
-    float4x4 xrot = math::makeYRotate( angle );
-    float4x4 zrot = math::makeZRotate( angle );
+    float4x4 xrot = math::makeXRotate( 0.0f ); // angle );
+    float4x4 zrot = math::makeZRotate( 0.0f ); // angle );
     float4x4 yrot = math::makeYRotate( angle );
 
     pInstanceData->instanceTransform = translate * xrot * yrot * zrot * scaler;

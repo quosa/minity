@@ -428,7 +428,12 @@ void metalRendererScenario()
     // Scene &scene = sphereScene;
     Scene &scene = headScene;
 
-    Renderer metalRenderer = Renderer(layer, scene);
+    minity::imageImporter imgImporter{};
+    auto headTexture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
+
+
+    assert(headTexture != nullptr); // bc passing as ref
+    Renderer metalRenderer = Renderer(layer, scene, *headTexture);
 
     std::cout << "hello, sdl metal" << std::endl;
 
@@ -449,7 +454,7 @@ void metalRendererScenario()
     simd::float3 scale{ 0.1f, 0.1f, 0.1f };
     simd::float3 position{ 0.0f, -5.0f, -12.0f };
 
-    simd::float4 color{ 1.0f, 1.0f, 0.0f, 1.0f };
+    simd::float4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // white base-color
 
 
     while (!quit) {
@@ -491,7 +496,7 @@ void metalRendererScenario()
 int main()
 {
     std::cout << banner << usage << std::endl;
-    // newScenario();
+    newScenario();
     // newRasterizer();
     // newRasterizerScene();
     metalRendererScenario();
