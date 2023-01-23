@@ -63,16 +63,19 @@ IMGUI_DIR = external/imgui
 
 CXX_SRCS = $(wildcard ${SOURCE_DIR}/*.cpp)
 CXX_SRCS += $(wildcard ${IMGUI_DIR}/*.cpp)
+OBJC_SRCS = $(wildcard ${IMGUI_DIR}/*.mm)
 CXX_OBJS = $(patsubst ${IMGUI_DIR}/%, $(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${CXX_SRCS:.cpp=.o}))
+OBJC_OBJS = $(patsubst ${IMGUI_DIR}/%, $(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${OBJC_SRCS:.mm=.o}))
 CXX_DEPS := $(patsubst ${IMGUI_DIR}/%,$(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${CXX_SRCS:.cpp=.d}))
+OBJC_DEPS := $(patsubst ${IMGUI_DIR}/%,$(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${OBJC_SRCS:.mm=.d}))
 
 C_SRCS = $(wildcard ${SOURCE_DIR}/*.c)
 C_OBJS = $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${C_SRCS:.c=.o})
 C_DEPS := $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${C_SRCS:.c=.d})
 
-SRCS = ${C_SRCS} ${CXX_SRCS}
-OBJS = ${C_OBJS} ${CXX_OBJS}
-DEPS = ${C_DEPS} ${CXX_DEPS}
+SRCS = ${C_SRCS} ${CXX_SRCS} ${OBJC_SRCS}
+OBJS = ${C_OBJS} ${CXX_OBJS} ${OBJC_OBJS}
+DEPS = ${C_DEPS} ${CXX_DEPS} ${OBJC_DEPS}
 
 TEST_INC = -I ${SOURCE_DIR}
 TEST_SRCS = $(wildcard ${TEST_DIR}/*.cpp)
@@ -91,7 +94,7 @@ all: ${TEST} ${MAIN}
 
 ${MAIN}: ${OBJS}
 	@echo building in $(mode) mode
-	${CXX} ${LDFLAGS} ${OBJS} ${LDLIBS} -o ${BIN_DIR}/${MAIN}
+	${CXX} -v ${LDFLAGS} ${OBJS} ${LDLIBS} -o ${BIN_DIR}/${MAIN}
 
 -include $(DEPS)
 
@@ -103,6 +106,14 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 
 $(BUILD_DIR)/%.o: $(IMGUI_DIR)/%.cpp
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -MMD -MP -c $< -o $@
+
+# metal c++ headers are not following strict coding
+# so disable -pedantic-errors -Werror as
+# external/imgui/imgui_impl_metal.mm includes
+# metal headers directly and we cannot silence
+# the include with pragma :-( (see main.cpp)
+$(BUILD_DIR)/%.o: $(IMGUI_DIR)/%.mm
+	${CXX} ${CPPFLAGS} -ObjC++ -fobjc-weak -fobjc-arc -std=c++17 -Wall -Wextra `sdl2-config --cflags` -MMD -MP -c $< -o $@
 
 #
 # Test Section

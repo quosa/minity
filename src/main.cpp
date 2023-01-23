@@ -7,19 +7,7 @@
 #include <iostream> //cout
 #include <memory> // shared_ptr
 
-#include "simpleMath.h" // full implementation here
-#include "scene.h" // scene/camera/light/mesh
-#include "renderPipeline.h"
-#define IMAGEIMPORTER_IMPLEMENTATION
-#include "imageImporter.h"
-#include "modelImporter.h"
-
-#include <SDL2/SDL.h>
-#include "rasterizer.h"
-
-#include "utils.h" // box, sphere...
-
-// METAL
+// METAL - INCLUDE IS MESSY SO GET THAT OUT OF THE WAY...
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdtor-name"
 // #pragma clang diagnostic ignored "-Werror"
@@ -38,8 +26,24 @@
 #include <Foundation/Foundation.hpp>
 #include <Metal/Metal.hpp>
 #include <QuartzCore/QuartzCore.hpp>
-// #endif
 #pragma clang diagnostic pop
+
+
+#include "simpleMath.h" // full implementation here
+#include "scene.h" // scene/camera/light/mesh
+#include "renderPipeline.h"
+#define IMAGEIMPORTER_IMPLEMENTATION
+#include "imageImporter.h"
+#include "modelImporter.h"
+
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_metal.h"
+
+#include <SDL2/SDL.h>
+#include "rasterizer.h"
+
+#include "utils.h" // box, sphere...
 
 #include <simd/simd.h> // vector_uintN
 #include "metal_scene.h"
@@ -410,6 +414,22 @@ void metalRendererScenario()
         640, 480
     };
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); // (void)io;
+    ImGui::StyleColorsLight();
+
+    // use a better 18pt font
+    const float font_size{18.0f};
+    io.Fonts->AddFontFromFileTTF(
+        "fonts/SourceCodePro-Regular.ttf",
+        font_size
+    );
+    io.FontDefault = io.Fonts->AddFontFromFileTTF(
+        "fonts/SourceCodePro-Regular.ttf",
+        font_size
+    );
+
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
     SDL_InitSubSystem(SDL_INIT_VIDEO);
 
@@ -417,6 +437,8 @@ void metalRendererScenario()
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     auto layer = (CA::MetalLayer*)SDL_RenderGetMetalLayer(renderer);
+    ImGui_ImplMetal_Init(layer->device());
+    ImGui_ImplSDL2_InitForMetal(window);
 
     // Scene bboxScene = loadModelAndConvert("models/BlenderBoxZ.obj");
     // Scene sphereScene = loadModelAndConvert("models/BlenderSmoothSphere.obj");
@@ -459,6 +481,7 @@ void metalRendererScenario()
 
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
+            ImGui_ImplSDL2_ProcessEvent(&e);
             switch (e.type) {
                 case SDL_QUIT: {
                     quit = true;
@@ -468,6 +491,9 @@ void metalRendererScenario()
                 {
                     case SDLK_SPACE:
                         std::cout << "hello" << std::endl;
+                        break;
+                    case SDLK_F1:
+                        g_config->showStatsWindow = g_config->showStatsWindow ? false : true;
                         break;
                     case SDLK_q:
                         std::cout << "bye" << std::endl;
@@ -486,6 +512,10 @@ void metalRendererScenario()
         metalRenderer.renderModel(position, scale, angle, color);
 
     } // end of rendering loop
+
+    ImGui_ImplMetal_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

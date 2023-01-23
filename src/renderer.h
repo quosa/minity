@@ -9,6 +9,9 @@
 
 #include <simd/simd.h> // vector_uintN
 
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_metal.h"
 #include <SDL2/SDL.h>
 #include <iostream>
 
@@ -427,6 +430,25 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
                                 index_buffer,
                                 0, // offset
                                 1 ); // instance count
+
+
+
+    // Show the dignostics window
+    if (g_config->showStatsWindow)
+    {
+        ImGui_ImplMetal_NewFrame(pass);
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+        ImGui::SetNextWindowPos(ImVec2(10, 10));
+        ImGui::Begin("Minity Stats Window", &g_config->showStatsWindow, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Minity is running on %s using metal renderer.", device->name()->utf8String());
+        ImGui::Text("Rendering average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
+        ImGui::Render();
+        ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), buffer, encoder);
+    }
+
+
 
     encoder->endEncoding();
     // encoder->release();
