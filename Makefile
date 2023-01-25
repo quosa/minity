@@ -94,7 +94,7 @@ all: ${TEST} ${MAIN}
 
 ${MAIN}: ${OBJS}
 	@echo building in $(mode) mode
-	${CXX} -v ${LDFLAGS} ${OBJS} ${LDLIBS} -o ${BIN_DIR}/${MAIN}
+	${CXX} ${LDFLAGS} ${OBJS} ${LDLIBS} -o ${BIN_DIR}/${MAIN}
 
 -include $(DEPS)
 
