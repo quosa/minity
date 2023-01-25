@@ -4,6 +4,7 @@
  * https://github.com/Kayzaks/StupidGL (gamasutra game engine from scratch)
  */
 
+#if 0 // #endif // OLD MAIN CODE
 #include <iostream> //cout
 #include <memory> // shared_ptr
 
@@ -50,6 +51,8 @@
 #include "renderer.h"
 #include "shader_types.h"
 
+// #include "input.h"
+#include "minity.h"
 
 const std::string usage = R"(
 key bindings:
@@ -529,8 +532,68 @@ void metalRendererScenario()
 int main()
 {
     std::cout << banner << usage << std::endl;
-    newScenario();
+    // newScenario();
     // newRasterizer();
     // newRasterizerScene();
     metalRendererScenario();
+}
+
+#endif // OLD MAIN CODE
+
+
+#include "simpleMath.h"
+#include "scene.h"
+#include "mesh.h"
+#include "minity.h"
+#define IMAGEIMPORTER_IMPLEMENTATION
+#include "imageImporter.h"
+
+#include <iostream> // cout
+#include <memory> // shared_ptr
+
+const std::string usage = R"(
+key bindings:
+    wasd keys  - look up/left/down/right
+    arrow keys - move camera
+    f key      - flat shade triangles
+    l key      - draw wireframe
+    n key      - draw normals
+    p key      - draw point cloud
+    x key      - draw axes
+    q key      - quit minity
+    r key      - render on change
+    F1 key     - show stats window)";
+
+
+const std::string banner = R"(
+
+ ._ _  o ._  o _|_        |
+ | | | | | | |  |_ \/     |____
+                   /     /
+                        '
+)";
+
+
+void newApi()
+{
+    minity::imageImporter imgImporter{};
+    auto headTexture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
+
+
+    minity::minity minity{minity::backend::metal};
+    minity::mesh *mesh = minity::GetSingleFaceMesh();
+    (void)mesh;
+    minity::scene scene{};
+    minity.run(scene);
+    minity.shutdown();
+}
+
+int main()
+{
+    std::cout << banner << usage << std::endl;
+    // newScenario();
+    // newRasterizer();
+    // newRasterizerScene();
+    // metalRendererScenario();
+    newApi();
 }
