@@ -1,12 +1,5 @@
 #pragma once
 
-// #define NS_PRIVATE_IMPLEMENTATION
-// #define CA_PRIVATE_IMPLEMENTATION
-// #define MTL_PRIVATE_IMPLEMENTATION
-// #include <Foundation/Foundation.hpp>
-// #include <Metal/Metal.hpp>
-// #include <QuartzCore/QuartzCore.hpp>
-
 // METAL - INCLUDE IS MESSY SO GET THAT OUT OF THE WAY...
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdtor-name"
@@ -39,10 +32,8 @@
 #include "simpleMath.h" // mesh etc. for now
 
 #include "shader_types.h"
-#include "mesh.h"
-// #include "scene.h"
-// #include "new_scene.h"
-// #include "metal_scene.h"
+#include "mesh.h" // mesh
+#include "new_scene.h" // image/texture
 #include "renderer_metallib.h"
 
 #include "config.h"
@@ -161,7 +152,7 @@ public:
     Renderer(CA::MetalLayer *layer, minity::mesh &mesh, minity::image& texture);
     ~Renderer();
     // one render pass
-    void renderModel(const simd::float3 &position, const simd::float3 &scale, const float &angle, const simd::float4 &color);
+    void renderModel(const simd::float3 &position, const simd::float3 &scale, const simd::float3 &angle, const simd::float4 &color);
 private:
     void initPipeline();
     void initDepthTexture();
@@ -347,7 +338,7 @@ void Renderer::initBuffers(minity::mesh &mesh)
     queue = device->newCommandQueue();
 };
 
-void Renderer::renderModel(const simd::float3 &position, const simd::float3 &scale, const float &angle, const simd::float4 &color)
+void Renderer::renderModel(const simd::float3 &position, const simd::float3 &scale, const simd::float3 &rotation, const simd::float4 &color)
 {
     auto drawable = layer->nextDrawable();
     using simd::float3;
@@ -374,9 +365,9 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     // Use the tiny math library to apply a 3D transformation to the instance.
     float4x4 translate = math::makeTranslate( position );
     float4x4 scaler = math::makeScale( scale );
-    float4x4 xrot = math::makeXRotate( 0.0f ); // angle );
-    float4x4 zrot = math::makeZRotate( 0.0f ); // angle );
-    float4x4 yrot = math::makeYRotate( angle );
+    float4x4 xrot = math::makeXRotate( rotation.x );
+    float4x4 yrot = math::makeYRotate( rotation.y );
+    float4x4 zrot = math::makeZRotate( rotation.z );
 
     pInstanceData->instanceTransform = translate * xrot * yrot * zrot * scaler;
     pInstanceData->instanceNormalTransform = math::discardTranslation( pInstanceData->instanceTransform );

@@ -92,8 +92,7 @@ void minity::run(scene scene)
     (void)scene;
     auto scale = sf3(scene.model.scale);
     auto position = sf3(scene.model.position);
-    // auto rotation = scene.model.rotation;
-    float angle = 0.0f;
+    auto rotation = sf3(scene.model.rotation);
     // auto colour = scene.model.material.color;
     simd::float4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // white base-color
     auto metalRenderer = Renderer(layer, scene.model.mesh, scene.model.material.texture);
@@ -106,7 +105,9 @@ void minity::run(scene scene)
         // }
         scene.model.update(0.1f); // TODO: add frame timer
         position = sf3(scene.model.position);
-        metalRenderer.renderModel(position, scale, angle, color);
+        scale = sf3(scene.model.scale);
+        rotation = sf3(scene.model.rotation);
+        metalRenderer.renderModel(position, scale, rotation, color);
     }
 }
 } // NS minity

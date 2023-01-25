@@ -605,12 +605,26 @@ void newApi()
                 std::cout << "FIRE!" << std::endl;
             }
 
-            self->position.x += 0.1f * timeDelta;
-            if (self->position.x > 1.0f)
-                self->position.x -= 2.0f;
-            // float rotationSpeed = 10.0f;
+            float speed = 0.0f;
+
+            if (input.isKeyDown(minity::KEY_LEFT))
+            {
+                std::cout << "LEFT!" << std::endl;
+                speed = -0.1f;
+            }
+            if (input.isKeyDown(minity::KEY_RIGHT))
+            {
+                std::cout << "RIGHT!" << std::endl;
+                speed = 0.1f;
+            }
+            self->position.x += speed * timeDelta;
+            // if (self->position.x > 1.0f)
+            //     self->position.x -= 2.0f;
+
             // std::cout << "update(" << timeDelta << ") yRot: " << self->rotation.y << " isKeyPressed(minity::KEY_LEFT) " << input.isKeyPressed(minity::KEY_LEFT)<< std::endl;
-            // self->rotation.y += timeDelta * rotationSpeed;
+
+            float rotationSpeed = 0.1f;
+            self->rotation.z += timeDelta * rotationSpeed;
         };
     };
     model.setUpdate(updateFactory);
