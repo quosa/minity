@@ -1,8 +1,12 @@
 #pragma once
 
+#define MATH_TYPES_ONLY
+#include "simpleMath.h"
 // #define MINITY_SCENE_TYPES_ONLY
 // #include "scene.h"
 #include "mesh.h"
+
+#include <simd/simd.h> // vector_floatN
 
 #include <algorithm>
 #include <iostream>
@@ -26,8 +30,14 @@ public:
     std::shared_ptr<mesh> loadFromString(const std::string &meshString, bool reverseWinding=false);
 private:
     void handleLine(const std::string &line);
-    void alignFaces(bool reverseWinding);
+    // void alignFaces(bool reverseWinding);
     std::shared_ptr<mesh> m_mesh{nullptr};
+
+    std::vector<vec3> vertices{};
+    std::vector<vec3> normals{};
+    std::vector<vec2> textureCoordinates{};
+    std::vector<VertexData> metalVertices{};
+    std::vector<u_int32_t> metalIndices{};
 };
 
 // adapted originally from:
@@ -56,8 +66,21 @@ std::shared_ptr<mesh> meshImporter::load(const std::string &path, bool reverseWi
         std::getline(f, line);
         handleLine(line);
     }
-    alignFaces(reverseWinding);
+    (void)reverseWinding;
+    // alignFaces(reverseWinding);
     // m_mesh->printModelInfo();
+
+    std::cout << "loaded a model with " << metalVertices.size() << " vertices,";
+    std::cout << " and " <<  metalIndices.size() / 3 << " faces." << std::endl;
+
+    m_mesh->vertexDataSize = metalVertices.size() * sizeof(VertexData);
+    m_mesh->vertexData = new VertexData[m_mesh->vertexDataSize];
+    memcpy(m_mesh->vertexData, &metalVertices[0], m_mesh->vertexDataSize);
+
+    m_mesh->indexDataSize = metalIndices.size() * sizeof(u_int32_t);
+    m_mesh->indexData = new u_int32_t[m_mesh->indexDataSize];
+    memcpy(m_mesh->indexData, &metalIndices[0], m_mesh->indexDataSize);
+
     return m_mesh;
 }
 
@@ -75,67 +98,77 @@ std::shared_ptr<mesh> meshImporter::loadFromString(const std::string &meshString
         // std::cout << line << std::endl;
         handleLine(line);
     }
-    alignFaces(reverseWinding);
+    (void)reverseWinding;
+    // alignFaces(reverseWinding);
     // m_mesh->printModelInfo();
+
+    m_mesh->vertexDataSize = metalVertices.size() * sizeof(VertexData);
+    m_mesh->vertexData = new VertexData[m_mesh->vertexDataSize];
+    memcpy(m_mesh->vertexData, &metalVertices[0], m_mesh->vertexDataSize);
+
+    m_mesh->indexDataSize = metalIndices.size() * sizeof(u_int32_t);
+    m_mesh->indexData = new u_int32_t[m_mesh->indexDataSize];
+    memcpy(m_mesh->indexData, &metalIndices[0], m_mesh->indexDataSize);
+
     return m_mesh;
 }
 
-// utility to align vertices, normals
-// and texture coordinates for easy access
-void meshImporter::alignFaces(bool reverseWinding)
-{
-    // (deep-)copy the unsorted arrays
-    std::vector<vec3> _vertices = m_mesh->vertices;
-    std::vector<vec3> _normals = m_mesh->normals;
-    std::vector<vec2> _textureCoordinates = m_mesh->textureCoordinates;
-    std::vector<std::vector<int>> _faces = m_mesh->faces; // v1_idx, v2_idx, v3_idx, ...
+// // utility to align vertices, normals
+// // and texture coordinates for easy access
+// void meshImporter::alignFaces(bool reverseWinding)
+// {
+//     // (deep-)copy the unsorted arrays
+//     std::vector<vec3> _vertices = m_mesh->vertices;
+//     std::vector<vec3> _normals = m_mesh->normals;
+//     std::vector<vec2> _textureCoordinates = m_mesh->textureCoordinates;
+//     std::vector<std::vector<int>> _faces = m_mesh->faces; // v1_idx, v2_idx, v3_idx, ...
 
-    // reset the mesh arrays
-    m_mesh->vertices.clear();
-    m_mesh->normals.clear();
-    m_mesh->textureCoordinates.clear();
-    m_mesh->faces.clear();
+//     // reset the mesh arrays
+//     m_mesh->vertices.clear();
+//     m_mesh->normals.clear();
+//     m_mesh->textureCoordinates.clear();
+//     m_mesh->faces.clear();
 
-    // populate the arrays back in order
-    // so that each have same id for same vertex
-    int i = 0;
-    for (auto vnt : _faces)
-    {
+//     // populate the arrays back in order
+//     // so that each have same id for same vertex
+//     int i = 0;
+//     for (auto vnt : _faces)
+//     {
 
-        m_mesh->vertices.insert( m_mesh->vertices.end(), { _vertices[vnt[0]], _vertices[vnt[3]], _vertices[vnt[6]]});
-        if (reverseWinding)
-        {
-            int n = m_mesh->vertices.size();
-            std::swap( m_mesh->vertices[n-2], m_mesh->vertices[n-1]);
-        }
+//         m_mesh->vertices.insert( m_mesh->vertices.end(), { _vertices[vnt[0]], _vertices[vnt[3]], _vertices[vnt[6]]});
+//         if (reverseWinding)
+//         {
+//             int n = m_mesh->vertices.size();
+//             std::swap( m_mesh->vertices[n-2], m_mesh->vertices[n-1]);
+//         }
 
-        if (m_mesh->hasNormals)
-        {
-            m_mesh->normals.insert( m_mesh->normals.end(), {_normals[vnt[1]], _normals[vnt[4]], _normals[vnt[7]]});
-            if (reverseWinding)
-            {
-                int n = m_mesh->normals.size();
-                std::swap( m_mesh->normals[n-2], m_mesh->normals[n-1]);
-            }
-        }
+//         if (m_mesh->hasNormals)
+//         {
+//             m_mesh->normals.insert( m_mesh->normals.end(), {_normals[vnt[1]], _normals[vnt[4]], _normals[vnt[7]]});
+//             if (reverseWinding)
+//             {
+//                 int n = m_mesh->normals.size();
+//                 std::swap( m_mesh->normals[n-2], m_mesh->normals[n-1]);
+//             }
+//         }
 
-        if (m_mesh->hasTextureCoordinates)
-        {
-            m_mesh->textureCoordinates.insert( m_mesh->textureCoordinates.end(),
-                { _textureCoordinates[vnt[2]], _textureCoordinates[vnt[5]], _textureCoordinates[vnt[8]]}
-            );
-            if (reverseWinding)
-            {
-                int n = m_mesh->textureCoordinates.size();
-                std::swap( m_mesh->textureCoordinates[n-2], m_mesh->textureCoordinates[n-1]);
-            }
-        }
-        std::vector<int> face{ i, i+1, i+2 };
-        m_mesh->faces.insert( m_mesh->faces.end(), face);
-        i += 3;
-    }
-    m_mesh->numFaces = m_mesh->faces.size();
-}
+//         if (m_mesh->hasTextureCoordinates)
+//         {
+//             m_mesh->textureCoordinates.insert( m_mesh->textureCoordinates.end(),
+//                 { _textureCoordinates[vnt[2]], _textureCoordinates[vnt[5]], _textureCoordinates[vnt[8]]}
+//             );
+//             if (reverseWinding)
+//             {
+//                 int n = m_mesh->textureCoordinates.size();
+//                 std::swap( m_mesh->textureCoordinates[n-2], m_mesh->textureCoordinates[n-1]);
+//             }
+//         }
+//         std::vector<int> face{ i, i+1, i+2 };
+//         m_mesh->faces.insert( m_mesh->faces.end(), face);
+//         i += 3;
+//     }
+//     m_mesh->numFaces = m_mesh->faces.size();
+// }
 
 // utility to handle a obj file line
 void meshImporter::handleLine(const std::string &line)
@@ -151,14 +184,14 @@ void meshImporter::handleLine(const std::string &line)
         // e.g. v 0.123 0.234 0.345 1.0
         vec3 v;
         s >> junk >> v.x >> v.y >> v.z;
-        m_mesh->vertices.push_back(v);
+        vertices.push_back(v);
     }
     else if (line.rfind("vn ", 0) == 0) // normal
     {
         // e.g. vn 0.707 0.000 0.707
         vec3 v;
         s >> junk >> junk >> v.x >> v.y >> v.z;
-        m_mesh->normals.push_back(v);
+        normals.push_back(v);
     }
     else if (line.rfind("vt ", 0) == 0) // texture coordinates
     {
@@ -173,15 +206,12 @@ void meshImporter::handleLine(const std::string &line)
             v.u += 1.0f; // likely indicates tiling
         if (v.v < 0.0f && v.v >= -1.0f)
             v.v += 1.0f; // likely indicates tiling
-        m_mesh->textureCoordinates.push_back(v);
+        textureCoordinates.push_back(v);
     }
     else if (line.rfind("f ", 0) == 0) // face
     {
         // e.g. f 1/11/111 2/22/222 3/33/333 (there are other types!)
         std::string vertexDetails;
-        int vrt[50]{0}; // vertex indices
-        int nrm[50]{0}; // normal indices
-        int tex[50]{0}; // texture cordinate indices
         int i = 0;
 
         s >> junk;
@@ -206,60 +236,61 @@ void meshImporter::handleLine(const std::string &line)
             // for (auto elem : indices) { std::cout << " " << elem; };
             // std::cout << " ]" << std::endl;
 
+            vec3 vert;
+            vec3 nrm;
+            vec2 tex;
+            vec3 zero3{}; // for filling in blanks
+            vec2 zero2{}; // for filling in blanks
             auto n = std::count(vertexDetails.begin(), vertexDetails.end(), '/');
             switch (n)
             {
             case 0: // just vertex indices: f 1 2 3
-                vrt[i] = indices.at(0);
-                nrm[i] = 0; // ends up as -1
-                tex[i] = 0; // ends up as -1
+                vert = indices.at(0) > 0 ? vertices[indices.at(0) - 1] : zero3;
+                nrm = zero3;
+                tex = zero2;
                 break;
             case 1: // vertex and texture coordinates: f 1/7 2/8 3/9
-                vrt[i] = indices.at(0);
-                tex[i] = indices.at(1);
-                nrm[i] = 0; // ends up as -1
-                m_mesh->hasTextureCoordinates = true;
+                vert = indices.at(0) > 0 ? vertices[indices.at(0) - 1] : zero3;
+                nrm = zero3;
+                tex = indices.at(1) > 0 ? textureCoordinates[indices.at(1) - 1] : zero2;
+                // m_mesh->hasTextureCoordinates = true;
                 break;
             case 2: // vertex, texture coordinates and normals: f 1/7/12 2/8/13 3/9/14
-                vrt[i] = indices.at(0);
-                tex[i] = indices.at(1);
-                nrm[i] = indices.at(2);
-                m_mesh->hasNormals = true;
-                m_mesh->hasTextureCoordinates = (tex[i] != 0);
+                vert =indices.at(0) > 0 ? vertices[indices.at(0) - 1] : zero3;
+                nrm = indices.at(2) > 0 ? normals[indices.at(2) - 1] : zero3;
+                tex = indices.at(1) > 0 ? textureCoordinates[indices.at(1) - 1] : zero2;
+                // m_mesh->hasNormals = true;
+                // m_mesh->hasTextureCoordinates = (textureCoordinateIndex[i] != 0);
                 break;
             default:
                 // std::cerr << "Trouble reading face vertex information: " << vertexDetails << std::endl;
                 throw std::runtime_error("Trouble reading face vertex information: " + vertexDetails); // we don't support anything else...
             }
+
+            VertexData vertex{
+                {vert.x, vert.y, vert.z},
+                {nrm.x, nrm.y, nrm.z},
+                {tex.u, tex.v}
+            };
+
+            metalVertices.push_back(vertex);
             i++;
-        }
+        };
 
-        // pack the scattered indices to each face in v1, n1, t1, v2, n2, t2...
-        std::vector<int> face;
-        for (int j : {0, 1, 2})
+        int j = metalVertices.size();
+        if (i == 3)
         {
-            face.insert( face.end(), { vrt[j] - 1, nrm[j] - 1, tex[j] -1} );
+            metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 3),  (u_int32_t)(j - 2),  (u_int32_t)(j - 1)});
         }
-        m_mesh->faces.push_back(face);
-        m_mesh->numFaces++;
-
-        if (i == 4)
+        else if (i == 4)
         {
-            // Break the 4 vertex manually
-            // TODO: this is fragile!
-            face.clear();
-            for (int k : {0, 2, 3})
-            {
-                face.insert( face.end(), { vrt[k] - 1, nrm[k] - 1, tex[k] -1} );
-            }
-            m_mesh->faces.push_back(face);
-            m_mesh->numFaces++;
+            metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 4),  (u_int32_t)(j - 3),  (u_int32_t)(j - 2)});
+            metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 4),  (u_int32_t)(j - 2),  (u_int32_t)(j - 1)});
         }
         else if (i>4)
         {
             std::cerr << "Warning, clipping a polygon of " << i << " vertices !!!" << std::endl;
         }
-
     }
 }
 

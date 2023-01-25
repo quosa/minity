@@ -82,7 +82,6 @@ struct camera
 };
 
 enum lightType {ambient, directional, point, spot};
-
 struct light
 {
     // type, light parameters

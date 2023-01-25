@@ -39,8 +39,10 @@
 #include "simpleMath.h" // mesh etc. for now
 
 #include "shader_types.h"
-#include "scene.h"
-#include "metal_scene.h"
+#include "mesh.h"
+// #include "scene.h"
+// #include "new_scene.h"
+// #include "metal_scene.h"
 #include "renderer_metallib.h"
 
 #include "config.h"
@@ -152,10 +154,11 @@ namespace math
 }
 #pragma clang diagnostic pop
 
+
 class Renderer
 {
 public:
-    Renderer(CA::MetalLayer *layer, Scene &scene, minity::image& texture);
+    Renderer(CA::MetalLayer *layer, minity::mesh &mesh, minity::image& texture);
     ~Renderer();
     // one render pass
     void renderModel(const simd::float3 &position, const simd::float3 &scale, const float &angle, const simd::float4 &color);
@@ -164,7 +167,7 @@ private:
     void initDepthTexture();
     void initDepthStencil();
     void initTexture(minity::image& texture);
-    void initBuffers(Scene &scene);
+    void initBuffers(minity::mesh &mesh);
 
     CA::MetalLayer *layer;
     MTL::Device *device{nullptr};
@@ -187,7 +190,7 @@ private:
 
 };
 
-Renderer::Renderer(CA::MetalLayer *layer, Scene &scene, minity::image& texture) : layer(layer)
+Renderer::Renderer(CA::MetalLayer *layer, minity::mesh &mesh, minity::image& texture) : layer(layer)
 {
     device = layer->device();
 
@@ -199,7 +202,7 @@ Renderer::Renderer(CA::MetalLayer *layer, Scene &scene, minity::image& texture) 
     initDepthTexture();
     initDepthStencil();
     initTexture(texture);
-    initBuffers(scene);
+    initBuffers(mesh);
 };
 
 Renderer::~Renderer()
@@ -315,19 +318,19 @@ void Renderer::initTexture(minity::image& texture)
     pTextureDesc->release();
 }
 
-void Renderer::initBuffers(Scene &scene)
+void Renderer::initBuffers(minity::mesh &mesh)
 {
     ///////////////////////////////////////////////////////////////////////////////////////
     // buffers
 
-    vertex_data_buffer = device->newBuffer( scene.vertexDataSize, MTL::ResourceStorageModeManaged );
-    memcpy( vertex_data_buffer->contents(), scene.vertexData, scene.vertexDataSize );
+    vertex_data_buffer = device->newBuffer( mesh.vertexDataSize, MTL::ResourceStorageModeManaged );
+    memcpy( vertex_data_buffer->contents(), mesh.vertexData, mesh.vertexDataSize );
     vertex_data_buffer->didModifyRange( NS::Range::Make( 0, vertex_data_buffer->length() ) );
 
-    index_buffer = device->newBuffer( scene.indexDataSize, MTL::ResourceStorageModeManaged );
-    memcpy( index_buffer->contents(), scene.indexData, scene.indexDataSize );
+    index_buffer = device->newBuffer( mesh.indexDataSize, MTL::ResourceStorageModeManaged );
+    memcpy( index_buffer->contents(), mesh.indexData, mesh.indexDataSize );
     index_buffer->didModifyRange( NS::Range::Make( 0, index_buffer->length() ) );
-    indexBufferCount = scene.indexDataSize / sizeof(u_int32_t);
+    indexBufferCount = mesh.indexDataSize / sizeof(u_int32_t);
 
     const size_t instanceDataSize = kMaxFramesInFlight * sizeof( InstanceData );
     for ( size_t i = 0; i < kMaxFramesInFlight; ++i )

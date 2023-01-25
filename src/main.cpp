@@ -542,11 +542,12 @@ int main()
 
 
 #include "simpleMath.h"
-#include "scene.h"
 #include "mesh.h"
+#include "new_scene.h"
 #include "minity.h"
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"
+#include "meshImporter.h"
 
 #include <iostream> // cout
 #include <memory> // shared_ptr
@@ -577,13 +578,60 @@ const std::string banner = R"(
 void newApi()
 {
     minity::imageImporter imgImporter{};
-    auto headTexture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
+    auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", true); // flip
 
+    minity::meshImporter importer{};
+    auto teapot = importer.load("test/models/teapot.obj");
+    (void)teapot;
 
     minity::minity minity{minity::backend::metal};
     minity::mesh *mesh = minity::GetSingleFaceMesh();
     (void)mesh;
-    minity::scene scene{};
+
+    minity::material material{minity::yellow, 1.0f, *texture};
+
+    minity::model model{*mesh, material};
+    model.scale = vec3{1.0f, 1.0f, 1.0f};
+    model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    model.position = vec3{0.0f, 0.0f, -2.0f};
+
+    auto updateFactory = [](minity::model *self)
+    {
+        return [self](float timeDelta)
+        {
+            minity::input &input = minity::input::instance();
+            if (input.isKeyDown(minity::KEY_SPACE))
+            {
+                std::cout << "FIRE!" << std::endl;
+            }
+
+            self->position.x += 0.1f * timeDelta;
+            if (self->position.x > 1.0f)
+                self->position.x -= 2.0f;
+            // float rotationSpeed = 10.0f;
+            // std::cout << "update(" << timeDelta << ") yRot: " << self->rotation.y << " isKeyPressed(minity::KEY_LEFT) " << input.isKeyPressed(minity::KEY_LEFT)<< std::endl;
+            // self->rotation.y += timeDelta * rotationSpeed;
+        };
+    };
+    model.setUpdate(updateFactory);
+
+    // simd::float4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // white base-color
+
+    // TODO: new camera type
+    // minity::camera camera{minity::cameraType::lookAt};
+    minity::camera camera{};
+    camera.fovDegrees = 50.0f;
+    camera.translation = vec3{0.0f, 0.0f, 5.0f};
+    camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+
+    // TODO: new light type
+    // minity::light light{minity::lightType::directional};
+    minity::light light{};
+    light.translation = vec3{-1.0f, 1.0f, 10.0f}; // top-left
+
+    // minity::scene scene{};
+    minity::scene scene{camera, light, model}; // todo: pass by reference (or pointer)
+
     minity.run(scene);
     minity.shutdown();
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scene.h"
+#include "new_scene.h"
 #include "input.h"
 #include "renderer.h"
 
@@ -81,18 +81,32 @@ void minity::shutdown()
     SDL_DestroyWindow(window);
 
     SDL_Quit();
+    std::cout << "goodbye, cruel world" << std::endl;
 }
 
+simd::float3 sf3(vec3 &v) {return simd::float3{v.x, v.y, v.z};};
+// TODO: color to float4
+// simd::float4 sf3(vec3 &v) {return simd::float3{v.x, v.y, v.z};};
 void minity::run(scene scene)
 {
     (void)scene;
+    auto scale = sf3(scene.model.scale);
+    auto position = sf3(scene.model.position);
+    // auto rotation = scene.model.rotation;
+    float angle = 0.0f;
+    // auto colour = scene.model.material.color;
+    simd::float4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // white base-color
+    auto metalRenderer = Renderer(layer, scene.model.mesh, scene.model.material.texture);
     while(m_input.handleInput())
     {
         SDL_Delay(20); // some computation budget...
-        if (m_input.isKeyDown(KEY_SPACE))
-        {
-            std::cout << "FIRE!" << std::endl;
-        }
+        // if (m_input.isKeyDown(KEY_SPACE))
+        // {
+        //     std::cout << "FIRE!" << std::endl;
+        // }
+        scene.model.update(0.1f); // TODO: add frame timer
+        position = sf3(scene.model.position);
+        metalRenderer.renderModel(position, scale, angle, color);
     }
 }
 } // NS minity
