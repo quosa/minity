@@ -19,11 +19,11 @@ namespace minity
 struct imageImporter
 {
 public:
-    imageImporter() : image_(std::make_shared<minity::image>()) {}
+    imageImporter() : image_(std::make_shared<image>()) {}
     ~imageImporter() { image_.reset(); }
-    std::shared_ptr<minity::image> load(const std::string &path, bool flipVertically = false);
+    std::shared_ptr<image> load(const std::string &path, bool flipVertically = false);
 private:
-    std::shared_ptr<minity::image> image_{nullptr};
+    std::shared_ptr<image> image_{nullptr};
 };
 
 
