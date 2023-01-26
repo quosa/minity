@@ -2,7 +2,7 @@
 
 #include <SDL.h>
 #include <iostream>
-
+#include <set>
 namespace minity
 {
 
@@ -13,17 +13,18 @@ enum keyCode
     KEY_UP = SDLK_UP,
     KEY_DOWN = SDLK_DOWN,
     KEY_SPACE = SDLK_SPACE,
-    KEY_a = SDLK_a, //wasd left
-    KEY_d = SDLK_d, //wasd right
-    KEY_w = SDLK_w, //wasd up
-    KEY_s = SDLK_s, //wasd down
+    KEY_a = SDLK_a, // wasd left
+    KEY_d = SDLK_d, // wasd right
+    KEY_w = SDLK_w, // wasd up
+    KEY_s = SDLK_s, // wasd down
+    KEY_l = SDLK_l, // l for draw wireframe "(l)ines"
 };
 
 class input
 {
 public:
     bool handleInput();
-    bool isKeyPressed(keyCode key) {return key == KEY_SPACE;}
+    bool isKeyPressed(keyCode key) {return pressedKeys.find(key) != pressedKeys.end();}
     bool isKeyDown(keyCode key) {return m_keyState[SDL_GetScancodeFromKey(key)];}
     bool isKeyUp(keyCode key) {return !m_keyState[SDL_GetScancodeFromKey(key)];} // needed?
     static input& instance() {
@@ -32,6 +33,8 @@ public:
     }
 private:
     const Uint8 *m_keyState;
+    std::set<keyCode> pressedKeys{};
+
     input() : m_keyState(SDL_GetKeyboardState(NULL)) {};
     ~input() {};
 };
@@ -42,6 +45,7 @@ private:
 bool input::handleInput()
 {
     SDL_Event sEvent;
+    pressedKeys.clear();
 
     while (SDL_PollEvent(&sEvent))
     {
@@ -53,6 +57,7 @@ bool input::handleInput()
             return false;
             break;
         case SDL_KEYDOWN:
+            // pressedKeys.insert(sEvent.key.keysym.sym);
             switch (sEvent.key.keysym.sym)
             {
             case SDLK_LEFT:
@@ -78,6 +83,7 @@ bool input::handleInput()
             case SDLK_n:
                 break;
             case SDLK_l:
+                pressedKeys.insert(KEY_l);
                 break;
             case SDLK_p:
                 break;

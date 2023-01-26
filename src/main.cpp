@@ -605,21 +605,26 @@ void newApi()
                 std::cout << "FIRE!" << std::endl;
             }
 
-            float speed = 0.0f;
+            vec3 speed{};
 
             if (input.isKeyDown(minity::KEY_LEFT))
             {
-                std::cout << "LEFT!" << std::endl;
-                speed = -0.1f;
+                speed.x = -0.1f;
             }
             if (input.isKeyDown(minity::KEY_RIGHT))
             {
-                std::cout << "RIGHT!" << std::endl;
-                speed = 0.1f;
+                speed.x = 0.1f;
             }
-            self->position.x += speed * timeDelta;
-            // if (self->position.x > 1.0f)
-            //     self->position.x -= 2.0f;
+            if (input.isKeyDown(minity::KEY_DOWN))
+            {
+                speed.y = -0.1f;
+            }
+            if (input.isKeyDown(minity::KEY_UP))
+            {
+                speed.y = 0.1f;
+            }
+            self->position.x += speed.x * timeDelta; // TODO: v3Mul()
+            self->position.y += speed.y * timeDelta;
 
             // std::cout << "update(" << timeDelta << ") yRot: " << self->rotation.y << " isKeyPressed(minity::KEY_LEFT) " << input.isKeyPressed(minity::KEY_LEFT)<< std::endl;
 

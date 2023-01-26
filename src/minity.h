@@ -1,6 +1,7 @@
 #pragma once
 
 #include "new_scene.h"
+#include "config.h"
 #include "input.h"
 #include "renderer.h"
 
@@ -99,10 +100,11 @@ void minity::run(scene scene)
     while(m_input.handleInput())
     {
         SDL_Delay(20); // some computation budget...
-        // if (m_input.isKeyDown(KEY_SPACE))
-        // {
-        //     std::cout << "FIRE!" << std::endl;
-        // }
+        if (m_input.isKeyPressed(KEY_l))
+        {
+            std::cout << "wireframes " << g_config->drawWireframe << std::endl;
+            g_config->drawWireframe = !g_config->drawWireframe;
+        }
         scene.model.update(0.1f); // TODO: add frame timer
         position = sf3(scene.model.position);
         scale = sf3(scene.model.scale);
