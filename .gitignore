@@ -47,3 +47,4 @@ imgui.ini
 # profiling
 instruments.memset.nodelay.trace
 llvm.*
+src/renderer/metal/renderer.air

@@ -6,19 +6,19 @@
 
 #define MINITY_SCENE_TYPES_ONLY
 #include "../../freezer/old_scene.h"
-#include "simpleMath.h"
+#include "../../simpleMath.h"
 #include "stats.h"
 
 namespace minity
 {
 
 typedef uint32_t color;
-const color black{0x000000ff};
-const color white{0xffffffff};
+// const color black{0x000000ff};
+// const color white{0xffffffff};
 const color red{0xff0000ff};
 const color green{0x00ff00ff};
 const color blue{0x0000ffff};
-const color yellow{0xffff00ff};
+// const color yellow{0xffff00ff};
 const color gray50{0x7f7f7fff};
 
 const bool debugRasterizer{false};

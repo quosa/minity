@@ -1,7 +1,12 @@
 #pragma once
 
 #define MATH_TYPES_ONLY
-#include "simpleMath.h" // mesh etc. for now
+#include "../simpleMath.h" // mesh etc. for now
+
+// for migration to new scene definitions...
+#ifndef OLD_SCENE_TYPES
+#include "../scene.h"
+#endif
 
 #include <memory>
 #include <iomanip>
@@ -10,6 +15,7 @@
 namespace minity
 {
 
+#ifdef OLD_SCENE_TYPES
 struct camera
 {
     float fovDegrees = 54.4; // 36x24mm 35mm film frame / full sensor
@@ -44,8 +50,9 @@ struct image
 private:
     unsigned char *_raw_data{nullptr};
 };
+#endif // OLD_SCENE_TYPES
 
-struct model
+struct old_model
 {
     // general fields
     bool enabled = true;
@@ -91,20 +98,20 @@ scene
         - ??? Line element ???
 */
 
-struct scene
+struct old_scene
 {
     std::string name{};
 
-    model model;
+    old_model model;
     camera camera;
     light light;
 };
 
 
 
-
 #ifndef MINITY_SCENE_TYPES_ONLY
 
+#ifdef OLD_SCENE_TYPES
 mat4 camera::getCameraMatrix()
 {
     cameraMatrix = lookAtMatrixRH(translation, lookAt, up);
@@ -134,12 +141,12 @@ mat4 light::getLightTranslationMatrix()
     lightMatrix = lightTransformations;
     return lightMatrix;
 }
-
+#endif // OLD_SCENE_TYPES
 //    vec3 lightRay = v3Normalize(multiplyVec3(vec3{0.0f, -1.0f, 0.0f}, lightTransformations));
 //    lightRay.z = 1; // todo: use the light entity for real
 
 
-bool model::addTexture(std::shared_ptr<minity::image> pTextureImage)
+bool old_model::addTexture(std::shared_ptr<minity::image> pTextureImage)
 {
     // if (texture != nullptr)
     // {
@@ -150,7 +157,7 @@ bool model::addTexture(std::shared_ptr<minity::image> pTextureImage)
     return true;
 }
 
-void  model::printModelInfo(bool debug)
+void  old_model::printModelInfo(bool debug)
 {
     std::cout << "loaded a model with " << numFaces << " faces, ";
     std::cout << (hasNormals ? "has " : "no ") << "normals and ";
@@ -176,7 +183,7 @@ void  model::printModelInfo(bool debug)
     }
 }
 
-void  model::dumpModel()
+void  old_model::dumpModel()
 {
     for (auto face : faces)
     {
@@ -208,6 +215,7 @@ void  model::dumpModel()
     }
 }
 
+#ifdef OLD_SCENE_TYPES
 // stb_image: the first pixel pointed to is top-left-most in the image
 // 0,0 = top-left (or bottom-left if flipped vertically)
 // 1,0 = top-right (or bottom-right if flipped vertically)
@@ -245,6 +253,6 @@ void *image::_getRawData()
 {
     return (void *)_raw_data;
 }
-
+#endif // OLD_SCENE_TYPES
 #endif //  MINITY_SCENE_TYPES_ONLY
 } // minity

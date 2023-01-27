@@ -4,52 +4,25 @@
  * https://github.com/Kayzaks/StupidGL (gamasutra game engine from scratch)
  */
 
-#if 0 // #endif // OLD MAIN CODE
+// #define OLD_MAIN_CODE 1
+#ifdef OLD_MAIN_CODE
 #include <iostream> //cout
 #include <memory> // shared_ptr
 
-// METAL - INCLUDE IS MESSY SO GET THAT OUT OF THE WAY...
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdtor-name"
-// #pragma clang diagnostic ignored "-Werror"
-#pragma clang diagnostic ignored "-Wc99-extensions"
-#pragma clang diagnostic ignored "-Wc99-designator"
-#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
-#pragma clang diagnostic ignored "-Wnested-anon-types"
-#pragma clang diagnostic ignored "-Wpedantic"
-// ignore the warnings from metal-cpp :-/
-// In file included from external/metal-cpp/Foundation/Foundation.hpp:42:
-// external/metal-cpp/Foundation/NSSharedPtr.hpp:162:33: error: ISO C++ requires the name after '::~' to be found in the same scope as the name before '::~' [-Werror,-Wdtor-name]
-// _NS_INLINE NS::SharedPtr<_Class>::~SharedPtr()
-#define NS_PRIVATE_IMPLEMENTATION
-#define CA_PRIVATE_IMPLEMENTATION
-#define MTL_PRIVATE_IMPLEMENTATION
-#include <Foundation/Foundation.hpp>
-#include <Metal/Metal.hpp>
-#include <QuartzCore/QuartzCore.hpp>
-#pragma clang diagnostic pop
-
-
 #include "simpleMath.h" // full implementation here
-#include "old_scene.h" // scene/camera/light/mesh
-#include "renderPipeline.h"
+#include "freezer/old_scene.h" // scene/camera/light/mesh
+#include "renderer/software/renderPipeline.h"
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"
-#include "modelImporter.h"
+#include "freezer/modelImporter.h"
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
-#include "imgui_impl_metal.h"
 
 #include <SDL2/SDL.h>
-#include "rasterizer.h"
+#include "renderer/software/rasterizer.h"
 
-#include "utils.h" // box, sphere...
-
-#include <simd/simd.h> // vector_uintN
-#include "metal_scene.h"
-#include "renderer.h"
-#include "shader_types.h"
+#include "freezer/utils.h" // box, sphere...
 
 // #include "input.h"
 #include "minity.h"
@@ -140,7 +113,7 @@ void newScenario()
 
     std::cout << "image and model imports successful" << std::endl;
 
-    minity::model test{};
+    minity::old_model test{};
     test.numFaces = 1;
     test.hasNormals = true;
     test.hasTextureCoordinates = true; // false to disable texture mapping
@@ -156,7 +129,7 @@ void newScenario()
     // test.printModelInfo();
     // test.dumpModel();
 
-    minity::model t = minity::square();
+    minity::old_model t = minity::square();
     t.addTexture(tTexture);
     t.scale = vec3{2.0f, 2.0f, 2.0f};
     // t.translation = vec3{0.0f, 0.0f, 0.0f};
@@ -178,14 +151,14 @@ void newScenario()
     // light is coming from positive z axis
     light.translation = vec3{0.0f, 0.0f, 10.0f};
 
-    // minity::scene scene{"teapot", *teapot, camera, light};
-    // minity::scene scene{"box", *box, camera, light};
-    // minity::scene scene{"bbox", *bbox, camera, light};
-    // minity::scene scene{"sphere", *sphere, camera, light};
-    // minity::scene scene{"male", *male, camera, light};
-    minity::scene scene{"head", *head, camera, light};
-    // minity::scene scene{"test", test, camera, light};
-    // minity::scene scene{"test square", t, camera, light};
+    // minity::old_scene scene{"teapot", *teapot, camera, light};
+    // minity::old_scene scene{"box", *box, camera, light};
+    // minity::old_scene scene{"bbox", *bbox, camera, light};
+    // minity::old_scene scene{"sphere", *sphere, camera, light};
+    // minity::old_scene scene{"male", *male, camera, light};
+    minity::old_scene scene{"head", *head, camera, light};
+    // minity::old_scene scene{"test", test, camera, light};
+    // minity::old_scene scene{"test square", t, camera, light};
 
     // g_config->renderOnChange = true;
     minity::run(scene);
@@ -220,7 +193,7 @@ void newRasterizerScene()
     // light is coming from positive z axis
     light.translation = vec3{0.0f, 0.0f, 10.0f};
 
-    minity::scene scene{"teapot", *teapot, camera, light};
+    minity::old_scene scene{"teapot", *teapot, camera, light};
 
     g_config->fillTriangles = true;
     g_config->drawWireframe = false;
@@ -351,194 +324,7 @@ void newRasterizer()
     minity::shutdown();
 }
 
-// utils to print vertices...
-std::string sf3(simd::float3 sf3) { return std::to_string(sf3[0]) + " " + std::to_string(sf3[1]) + " " + std::to_string(sf3[2]); };
-std::string sf2(simd::float2 sf2) { return std::to_string(sf2[0]) + " " + std::to_string(sf2[1]); };
-
-/**
- * @brief convert a minity::model for use with metal renderer
- *
- * @param path to model obj file
- * @param reverseWinding default true = load as counter clockwise (e.g. from Blender)
- * @return Scene TODO: change to a metal mesh as that is what is in reality returned
- */
-inline Scene loadModelAndConvert(const std::string path, bool reverseWinding=true)
-{
-    minity::modelImporter importer{};
-    auto model = importer.load(path, reverseWinding);
-
-    assert(model->faces.size() == (size_t)model->numFaces);
-    assert(model->vertices.size() == model->normals.size());
-    assert(model->vertices.size() == model->textureCoordinates.size());
-
-    // number of bytes in the vertexData buffer
-    size_t vertexDataSize = model->numFaces * 3 * sizeof(VertexData);
-    // vertex buffer: 1 * VertexData per vertex * 3 vertices per face * N faces
-    VertexData *vertexData = new VertexData[vertexDataSize];
-    // number of bytes in the indexData buffer
-    size_t indexDataSize = model->numFaces * 3 * sizeof(u_int32_t);
-    // index buffer: one 32-bit index per vertex * 3 vertices per face * N faces
-    u_int32_t *indexData = new u_int32_t[indexDataSize];
-
-    size_t vIdx = 0;
-    for (auto f : model->faces)
-    {
-        assert(f.size() == 3); // we support only triangles
-        for (auto idx : f)
-        {
-            VertexData tmp{};
-            vec3 v = model->vertices[idx];
-            vec3 n = model->normals[idx];
-            vec2 t = model->textureCoordinates[idx];
-            tmp.position = simd::float3{v.x, v.y, v.z};
-            tmp.normal = simd::float3{n.x, n.y, n.z};
-            tmp.texcoord = simd::float2{t.u, t.v};
-
-            vertexData[vIdx] = tmp;
-            indexData[vIdx] = (u_int32_t)vIdx;
-            vIdx++;
-        }
-    }
-    return Scene{vertexData, vertexDataSize, indexData, indexDataSize};
-}
-
-// https://developer.apple.com/library/archive/documentation/Miscellaneous/Conceptual/MetalProgrammingGuide/Dev-Technique/Dev-Technique.html
-// https://developer.apple.com/documentation/metal/shader_libraries/building_a_library_with_metal_s_command-line_tools?language=objc
-//
-// NOTE: -gline-tables-only -frecord-sources add debug info to shader if you want to use xcode metal debugger
-//
-// xcrun -sdk macosx metal -gline-tables-only -frecord-sources -c renderer.metal -o renderer.air
-// xcrun -sdk macosx metallib renderer.air -o renderer.metallib
-// xxd -i renderer.metallib renderer_metallib.h
-// clang++ -std=c++17 -I /usr/local/include -I ../metal-cpp main.cpp -l SDL2 -framework Foundation -framework QuartzCore -framework Metal && ./a.out
-void metalRendererScenario()
-{
-    const vector_uint2 viewport = {
-        640, 480
-    };
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); // (void)io;
-    ImGui::StyleColorsLight();
-
-    // use a better 18pt font
-    const float font_size{18.0f};
-    io.Fonts->AddFontFromFileTTF(
-        "fonts/SourceCodePro-Regular.ttf",
-        font_size
-    );
-    io.FontDefault = io.Fonts->AddFontFromFileTTF(
-        "fonts/SourceCodePro-Regular.ttf",
-        font_size
-    );
-
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
-    SDL_InitSubSystem(SDL_INIT_VIDEO);
-
-    SDL_Window *window = SDL_CreateWindow("SDL Metal", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, viewport[0], viewport[1], SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-
-    auto layer = (CA::MetalLayer*)SDL_RenderGetMetalLayer(renderer);
-    ImGui_ImplMetal_Init(layer->device());
-    ImGui_ImplSDL2_InitForMetal(window);
-
-    // Scene bboxScene = loadModelAndConvert("models/BlenderBoxZ.obj");
-    // Scene sphereScene = loadModelAndConvert("models/BlenderSmoothSphere.obj");
-    Scene headScene = loadModelAndConvert("test/models/Model_D0606058/head.obj");
-
-    // Scene scene = *GetSingleFaceScene(); // only 1 face
-    // Scene scene = *GetCubeScene(); // TODO: needs MTL::Winding::WindingCounterClockwise (right-hand winding)
-    // Scene &scene = bboxScene;
-    // Scene &scene = sphereScene;
-    Scene &scene = headScene;
-
-    minity::imageImporter imgImporter{};
-    auto headTexture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
-
-
-    assert(headTexture != nullptr); // bc passing as ref
-    Renderer metalRenderer = Renderer(layer, scene, *headTexture);
-
-    std::cout << "hello, sdl metal" << std::endl;
-
-    bool quit = false;
-    SDL_Event e;
-
-    float angle = 0.0f;
-
-    // cube parameters
-    // simd::float3 scale{ 1.0f, 1.0f, 1.0f };
-    // simd::float3 position{ 0.0f, 0.0f, -2.0f };
-
-    // Blender box and sphere parameters
-    // simd::float3 scale{ 1.0f, 1.0f, 1.0f };
-    // simd::float3 position{ 0.0f, 0.0f, -5.0f };
-
-    // head scene parameters
-    simd::float3 scale{ 0.1f, 0.1f, 0.1f };
-    simd::float3 position{ 0.0f, -5.0f, -12.0f };
-
-    simd::float4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // white base-color
-
-
-    while (!quit) {
-        while (SDL_PollEvent(&e) != 0) {
-            ImGui_ImplSDL2_ProcessEvent(&e);
-            switch (e.type) {
-                case SDL_QUIT: {
-                    quit = true;
-                } break;
-                case SDL_KEYDOWN:
-                switch (e.key.keysym.sym)
-                {
-                    case SDLK_SPACE:
-                        std::cout << "hello" << std::endl;
-                        break;
-                    case SDLK_l:
-                        g_config->drawWireframe = g_config->drawWireframe ? false : true;
-                        break;
-                    case SDLK_F1:
-                        g_config->showStatsWindow = g_config->showStatsWindow ? false : true;
-                        break;
-                    case SDLK_q:
-                        std::cout << "bye" << std::endl;
-                        quit = true;
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-
-        // cube translation parameters
-        angle += 0.01f;
-
-        metalRenderer.renderModel(position, scale, angle, color);
-
-    } // end of rendering loop
-
-    ImGui_ImplMetal_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
-
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-
-    SDL_Quit();
-}
-
-int main()
-{
-    std::cout << banner << usage << std::endl;
-    // newScenario();
-    // newRasterizer();
-    // newRasterizerScene();
-    metalRendererScenario();
-}
-
-#endif // OLD MAIN CODE
+#else
 
 
 #include "simpleMath.h"
@@ -671,13 +457,16 @@ void newApi()
     minity.run(scene);
     minity.shutdown();
 }
-
+#endif // OLD MAIN CODE
 int main()
 {
     std::cout << banner << usage << std::endl;
-    // newScenario();
+#ifdef OLD_MAIN_CODE
+    newScenario();
     // newRasterizer();
     // newRasterizerScene();
     // metalRendererScenario();
+#else
     newApi();
+#endif // OLD_MAIN_CODE
 }

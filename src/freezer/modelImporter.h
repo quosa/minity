@@ -19,14 +19,14 @@ namespace minity
 struct modelImporter
 {
 public:
-    modelImporter() : model_(std::make_shared<model>()) {}
+    modelImporter() : model_(std::make_shared<old_model>()) {}
     ~modelImporter() { model_.reset(); }
-    std::shared_ptr<model> load(const std::string &path, bool reverseWinding=false);
-    std::shared_ptr<model> loadFromString(const std::string &modelString, bool reverseWinding=false);
+    std::shared_ptr<old_model> load(const std::string &path, bool reverseWinding=false);
+    std::shared_ptr<old_model> loadFromString(const std::string &modelString, bool reverseWinding=false);
 private:
     void handleLine(const std::string &line);
     void alignFaces(bool reverseWinding);
-    std::shared_ptr<model> model_{nullptr};
+    std::shared_ptr<old_model> model_{nullptr};
 };
 
 // adapted originally from:
@@ -35,12 +35,12 @@ private:
 // supports vertices, faces, normals
 // and texture coordinates
 // might throw runtime exception
-std::shared_ptr<model> modelImporter::load(const std::string &path, bool reverseWinding)
+std::shared_ptr<old_model> modelImporter::load(const std::string &path, bool reverseWinding)
 {
     if (model_)
     {
         model_.reset();
-        model_ = std::make_shared<model>();
+        model_ = std::make_shared<old_model>();
     }
     std::ifstream f(path);
     if (!f.is_open())
@@ -61,12 +61,12 @@ std::shared_ptr<model> modelImporter::load(const std::string &path, bool reverse
 }
 
 // might throw runtime exception
-std::shared_ptr<model> modelImporter::loadFromString(const std::string &modelString, bool reverseWinding)
+std::shared_ptr<old_model> modelImporter::loadFromString(const std::string &modelString, bool reverseWinding)
 {
     if (model_)
     {
         model_.reset();
-        model_ = std::make_shared<model>();
+        model_ = std::make_shared<old_model>();
     }
     std::istringstream iss(modelString);
     std::string line;
@@ -89,7 +89,7 @@ void modelImporter::alignFaces(bool reverseWinding)
     std::vector<vec2> _textureCoordinates = model_->textureCoordinates;
     std::vector<std::vector<int>> _faces = model_->faces; // v1_idx, v2_idx, v3_idx, ...
 
-    // reset the model arrays
+    // reset the old_model arrays
     model_->vertices.clear();
     model_->normals.clear();
     model_->textureCoordinates.clear();

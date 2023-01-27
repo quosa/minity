@@ -1,10 +1,10 @@
 #include <algorithm>
 #include <cassert>
 
-#include "simpleMath.h"
-#include "old_scene.h"
+#include "../../simpleMath.h"
+#include "../../freezer/old_scene.h"
 #include "sdlHelpers.h" // full math
-#include "modelImporter.h"
+#include "../../freezer/modelImporter.h"
 // #include "lineDraw.h"
 // #include "triangleFill.h" // old triangle fill algorithm
 #include "frameTimer.h"
@@ -40,7 +40,7 @@ enum spaceType
 // TODO: make matrices come from model getters
 // TODO: figure out if we need to add some encapsulation for vects/norms/texc
 void processVertices(
-    minity::model &model,
+    minity::old_model &model,
     const int idx, vec3 (&vects)[5][3], vec3 (&norms)[5][3], vec2 (&texc)[3],
     const mat4 &worldTransformations, const mat4 &viewMatrix, const mat4 &projector,
     const mat4 &inverseWorldTransformations, const mat4 &inverseViewMatrix, const mat4 &inverseProjector,
@@ -171,11 +171,11 @@ bool clippingFunction(vec3 (&ndcVertices)[3], renderStats &stats)
 };
 
 
-bool render(minity::scene scene, minity::rasterizer &rasterizer)
+bool render(minity::old_scene scene, minity::rasterizer &rasterizer)
 {
     renderStats stats{};
 
-    minity::model &model = scene.model;
+    minity::old_model &model = scene.model;
     minity::camera &camera = scene.camera;
     minity::light &light = scene.light;
 
@@ -485,7 +485,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
 }
 
 
-void run(minity::scene scene)
+void run(minity::old_scene scene)
 {
     const unsigned int width{640};
     const unsigned int height{480};
