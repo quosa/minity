@@ -4,7 +4,7 @@
  * https://github.com/Kayzaks/StupidGL (gamasutra game engine from scratch)
  */
 
-// #define OLD_MAIN_CODE 1
+#define OLD_MAIN_CODE 1
 #ifdef OLD_MAIN_CODE
 #include <iostream> //cout
 #include <memory> // shared_ptr
