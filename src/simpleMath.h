@@ -70,14 +70,14 @@ struct tri
     u_int32_t color = 0xffffffff;
 };
 
-struct mesh
-{
-    bool enabled = true;
-    std::vector<tri> tris;
-    vec3 scale{1.0f, 1.0f, 1.0f};
-    vec3 rotation{};
-    vec3 translation{};
-};
+// struct mesh
+// {
+//     bool enabled = true;
+//     std::vector<tri> tris;
+//     vec3 scale{1.0f, 1.0f, 1.0f};
+//     vec3 rotation{};
+//     vec3 translation{};
+// };
 
 struct mat4
 {
