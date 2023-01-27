@@ -1,8 +1,12 @@
 #pragma once
 
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_metal.h"
 #include <SDL.h>
 #include <iostream>
 #include <set>
+
 namespace minity
 {
 
@@ -13,11 +17,14 @@ enum keyCode
     KEY_UP = SDLK_UP,
     KEY_DOWN = SDLK_DOWN,
     KEY_SPACE = SDLK_SPACE,
+    KEY_PLUS = SDLK_PLUS, // zoom in, z+
+    KEY_MINUS = SDLK_MINUS, // zoom out z-
     KEY_a = SDLK_a, // wasd left
     KEY_d = SDLK_d, // wasd right
     KEY_w = SDLK_w, // wasd up
     KEY_s = SDLK_s, // wasd down
     KEY_l = SDLK_l, // l for draw wireframe "(l)ines"
+    KEY_F1 = SDLK_F1, // show stats window
 };
 
 class input
@@ -49,7 +56,7 @@ bool input::handleInput()
 
     while (SDL_PollEvent(&sEvent))
     {
-        // ImGui_ImplSDL2_ProcessEvent(&sEvent);
+        ImGui_ImplSDL2_ProcessEvent(&sEvent);
 
         switch (sEvent.type)
         {
@@ -94,6 +101,7 @@ bool input::handleInput()
             case SDLK_x:
                 break;
             case SDLK_F1:
+                pressedKeys.insert(KEY_F1);
                 break;
             case SDLK_q:
                 return false;

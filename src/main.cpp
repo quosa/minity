@@ -583,17 +583,22 @@ void newApi()
     minity::meshImporter importer{};
     auto teapot = importer.load("test/models/teapot.obj");
     (void)teapot;
+    auto mesh = teapot;
 
     minity::minity minity{minity::backend::metal};
-    minity::mesh *mesh = minity::GetSingleFaceMesh();
-    (void)mesh;
+    // minity::mesh *mesh = minity::GetSingleFaceMesh();
+    // (void)mesh;
 
     minity::material material{minity::yellow, 1.0f, *texture};
 
     minity::model model{*mesh, material};
+    // model.scale = vec3{1.0f, 1.0f, 1.0f};
+    // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    // model.position = vec3{0.0f, 0.0f, -2.0f};
     model.scale = vec3{1.0f, 1.0f, 1.0f};
     model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    model.position = vec3{0.0f, 0.0f, -2.0f};
+    model.position = vec3{0.0f, -0.5f, -4.0f};
+
 
     auto updateFactory = [](minity::model *self)
     {
@@ -623,8 +628,17 @@ void newApi()
             {
                 speed.y = 0.1f;
             }
+            if (input.isKeyDown(minity::KEY_MINUS))
+            {
+                speed.z = -0.1f;
+            }
+            if (input.isKeyDown(minity::KEY_PLUS))
+            {
+                speed.z = 0.1f;
+            }
             self->position.x += speed.x * timeDelta; // TODO: v3Mul()
             self->position.y += speed.y * timeDelta;
+            self->position.z += speed.z * timeDelta;
 
             // std::cout << "update(" << timeDelta << ") yRot: " << self->rotation.y << " isKeyPressed(minity::KEY_LEFT) " << input.isKeyPressed(minity::KEY_LEFT)<< std::endl;
 

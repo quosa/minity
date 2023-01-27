@@ -2,13 +2,14 @@
 
 #include "new_scene.h"
 #include "config.h"
-#include "input.h"
 #include "renderer.h"
+#include "input.h"
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_metal.h"
 #include <SDL.h>
+#include <Foundation/Foundation.hpp> // CA::MetalLayer
 
 #include <simd/simd.h> // vector_uintN
 
@@ -82,7 +83,6 @@ void minity::shutdown()
     SDL_DestroyWindow(window);
 
     SDL_Quit();
-    std::cout << "goodbye, cruel world" << std::endl;
 }
 
 simd::float3 sf3(vec3 &v) {return simd::float3{v.x, v.y, v.z};};
@@ -102,8 +102,11 @@ void minity::run(scene scene)
         SDL_Delay(20); // some computation budget...
         if (m_input.isKeyPressed(KEY_l))
         {
-            std::cout << "wireframes " << g_config->drawWireframe << std::endl;
             g_config->drawWireframe = !g_config->drawWireframe;
+        }
+        if (m_input.isKeyPressed(KEY_F1))
+        {
+            g_config->showStatsWindow = !g_config->showStatsWindow;
         }
         scene.model.update(0.1f); // TODO: add frame timer
         position = sf3(scene.model.position);
