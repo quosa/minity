@@ -6,20 +6,21 @@
 
 // for vec3 and deg2rad :-/
 #define MATH_TYPES_ONLY
-#include "simpleMath.h"
+#include "../../simpleMath.h"
 #include "rasterizer.h"
+#include "../../config.h"
 
-struct config
-{
-    bool drawNormals = false; // n key
-    bool drawWireframe = false; // l key
-    bool drawPointCloud = false; // p key
-    bool drawAxes = false; // x key
-    bool fillTriangles = true; // f key
-    bool showStatsWindow = false; // F1 key
-    bool renderOnChange = false; // r key
-};
-config *g_config = new config();
+// struct config
+// {
+//     bool drawNormals = false; // n key
+//     bool drawWireframe = false; // l key
+//     bool drawPointCloud = false; // p key
+//     bool drawAxes = false; // x key
+//     bool fillTriangles = true; // f key
+//     bool showStatsWindow = false; // F1 key
+//     bool renderOnChange = false; // r key
+// };
+// config *g_config = new config();
 
 SDL_Window *g_SDLWindow;
 SDL_Renderer *g_SDLRenderer;
