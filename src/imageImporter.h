@@ -35,6 +35,7 @@ std::shared_ptr<image> imageImporter::load(const std::string &path, bool flipVer
         image_.reset();
         image_ = std::make_shared<image>();
     }
+    stbi_set_flip_vertically_on_load(0);
     if (flipVertically)
     {
         stbi_set_flip_vertically_on_load(1); // flag_true_if_should_flip
