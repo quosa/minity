@@ -1,7 +1,7 @@
 #pragma once
 
 #define MINITY_SCENE_TYPES_ONLY
-#include "scene.h"
+#include "old_scene.h"
 
 #include <algorithm>
 #include <iostream>
@@ -56,7 +56,7 @@ std::shared_ptr<model> modelImporter::load(const std::string &path, bool reverse
         handleLine(line);
     }
     alignFaces(reverseWinding);
-    model_->printModelInfo();
+    // model_->printModelInfo();
     return model_;
 }
 
@@ -75,7 +75,7 @@ std::shared_ptr<model> modelImporter::loadFromString(const std::string &modelStr
         handleLine(line);
     }
     alignFaces(reverseWinding);
-    model_->printModelInfo();
+    // model_->printModelInfo();
     return model_;
 }
 

@@ -136,14 +136,6 @@ public:
     // void run(scene scene) {(void)scene;};
     void run(scene scene) { for (int i = 0; i < 10; i++) scene.model.update(0.01f); };
     void shutdown() {};
-//     static minity& instance() {
-//         static minity m;
-//         return m;
-//     }
-
-// private:
-//     Singleton();
-//     ~Singleton();};
 private:
     input &m_input;
 };

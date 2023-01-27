@@ -2,7 +2,7 @@
 #include <cassert>
 
 #include "simpleMath.h"
-#include "scene.h"
+#include "old_scene.h"
 #include "sdlHelpers.h" // full math
 #include "modelImporter.h"
 // #include "lineDraw.h"

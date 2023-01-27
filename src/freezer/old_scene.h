@@ -2,7 +2,6 @@
 
 #define MATH_TYPES_ONLY
 #include "simpleMath.h" // mesh etc. for now
-#include "mesh.h"
 
 #include <memory>
 #include <iomanip>
@@ -10,9 +9,6 @@
 
 namespace minity
 {
-
-typedef u_int32_t color;
-const color yellow{0xffff00ff};
 
 struct camera
 {
@@ -49,59 +45,32 @@ private:
     unsigned char *_raw_data{nullptr};
 };
 
-typedef image texture; // TODO: change for real...
-
-// struct model
-// {
-//     // general fields
-//     bool enabled = true;
-//     std::string name{};
-
-//     // transformation fields
-//     vec3 scale{1.0f, 1.0f, 1.0f};
-//     vec3 rotation{};
-//     vec3 translation{};
-
-//     // model details
-//     int numFaces{0};
-//     bool hasNormals{false};
-//     bool hasTextureCoordinates{false};
-//     bool hasTexture{false};
-
-//     std::vector<std::vector<int>> faces; // [[v1_idx, v2_idx, v3_idx], [...
-//     std::vector<vec3> vertices; // x, y, z (w=1.0)
-//     std::vector<vec3> normals; // x, y, z (w=1.0)
-//     std::vector<vec2> textureCoordinates; // u, v (w ignored)
-//     std::shared_ptr<image> texture {nullptr};
-
-//     void printModelInfo(bool debug=false);
-//     void dumpModel();
-//     bool addTexture(std::shared_ptr<image> pTextureImage);
-// };
-
-struct material
-{
-    color color; // rgba - 0xffff00ff = yellow
-    float reflectivity;
-    // transparency and refraction later
-    texture &texture;
-};
-
-struct model; // fwd
-typedef std::function< void(float) > updateMethod;
-typedef std::function< updateMethod(minity::model *) > updateMethodFactory;
-// default null-update method that does nothing
-auto nullUpdater = [](float timeDelta) -> void { (void)timeDelta; };
-
 struct model
 {
-    mesh mesh;
-    material material;
-    vec3 position{};
+    // general fields
+    bool enabled = true;
+    std::string name{};
+
+    // transformation fields
+    vec3 scale{1.0f, 1.0f, 1.0f};
     vec3 rotation{};
-    vec3 scale{};
-    updateMethod update = nullUpdater;
-    void setUpdate(updateMethodFactory updateMaker) { update = updateMaker(this); }
+    vec3 translation{};
+
+    // model details
+    int numFaces{0};
+    bool hasNormals{false};
+    bool hasTextureCoordinates{false};
+    bool hasTexture{false};
+
+    std::vector<std::vector<int>> faces; // [[v1_idx, v2_idx, v3_idx], [...
+    std::vector<vec3> vertices; // x, y, z (w=1.0)
+    std::vector<vec3> normals; // x, y, z (w=1.0)
+    std::vector<vec2> textureCoordinates; // u, v (w ignored)
+    std::shared_ptr<image> texture {nullptr};
+
+    void printModelInfo(bool debug=false);
+    void dumpModel();
+    bool addTexture(std::shared_ptr<image> pTextureImage);
 };
 
 /*
@@ -122,20 +91,13 @@ scene
         - ??? Line element ???
 */
 
-// struct scene
-// {
-//     std::string name{};
-//
-//     model model;
-//     camera camera;
-//     light light;
-// };
-
 struct scene
 {
-    camera &camera;
-    light &light;
-    model &model;
+    std::string name{};
+
+    model model;
+    camera camera;
+    light light;
 };
 
 
@@ -177,74 +139,74 @@ mat4 light::getLightTranslationMatrix()
 //    lightRay.z = 1; // todo: use the light entity for real
 
 
-// bool model::addTexture(std::shared_ptr<minity::image> pTextureImage)
-// {
-//     // if (texture != nullptr)
-//     // {
-//     //     texture = nullptr;
-//     // }
-//     texture = pTextureImage;
-//     hasTexture = true;
-//     return true;
-// }
+bool model::addTexture(std::shared_ptr<minity::image> pTextureImage)
+{
+    // if (texture != nullptr)
+    // {
+    //     texture = nullptr;
+    // }
+    texture = pTextureImage;
+    hasTexture = true;
+    return true;
+}
 
-// void  model::printModelInfo(bool debug)
-// {
-//     std::cout << "loaded a model with " << numFaces << " faces, ";
-//     std::cout << (hasNormals ? "has " : "no ") << "normals and ";
-//     std::cout << (hasTextureCoordinates ? "has " : "no ") << "texture coordinates";
-//     std::cout << "." << std::endl;
+void  model::printModelInfo(bool debug)
+{
+    std::cout << "loaded a model with " << numFaces << " faces, ";
+    std::cout << (hasNormals ? "has " : "no ") << "normals and ";
+    std::cout << (hasTextureCoordinates ? "has " : "no ") << "texture coordinates";
+    std::cout << "." << std::endl;
 
-//     if(debug)
-//     {
-//         std::cout << "vertices: [";
-//         for (auto v : vertices) { std::cout << " " << v; };
-//         std::cout << " ]" << std::endl;
+    if(debug)
+    {
+        std::cout << "vertices: [";
+        for (auto v : vertices) { std::cout << " " << v; };
+        std::cout << " ]" << std::endl;
 
-//         std::cout << "normals: [";
-//         for (auto n : normals) { std::cout << " " << n; };
-//         std::cout << " ]" << std::endl;
+        std::cout << "normals: [";
+        for (auto n : normals) { std::cout << " " << n; };
+        std::cout << " ]" << std::endl;
 
-//         std::cout << "texture coordinates: [";
-//         for (auto tc : textureCoordinates)
-//         {
-//             std::cout << " (" << tc.u << ", " << tc.v << ")";
-//         };
-//         std::cout << " ]" << std::endl;
-//     }
-// }
+        std::cout << "texture coordinates: [";
+        for (auto tc : textureCoordinates)
+        {
+            std::cout << " (" << tc.u << ", " << tc.v << ")";
+        };
+        std::cout << " ]" << std::endl;
+    }
+}
 
-// void  model::dumpModel()
-// {
-//     for (auto face : faces)
-//     {
-//         // v0, v1, v2 | n0, n1, n2 | t0, t1, t2
-//         for (int i : {0,1,2})
-//         {
-//             std::cout << " " << std::setw(35) << std::setprecision(3) << vertices[face[i]];
-//         };
-//         std::cout << " | ";
-//         if (hasNormals)
-//         {
-//             for (int i : {0,1,2})
-//             {
-//                 std::cout << " " << std::setw(35) << std::setprecision(3) << normals[face[i]];
-//             };
-//             std::cout << " | ";
-//         }
-//         if (hasTextureCoordinates)
-//         {
-//             for (int i : {0,1,2})
-//             {
-//                 auto tc = textureCoordinates[face[i]];
-//                 // << std::setw(7) << std::setprecision(3)
-//                 std::cout << " (" << tc.u << ", " << tc.v << ")" ;
-//             };
+void  model::dumpModel()
+{
+    for (auto face : faces)
+    {
+        // v0, v1, v2 | n0, n1, n2 | t0, t1, t2
+        for (int i : {0,1,2})
+        {
+            std::cout << " " << std::setw(35) << std::setprecision(3) << vertices[face[i]];
+        };
+        std::cout << " | ";
+        if (hasNormals)
+        {
+            for (int i : {0,1,2})
+            {
+                std::cout << " " << std::setw(35) << std::setprecision(3) << normals[face[i]];
+            };
+            std::cout << " | ";
+        }
+        if (hasTextureCoordinates)
+        {
+            for (int i : {0,1,2})
+            {
+                auto tc = textureCoordinates[face[i]];
+                // << std::setw(7) << std::setprecision(3)
+                std::cout << " (" << tc.u << ", " << tc.v << ")" ;
+            };
 
-//         }
-//         std::cout << std::endl;
-//     }
-// }
+        }
+        std::cout << std::endl;
+    }
+}
 
 // stb_image: the first pixel pointed to is top-left-most in the image
 // 0,0 = top-left (or bottom-left if flipped vertically)

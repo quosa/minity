@@ -3,7 +3,7 @@
 #define MATH_TYPES_ONLY
 #include "simpleMath.h"
 // #define MINITY_SCENE_TYPES_ONLY
-// #include "scene.h"
+// #include "old_scene.h"
 #include "mesh.h"
 
 #include <simd/simd.h> // vector_floatN
@@ -29,8 +29,7 @@ public:
     std::shared_ptr<mesh> load(const std::string &path, bool reverseWinding=false);
     std::shared_ptr<mesh> loadFromString(const std::string &meshString, bool reverseWinding=false);
 private:
-    void handleLine(const std::string &line);
-    // void alignFaces(bool reverseWinding);
+    void handleLine(const std::string &line, bool reverseWinding);
     std::shared_ptr<mesh> m_mesh{nullptr};
 
     std::vector<vec3> vertices{};
@@ -64,10 +63,8 @@ std::shared_ptr<mesh> meshImporter::load(const std::string &path, bool reverseWi
     {
         // std::cout << line << std::endl;
         std::getline(f, line);
-        handleLine(line);
+        handleLine(line, reverseWinding);
     }
-    (void)reverseWinding;
-    // alignFaces(reverseWinding);
     // m_mesh->printModelInfo();
 
     std::cout << "loaded a model with " << metalVertices.size() << " vertices,";
@@ -96,10 +93,8 @@ std::shared_ptr<mesh> meshImporter::loadFromString(const std::string &meshString
     std::string line;
     while (std::getline(iss, line)) {
         // std::cout << line << std::endl;
-        handleLine(line);
+        handleLine(line, reverseWinding);
     }
-    (void)reverseWinding;
-    // alignFaces(reverseWinding);
     // m_mesh->printModelInfo();
 
     m_mesh->vertexDataSize = metalVertices.size() * sizeof(VertexData);
@@ -113,65 +108,8 @@ std::shared_ptr<mesh> meshImporter::loadFromString(const std::string &meshString
     return m_mesh;
 }
 
-// // utility to align vertices, normals
-// // and texture coordinates for easy access
-// void meshImporter::alignFaces(bool reverseWinding)
-// {
-//     // (deep-)copy the unsorted arrays
-//     std::vector<vec3> _vertices = m_mesh->vertices;
-//     std::vector<vec3> _normals = m_mesh->normals;
-//     std::vector<vec2> _textureCoordinates = m_mesh->textureCoordinates;
-//     std::vector<std::vector<int>> _faces = m_mesh->faces; // v1_idx, v2_idx, v3_idx, ...
-
-//     // reset the mesh arrays
-//     m_mesh->vertices.clear();
-//     m_mesh->normals.clear();
-//     m_mesh->textureCoordinates.clear();
-//     m_mesh->faces.clear();
-
-//     // populate the arrays back in order
-//     // so that each have same id for same vertex
-//     int i = 0;
-//     for (auto vnt : _faces)
-//     {
-
-//         m_mesh->vertices.insert( m_mesh->vertices.end(), { _vertices[vnt[0]], _vertices[vnt[3]], _vertices[vnt[6]]});
-//         if (reverseWinding)
-//         {
-//             int n = m_mesh->vertices.size();
-//             std::swap( m_mesh->vertices[n-2], m_mesh->vertices[n-1]);
-//         }
-
-//         if (m_mesh->hasNormals)
-//         {
-//             m_mesh->normals.insert( m_mesh->normals.end(), {_normals[vnt[1]], _normals[vnt[4]], _normals[vnt[7]]});
-//             if (reverseWinding)
-//             {
-//                 int n = m_mesh->normals.size();
-//                 std::swap( m_mesh->normals[n-2], m_mesh->normals[n-1]);
-//             }
-//         }
-
-//         if (m_mesh->hasTextureCoordinates)
-//         {
-//             m_mesh->textureCoordinates.insert( m_mesh->textureCoordinates.end(),
-//                 { _textureCoordinates[vnt[2]], _textureCoordinates[vnt[5]], _textureCoordinates[vnt[8]]}
-//             );
-//             if (reverseWinding)
-//             {
-//                 int n = m_mesh->textureCoordinates.size();
-//                 std::swap( m_mesh->textureCoordinates[n-2], m_mesh->textureCoordinates[n-1]);
-//             }
-//         }
-//         std::vector<int> face{ i, i+1, i+2 };
-//         m_mesh->faces.insert( m_mesh->faces.end(), face);
-//         i += 3;
-//     }
-//     m_mesh->numFaces = m_mesh->faces.size();
-// }
-
 // utility to handle a obj file line
-void meshImporter::handleLine(const std::string &line)
+void meshImporter::handleLine(const std::string &line, bool reverseWinding)
 {
     std::strstream s;
     s << line;
@@ -281,11 +219,26 @@ void meshImporter::handleLine(const std::string &line)
         if (i == 3)
         {
             metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 3),  (u_int32_t)(j - 2),  (u_int32_t)(j - 1)});
+            if (reverseWinding)
+            {
+                assert(metalIndices.size() > 2);
+                std::swap(metalIndices.end()[-2], metalIndices.end()[-1]);
+            }
         }
         else if (i == 4)
         {
             metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 4),  (u_int32_t)(j - 3),  (u_int32_t)(j - 2)});
+            if (reverseWinding)
+            {
+                assert(metalIndices.size() > 2);
+                std::swap(metalIndices.end()[-2], metalIndices.end()[-1]);
+            }
             metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 4),  (u_int32_t)(j - 2),  (u_int32_t)(j - 1)});
+            if (reverseWinding)
+            {
+                assert(metalIndices.size() > 2);
+                std::swap(metalIndices.end()[-2], metalIndices.end()[-1]);
+            }
         }
         else if (i>4)
         {

@@ -2,6 +2,7 @@
 
  // full scene implementation in one file,
  // other tests #define MINITY_SCENE_TYPES_ONLY
+// #include "freezer/old_scene.h"
 #include "scene.h"
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"

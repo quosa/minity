@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scene.h"
+#include "old_scene.h"
 
 #include <cmath>
 #include <cassert>

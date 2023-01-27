@@ -1,8 +1,8 @@
 #pragma once
 
-#include "new_scene.h"
+#include "scene.h"
 #include "config.h"
-#include "renderer.h"
+#include "renderer/metal/renderer.h"
 #include "input.h"
 
 #include "imgui.h"

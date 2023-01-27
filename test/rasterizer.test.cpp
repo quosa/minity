@@ -2,7 +2,7 @@
 
 #define MATH_TYPES_ONLY
 #include "simpleMath.h"
-#include "rasterizer.h"
+#include "renderer/software/rasterizer.h"
 
 const vec3 origin{0.0f, 0.0f, 0.0f};
 const minity::color yellow = 0xffff00ff;

@@ -31,7 +31,7 @@
 
 
 #include "simpleMath.h" // full implementation here
-#include "scene.h" // scene/camera/light/mesh
+#include "old_scene.h" // scene/camera/light/mesh
 #include "renderPipeline.h"
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"
@@ -543,7 +543,7 @@ int main()
 
 #include "simpleMath.h"
 #include "mesh.h"
-#include "new_scene.h"
+#include "scene.h"
 #include "minity.h"
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"
@@ -577,27 +577,32 @@ const std::string banner = R"(
 
 void newApi()
 {
-    minity::imageImporter imgImporter{};
-    auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", true); // flip
-
-    minity::meshImporter importer{};
-    auto teapot = importer.load("test/models/teapot.obj");
-    (void)teapot;
-    auto mesh = teapot;
-
     minity::minity minity{minity::backend::metal};
+
+    minity::imageImporter imgImporter{};
+    // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", true); // flip
+    auto texture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
+
+    minity::meshImporter meshImporter{};
+    // auto mesh = importer.load("test/models/teapot.obj");
+    auto mesh = meshImporter.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
     // minity::mesh *mesh = minity::GetSingleFaceMesh();
-    // (void)mesh;
 
     minity::material material{minity::yellow, 1.0f, *texture};
 
     minity::model model{*mesh, material};
+    // single face parameters
     // model.scale = vec3{1.0f, 1.0f, 1.0f};
     // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
     // model.position = vec3{0.0f, 0.0f, -2.0f};
-    model.scale = vec3{1.0f, 1.0f, 1.0f};
+    // teapot parameters
+    // model.scale = vec3{1.0f, 1.0f, 1.0f};
+    // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    // model.position = vec3{0.0f, -0.5f, -4.0f};
+    // head parameters
+    model.scale = vec3{0.1f, 0.1f, 0.1f};
     model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    model.position = vec3{0.0f, -0.5f, -4.0f};
+    model.position = vec3{0.0f, -5.0f, -14.0f};
 
 
     auto updateFactory = [](minity::model *self)
@@ -643,12 +648,10 @@ void newApi()
             // std::cout << "update(" << timeDelta << ") yRot: " << self->rotation.y << " isKeyPressed(minity::KEY_LEFT) " << input.isKeyPressed(minity::KEY_LEFT)<< std::endl;
 
             float rotationSpeed = 0.1f;
-            self->rotation.z += timeDelta * rotationSpeed;
+            self->rotation.y += timeDelta * rotationSpeed;
         };
     };
     model.setUpdate(updateFactory);
-
-    // simd::float4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // white base-color
 
     // TODO: new camera type
     // minity::camera camera{minity::cameraType::lookAt};
@@ -662,8 +665,8 @@ void newApi()
     minity::light light{};
     light.translation = vec3{-1.0f, 1.0f, 10.0f}; // top-left
 
-    // minity::scene scene{};
-    minity::scene scene{camera, light, model}; // todo: pass by reference (or pointer)
+
+    minity::scene scene{camera, light, model};
 
     minity.run(scene);
     minity.shutdown();

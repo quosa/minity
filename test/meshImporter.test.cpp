@@ -1,10 +1,7 @@
 #include <catch2/catch.hpp>
 
-// full implementation comes from imageImporter tests
-// #define MINITY_SCENE_TYPES_ONLY
-// #include "scene.h"
-
 #include "mesh.h"
+#define MESH_UTILS_IMPLEMENTATION
 #include "meshImporter.h"
 
 // utils to print vertices...
@@ -36,15 +33,6 @@ TEST_CASE("meshimporter - can import bigger free asset")
     auto mesh = importer.load("test/models/Model_D0606058/head.obj");
     REQUIRE(mesh->vertexDataSize == 62864 * sizeof(VertexData) );
     REQUIRE(mesh->indexDataSize == 31432 * 3 * sizeof(u_int32_t) ); // has many quads...
-    // minity::modelImporter importer;
-    // auto mdl = importer.load("test/models/Model_D0606058/head.obj");
-    // REQUIRE(mdl->numFaces == 31432);
-    // REQUIRE(mdl->hasNormals);
-    // REQUIRE(mdl->hasTextureCoordinates);
-    // REQUIRE(mdl->vertices.size() == 94296);
-    // REQUIRE(mdl->normals.size() == 94296);
-    // REQUIRE(mdl->textureCoordinates.size() == 94296);
-    // REQUIRE(mdl->faces.size() == 31432);
 }
 
 TEST_CASE("meshimporter - detailed hand-written model")

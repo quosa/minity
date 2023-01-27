@@ -2,8 +2,8 @@
 
 // full implementation comes from imageImporter tests
 #define MINITY_SCENE_TYPES_ONLY
-#include "scene.h"
-#include "modelImporter.h"
+#include "freezer/old_scene.h"
+#include "freezer/modelImporter.h"
 
 TEST_CASE("can import from memory")
 {

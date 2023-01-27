@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shader_types.h"
+#include "renderer/metal/shader_types.h"
 
 namespace minity
 {
@@ -13,7 +13,7 @@ struct mesh
     size_t indexDataSize;
 };
 
-
+#if MESH_UTILS_IMPLEMENTATION
 // simple triangle face with normals and texture coordinates
 mesh *GetSingleFaceMesh()
 {
@@ -88,5 +88,5 @@ mesh *GetCubeScene()
     mesh *cubeMesh = new mesh{vertexData, vertexDataSize, indexData, indexDataSize};
     return cubeMesh;
 };
-
+#endif // MESH_UTILS_IMPLEMENTATION
 } // NS minity

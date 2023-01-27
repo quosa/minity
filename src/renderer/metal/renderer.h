@@ -29,14 +29,12 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
-#include "simpleMath.h" // mesh etc. for now
-
 #include "shader_types.h"
-#include "mesh.h" // mesh
-#include "new_scene.h" // image/texture
+#include "../../mesh.h" // mesh
+#include "../../scene.h" // image/texture
+#include "../../config.h"
 #include "renderer_metallib.h"
 
-#include "config.h"
 
 static constexpr size_t kMaxFramesInFlight = 3;
 

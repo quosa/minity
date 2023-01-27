@@ -6,8 +6,8 @@
 #include <stb/stb_image.h>
 
 #define MINITY_SCENE_TYPES_ONLY
-// #include "scene.h"
-#include "new_scene.h"
+// #include "old_scene.h"
+#include "scene.h"
 
 #include <iostream>
 #include <string>
