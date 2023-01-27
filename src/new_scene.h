@@ -84,7 +84,7 @@ struct material
     color color; // rgba - 0xffff00ff = yellow
     float reflectivity;
     // transparency and refraction later
-    texture texture;
+    texture &texture;
 };
 
 struct model; // fwd
