@@ -4,6 +4,7 @@
 #include "../config.h"
 #include "engine_interface.h" // IEngine
 #include "metal/metal_engine.h"
+#include "software/software_engine.h"
 
 namespace minity
 {
@@ -22,7 +23,7 @@ IEngine *getEngine(backend engineBackend)
         engine = new metalEngine();
         break;
     case kSoftware:
-        engine = nullptr;
+        engine = new softwareEngine();
         break;
     case kNull:
         engine = nullptr;

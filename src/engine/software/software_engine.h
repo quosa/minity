@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cassert>
 
+#include "../engine_interface.h" // IEngine
+
 #include "../../simpleMath.h"
 #include "../../freezer/old_scene.h"
 #include "sdlHelpers.h" // full math
@@ -14,6 +16,17 @@
 namespace minity
 {
 
+class softwareEngine : public IEngine
+{
+public:
+    softwareEngine();
+    ~softwareEngine() = default;
+    void run(scene scene);
+    void run(minity::old_scene scene); // TODO: refactor to new scene type
+    void shutdown();
+};
+
+
 inline vec3 &toScreenXY(vec3 &point, unsigned int screenWidth, unsigned int screenHeight)
 {
     point.x = (point.x + 1.0f) * static_cast<float>(screenWidth) / 2.0f;
@@ -21,11 +34,11 @@ inline vec3 &toScreenXY(vec3 &point, unsigned int screenWidth, unsigned int scre
     return point;
 }
 
-void init()
+softwareEngine::softwareEngine()
 {
     SDLStart(640, 480);
     SDLClearBuffers();
-}
+};
 
 enum spaceType
 {
@@ -485,7 +498,8 @@ bool render(minity::old_scene scene, minity::rasterizer &rasterizer)
 }
 
 
-void run(minity::old_scene scene)
+void softwareEngine::run(scene scene) { (void)scene; std::cout << "runnning..." << std::endl; };
+void softwareEngine::run(minity::old_scene scene)
 {
     const unsigned int width{640};
     const unsigned int height{480};
@@ -530,7 +544,8 @@ void run(minity::old_scene scene)
     }
 }
 
-void shutdown()
+
+void softwareEngine::shutdown()
 {
     SDLEnd();
 }
