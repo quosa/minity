@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderer/metal/shader_types.h"
+#include "engine/metal/shader_types.h"
 
 namespace minity
 {

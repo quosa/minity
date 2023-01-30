@@ -1,9 +1,10 @@
 #pragma once
 
-#include "scene.h"
-#include "config.h"
-#include "renderer/metal/renderer.h"
-#include "input.h"
+#include "../../scene.h"
+#include "../../config.h"
+#include "../../input.h"
+#include "../engine.h"
+#include "renderer.h"
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -16,29 +17,24 @@
 namespace minity
 {
 
-enum backend {software, metal};
-class minity
+class IEngine; // fwd
+
+class metalEngine : public IEngine
 {
 public:
-    minity(backend renderingBackend);
-    // minity(backend renderingBackend) : m_input(input::instance()) {
-    //     (void)renderingBackend;
-    // };
-    // void run(scene scene) {(void)scene;};
-    void run(scene scene); //  { (void)scene; /* for (int i = 0; i < 10; i++) scene.model.update(0.01f); */ };
+    metalEngine();
+    ~metalEngine() = default;
+    void run(scene scene);
     void shutdown();
 private:
     input &m_input;
     SDL_Window *window;
     SDL_Renderer *renderer;
     CA::MetalLayer* layer;
-    // Renderer m_metalRenderer;
 };
 
-minity::minity(backend renderingBackend) : m_input(input::instance())
+metalEngine::metalEngine() : m_input(input::instance())
 {
-    assert(renderingBackend == metal);
-
     const vector_uint2 viewport = {
         640, 480
     };
@@ -73,7 +69,7 @@ minity::minity(backend renderingBackend) : m_input(input::instance())
 
 };
 
-void minity::shutdown()
+void metalEngine::shutdown()
 {
     ImGui_ImplMetal_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -88,9 +84,8 @@ void minity::shutdown()
 simd::float3 sf3(vec3 &v) {return simd::float3{v.x, v.y, v.z};};
 // TODO: color to float4
 // simd::float4 sf3(vec3 &v) {return simd::float3{v.x, v.y, v.z};};
-void minity::run(scene scene)
+void metalEngine::run(scene scene)
 {
-    (void)scene;
     auto scale = sf3(scene.model.scale);
     auto position = sf3(scene.model.position);
     auto rotation = sf3(scene.model.rotation);

@@ -4,14 +4,15 @@
  * https://github.com/Kayzaks/StupidGL (gamasutra game engine from scratch)
  */
 
-#define OLD_MAIN_CODE 1
+// #define OLD_MAIN_CODE 1
+#undef OLD_MAIN_CODE
 #ifdef OLD_MAIN_CODE
 #include <iostream> //cout
 #include <memory> // shared_ptr
 
 #include "simpleMath.h" // full implementation here
 #include "freezer/old_scene.h" // scene/camera/light/mesh
-#include "renderer/software/renderPipeline.h"
+#include "engine/software/renderPipeline.h"
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"
 #include "freezer/modelImporter.h"
@@ -20,7 +21,7 @@
 #include "imgui_impl_sdl.h"
 
 #include <SDL2/SDL.h>
-#include "renderer/software/rasterizer.h"
+#include "engine/software/rasterizer.h"
 
 #include "freezer/utils.h" // box, sphere...
 
@@ -330,7 +331,9 @@ void newRasterizer()
 #include "simpleMath.h"
 #include "mesh.h"
 #include "scene.h"
-#include "minity.h"
+// #include "minity.h"
+#include "engine/engine.h"
+#include "input.h"
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"
 #include "meshImporter.h"
@@ -363,7 +366,8 @@ const std::string banner = R"(
 
 void newApi()
 {
-    minity::minity minity{minity::backend::metal};
+    // minity::minity minity{minity::backend::metal};
+    auto minity = minity::getEngine(minity::backend::kMetal);
 
     minity::imageImporter imgImporter{};
     // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", true); // flip
@@ -454,8 +458,10 @@ void newApi()
 
     minity::scene scene{camera, light, model};
 
-    minity.run(scene);
-    minity.shutdown();
+    // minity.run(scene);
+    // minity.shutdown();
+    minity->run(scene);
+    minity->shutdown();
 }
 #endif // OLD MAIN CODE
 int main()

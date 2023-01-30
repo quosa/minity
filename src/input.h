@@ -1,5 +1,6 @@
 #pragma once
 
+#include "engine/metal/metal_include.h"
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_metal.h"
