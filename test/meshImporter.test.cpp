@@ -1,38 +1,36 @@
 #include <catch2/catch.hpp>
 
+#define MATH_TYPES_ONLY
+#include "simpleMath.h"
 #include "mesh.h"
 #define MESH_UTILS_IMPLEMENTATION
 #include "meshImporter.h"
 
-// utils to print vertices...
-std::string sf3(simd::float3 sf3) { return std::to_string(sf3[0]) + " " + std::to_string(sf3[1]) + " " + std::to_string(sf3[2]); };
-std::string sf2(simd::float2 sf2) { return std::to_string(sf2[0]) + " " + std::to_string(sf2[1]); };
-
 auto f3compare = [](auto &x, auto &y) { return x.x==y.x && x.y==y.y && x.z==y.z; };
-auto f2compare = [](auto &x, auto &y) { return x.x==y.x && x.y==y.y; };
+auto f2compare = [](auto &x, auto &y) { return x.u==y.u && x.v==y.v; };
 
 TEST_CASE("meshimporter - can import the Utah classic teapot")
 {
     minity::meshImporter importer;
     auto mesh = importer.load("test/models/teapot.obj");
-    REQUIRE(mesh->vertexDataSize == 6320 * 3 * sizeof(VertexData) ); // only 3644 vertices but we need 6320 * 3 vertices
-    REQUIRE(mesh->indexDataSize == 6320 * 3 * sizeof(u_int32_t) ); // egrep "^f .*" test/models/teapot.obj | wc -l
+    REQUIRE(mesh->vertexData.size() == 6320 * 3 ); // only 3644 vertices but we need 6320 * 3 vertices
+    REQUIRE(mesh->indexData.size() == 6320 * 3 ); // egrep "^f .*" test/models/teapot.obj | wc -l
 }
 
 TEST_CASE("meshimporter - can handle full face line")
 {
     minity::meshImporter importer;
     auto mesh = importer.load("test/models/MaleLow.obj");
-    REQUIRE(mesh->vertexDataSize == 3752 * sizeof(VertexData) );
-    REQUIRE(mesh->indexDataSize == 1494 * 3 * sizeof(u_int32_t) ); // has many quads...
+    REQUIRE(mesh->vertexData.size() == 3752 );
+    REQUIRE(mesh->indexData.size() == 1494 * 3 ); // has many quads...
 }
 
 TEST_CASE("meshimporter - can import bigger free asset")
 {
     minity::meshImporter importer;
     auto mesh = importer.load("test/models/Model_D0606058/head.obj");
-    REQUIRE(mesh->vertexDataSize == 62864 * sizeof(VertexData) );
-    REQUIRE(mesh->indexDataSize == 31432 * 3 * sizeof(u_int32_t) ); // has many quads...
+    REQUIRE(mesh->vertexData.size() == 62864 );
+    REQUIRE(mesh->indexData.size() == 31432 * 3 ); // has many quads...
 }
 
 TEST_CASE("meshimporter - detailed hand-written model")
@@ -44,9 +42,9 @@ TEST_CASE("meshimporter - detailed hand-written model")
     "f 1 2 3\n"; // clockwise winding order
     minity::meshImporter importer;
     auto mesh = importer.loadFromString(modelString);
-    REQUIRE(mesh->vertexDataSize == sizeof(VertexData) * 3);
-    REQUIRE(mesh->indexDataSize == 3 * sizeof(u_int32_t)); // 3*4=12B
-    simd::float3 vIexpected[3]{
+    REQUIRE(mesh->vertexData.size() == 3);
+    REQUIRE(mesh->indexData.size() == 3);
+    vec3 vIexpected[3]{
         {0.0f, 0.0f, 0.0f},
         {0.0f, 1.0f, 0.0f},
         {1.0f, 0.0f, 0.0f}
@@ -70,14 +68,14 @@ TEST_CASE("meshimporter - detailed hand-written model with normals")
     "f 1//1 2//2 3//3\n"; // clockwise winding order
     minity::meshImporter importer;
     auto mesh = importer.loadFromString(modelString);
-    REQUIRE(mesh->vertexDataSize == sizeof(VertexData) * 3);
-    REQUIRE(mesh->indexDataSize == 3 * sizeof(u_int32_t)); // 3*4=12B
-    simd::float3 vIexpected[3]{
+    REQUIRE(mesh->vertexData.size() == 3);
+    REQUIRE(mesh->indexData.size() == 3);
+    vec3 vIexpected[3]{
         {0.0f, 0.0f, 0.0f},
         {0.0f, 1.0f, 0.0f},
         {1.0f, 0.0f, 0.0f}
     };
-    simd::float3 nIexpected[3]{
+    vec3 nIexpected[3]{
         {0.0f, 0.0f, 1.0f},
         {0.0f, 0.0f, 1.0f},
         {0.0f, 0.0f, 1.0f}
@@ -106,19 +104,19 @@ TEST_CASE("meshimporter - detailed hand-written model with normals and texture c
     "f 1/1/1 2/2/2 3/3/3\n"; // clockwise winding order
     minity::meshImporter importer;
     auto mesh = importer.loadFromString(modelString);
-    REQUIRE(mesh->vertexDataSize == sizeof(VertexData) * 3);
-    REQUIRE(mesh->indexDataSize == 3 * sizeof(u_int32_t)); // 3*4=12B
-    simd::float3 vIexpected[3]{
+    REQUIRE(mesh->vertexData.size() == 3);
+    REQUIRE(mesh->indexData.size() == 3);
+    vec3 vIexpected[3]{
         {0.0f, 0.0f, 0.0f},
         {0.0f, 1.0f, 0.0f},
         {1.0f, 0.0f, 0.0f}
     };
-    simd::float3 nIexpected[3]{
+    vec3 nIexpected[3]{
         {0.0f, 0.0f, 1.0f},
         {0.0f, 0.0f, 1.0f},
         {0.0f, 0.0f, 1.0f}
     };
-    simd::float2 tIexpected[3]{
+    vec2 tIexpected[3]{
         {0.0f, 1.0f},
         {0.0f, 0.0f},
         {1.0f, 0.0f}

@@ -4,8 +4,8 @@
  * https://github.com/Kayzaks/StupidGL (gamasutra game engine from scratch)
  */
 
-#define OLD_MAIN_CODE 1
-// #undef OLD_MAIN_CODE
+// #define OLD_MAIN_CODE 1
+#undef OLD_MAIN_CODE
 #ifdef OLD_MAIN_CODE
 
 #include "simpleMath.h" // full implementation here

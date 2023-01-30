@@ -2,11 +2,7 @@
 
 #define MATH_TYPES_ONLY
 #include "simpleMath.h"
-// #define MINITY_SCENE_TYPES_ONLY
-// #include "old_scene.h"
 #include "mesh.h"
-
-#include <simd/simd.h> // vector_floatN
 
 #include <algorithm>
 #include <iostream>
@@ -35,8 +31,8 @@ private:
     std::vector<vec3> vertices{};
     std::vector<vec3> normals{};
     std::vector<vec2> textureCoordinates{};
-    std::vector<VertexData> metalVertices{};
-    std::vector<u_int32_t> metalIndices{};
+    std::vector<vertexData> meshVertices{};
+    std::vector<u_int32_t> meshIndices{};
 };
 
 // adapted originally from:
@@ -67,17 +63,11 @@ std::shared_ptr<mesh> meshImporter::load(const std::string &path, bool reverseWi
     }
     // m_mesh->printModelInfo();
 
-    std::cout << "loaded a model with " << metalVertices.size() << " vertices,";
-    std::cout << " and " <<  metalIndices.size() / 3 << " faces." << std::endl;
+    std::cout << "loaded a model with " << meshVertices.size() << " vertices,";
+    std::cout << " and " <<  meshIndices.size() / 3 << " faces." << std::endl;
 
-    m_mesh->vertexDataSize = metalVertices.size() * sizeof(VertexData);
-    m_mesh->vertexData = new VertexData[m_mesh->vertexDataSize];
-    memcpy(m_mesh->vertexData, &metalVertices[0], m_mesh->vertexDataSize);
-
-    m_mesh->indexDataSize = metalIndices.size() * sizeof(u_int32_t);
-    m_mesh->indexData = new u_int32_t[m_mesh->indexDataSize];
-    memcpy(m_mesh->indexData, &metalIndices[0], m_mesh->indexDataSize);
-
+    m_mesh->vertexData = meshVertices;
+    m_mesh->indexData = meshIndices;
     return m_mesh;
 }
 
@@ -97,14 +87,8 @@ std::shared_ptr<mesh> meshImporter::loadFromString(const std::string &meshString
     }
     // m_mesh->printModelInfo();
 
-    m_mesh->vertexDataSize = metalVertices.size() * sizeof(VertexData);
-    m_mesh->vertexData = new VertexData[m_mesh->vertexDataSize];
-    memcpy(m_mesh->vertexData, &metalVertices[0], m_mesh->vertexDataSize);
-
-    m_mesh->indexDataSize = metalIndices.size() * sizeof(u_int32_t);
-    m_mesh->indexData = new u_int32_t[m_mesh->indexDataSize];
-    memcpy(m_mesh->indexData, &metalIndices[0], m_mesh->indexDataSize);
-
+    m_mesh->vertexData = meshVertices;
+    m_mesh->indexData = meshIndices;
     return m_mesh;
 }
 
@@ -205,39 +189,39 @@ void meshImporter::handleLine(const std::string &line, bool reverseWinding)
                 throw std::runtime_error("Trouble reading face vertex information: " + vertexDetails); // we don't support anything else...
             }
 
-            VertexData vertex{
+            vertexData vertex{
                 {vert.x, vert.y, vert.z},
                 {nrm.x, nrm.y, nrm.z},
                 {tex.u, tex.v}
             };
 
-            metalVertices.push_back(vertex);
+            meshVertices.push_back(vertex);
             i++;
         };
 
-        int j = metalVertices.size();
+        int j = meshVertices.size();
         if (i == 3)
         {
-            metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 3),  (u_int32_t)(j - 2),  (u_int32_t)(j - 1)});
+            meshIndices.insert( meshIndices.end(), { (u_int32_t)(j - 3),  (u_int32_t)(j - 2),  (u_int32_t)(j - 1)});
             if (reverseWinding)
             {
-                assert(metalIndices.size() > 2);
-                std::swap(metalIndices.end()[-2], metalIndices.end()[-1]);
+                assert(meshIndices.size() > 2);
+                std::swap(meshIndices.end()[-2], meshIndices.end()[-1]);
             }
         }
         else if (i == 4)
         {
-            metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 4),  (u_int32_t)(j - 3),  (u_int32_t)(j - 2)});
+            meshIndices.insert( meshIndices.end(), { (u_int32_t)(j - 4),  (u_int32_t)(j - 3),  (u_int32_t)(j - 2)});
             if (reverseWinding)
             {
-                assert(metalIndices.size() > 2);
-                std::swap(metalIndices.end()[-2], metalIndices.end()[-1]);
+                assert(meshIndices.size() > 2);
+                std::swap(meshIndices.end()[-2], meshIndices.end()[-1]);
             }
-            metalIndices.insert( metalIndices.end(), { (u_int32_t)(j - 4),  (u_int32_t)(j - 2),  (u_int32_t)(j - 1)});
+            meshIndices.insert( meshIndices.end(), { (u_int32_t)(j - 4),  (u_int32_t)(j - 2),  (u_int32_t)(j - 1)});
             if (reverseWinding)
             {
-                assert(metalIndices.size() > 2);
-                std::swap(metalIndices.end()[-2], metalIndices.end()[-1]);
+                assert(meshIndices.size() > 2);
+                std::swap(meshIndices.end()[-2], meshIndices.end()[-1]);
             }
         }
         else if (i>4)

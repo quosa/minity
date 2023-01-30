@@ -1,26 +1,5 @@
 #pragma once
 
-// // METAL - INCLUDE IS MESSY SO GET THAT OUT OF THE WAY...
-// #pragma clang diagnostic push
-// #pragma clang diagnostic ignored "-Wdtor-name"
-// // #pragma clang diagnostic ignored "-Werror"
-// #pragma clang diagnostic ignored "-Wc99-extensions"
-// #pragma clang diagnostic ignored "-Wc99-designator"
-// #pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
-// #pragma clang diagnostic ignored "-Wnested-anon-types"
-// #pragma clang diagnostic ignored "-Wpedantic"
-// // ignore the warnings from metal-cpp :-/
-// // In file included from external/metal-cpp/Foundation/Foundation.hpp:42:
-// // external/metal-cpp/Foundation/NSSharedPtr.hpp:162:33: error: ISO C++ requires the name after '::~' to be found in the same scope as the name before '::~' [-Werror,-Wdtor-name]
-// // _NS_INLINE NS::SharedPtr<_Class>::~SharedPtr()
-// #define NS_PRIVATE_IMPLEMENTATION
-// #define CA_PRIVATE_IMPLEMENTATION
-// #define MTL_PRIVATE_IMPLEMENTATION
-// #include <Foundation/Foundation.hpp>
-// #include <Metal/Metal.hpp>
-// #include <QuartzCore/QuartzCore.hpp>
-// #pragma clang diagnostic pop
-
 #include "metal_include.h"
 #include <simd/simd.h> // vector_uintN
 
@@ -311,16 +290,42 @@ void Renderer::initTexture(minity::image& texture)
 void Renderer::initBuffers(minity::mesh &mesh)
 {
     ///////////////////////////////////////////////////////////////////////////////////////
+    // mesh (vec2/3) conversion to metal (simd::float2/3)
+    size_t vertexDataSize = mesh.vertexData.size() * sizeof(VertexData);
+    VertexData *vertexData = new VertexData[mesh.vertexData.size()];
+
+    size_t indexDataSize = mesh.indexData.size() * sizeof(u_int32_t);
+    u_int32_t *indexData = new u_int32_t[mesh.indexData.size()];
+
+    size_t i = 0;
+    for(auto v : mesh.vertexData)
+    {
+        auto p = v.position;
+        auto n = v.normal;
+        auto t = v.texcoord;
+        VertexData vd{{p.x, p.y, p.z}, {n.x, n.y, n.z}, {t.u, t.v}};
+        vertexData[i] = vd;
+        i++;
+    }
+
+    size_t j = 0;
+    for(auto idx : mesh.indexData)
+    {
+        indexData[j] = idx;
+        j++;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////
     // buffers
 
-    vertex_data_buffer = device->newBuffer( mesh.vertexDataSize, MTL::ResourceStorageModeManaged );
-    memcpy( vertex_data_buffer->contents(), mesh.vertexData, mesh.vertexDataSize );
+    vertex_data_buffer = device->newBuffer( vertexDataSize, MTL::ResourceStorageModeManaged );
+    memcpy( vertex_data_buffer->contents(), vertexData, vertexDataSize );
     vertex_data_buffer->didModifyRange( NS::Range::Make( 0, vertex_data_buffer->length() ) );
 
-    index_buffer = device->newBuffer( mesh.indexDataSize, MTL::ResourceStorageModeManaged );
-    memcpy( index_buffer->contents(), mesh.indexData, mesh.indexDataSize );
+    index_buffer = device->newBuffer( indexDataSize, MTL::ResourceStorageModeManaged );
+    memcpy( index_buffer->contents(), indexData, indexDataSize );
     index_buffer->didModifyRange( NS::Range::Make( 0, index_buffer->length() ) );
-    indexBufferCount = mesh.indexDataSize / sizeof(u_int32_t);
+    indexBufferCount = indexDataSize / sizeof(u_int32_t);
 
     const size_t instanceDataSize = kMaxFramesInFlight * sizeof( InstanceData );
     for ( size_t i = 0; i < kMaxFramesInFlight; ++i )

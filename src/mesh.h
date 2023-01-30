@@ -1,16 +1,19 @@
 #pragma once
 
-#include "engine/metal/shader_types.h"
-
 namespace minity
 {
 
+struct vertexData
+{
+    vec3 position;
+    vec3 normal;
+    vec2 texcoord;
+};
+
 struct mesh
 {
-    VertexData *vertexData;
-    size_t vertexDataSize;
-    u_int32_t *indexData;
-    size_t indexDataSize;
+    std::vector<vertexData> vertexData;
+    std::vector<u_int32_t> indexData;
 };
 
 #if MESH_UTILS_IMPLEMENTATION
