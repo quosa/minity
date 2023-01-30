@@ -3,7 +3,7 @@
 #include "../../scene.h"
 #include "../../config.h"
 #include "../../input.h"
-#include "../engine.h"
+#include "../engine_interface.h" // IEngine
 #include "renderer.h"
 
 #include "imgui.h"
@@ -16,8 +16,6 @@
 
 namespace minity
 {
-
-class IEngine; // fwd
 
 class metalEngine : public IEngine
 {
