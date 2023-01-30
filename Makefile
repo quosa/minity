@@ -14,6 +14,8 @@ ifeq ($(mode),release)
 else
 	mode = debug
 
+	CXXFLAGS += -g -O0
+
 	# run with address sanitizer
 	# CXXFLAGS += -g -O0 -fsanitize=address -fno-omit-frame-pointer
 	# LDFLAGS += -fsanitize=address
