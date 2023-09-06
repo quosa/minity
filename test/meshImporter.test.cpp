@@ -3,7 +3,6 @@
 #define MATH_TYPES_ONLY
 #include "simpleMath.h"
 #include "mesh.h"
-#define MESH_UTILS_IMPLEMENTATION
 #include "meshImporter.h"
 
 auto f3compare = [](auto &x, auto &y) { return x.x==y.x && x.y==y.y && x.z==y.z; };
