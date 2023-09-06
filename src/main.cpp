@@ -5,7 +5,6 @@
  */
 
 // #define OLD_MAIN_CODE 1
-#undef OLD_MAIN_CODE
 #ifdef OLD_MAIN_CODE
 
 #include "simpleMath.h" // full implementation here
@@ -161,10 +160,12 @@ void newScenario()
     minity->shutdown();
 }
 
+
 #else // OLD MAIN CODE
 
 
 #include "simpleMath.h"
+#define MESH_UTILS_IMPLEMENTATION
 #include "mesh.h"
 #include "scene.h"
 #include "engine/engine.h"
@@ -196,34 +197,46 @@ const std::string banner = R"(
 
 void newApi()
 {
-    // minity::minity minity{minity::backend::metal};
-    auto minity = minity::getEngine(minity::backend::kMetal);
+    auto minity = minity::getEngine(minity::backend::kSoftware);
+    // auto minity = minity::getEngine(minity::backend::kMetal);
 
     minity::imageImporter imgImporter{};
-    // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", true); // flip
-    auto texture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
+    // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
+    // auto texture = imgImporter.load("test/materials/test_image_100x100.png", false); // flip
+    // auto texture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
+    auto texture = imgImporter.load("models/african_head/african_head_diffuse.tga", true); // flip
+    // auto texture = imgImporter.load("test/materials/wall_512_3_05.tga", true); // flip
+    // auto texture = imgImporter.load("models/from_internet/GroundClay002/GroundClay002_COL_VAR1_1K.jpg", true); // flip
 
-    minity::meshImporter meshImporter{};
-    // auto mesh = importer.load("test/models/teapot.obj");
-    auto mesh = meshImporter.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
-    // minity::mesh *mesh = minity::GetSingleFaceMesh();
+
 
     minity::material material{minity::yellow, 1.0f, *texture};
 
+    minity::meshImporter meshImporter{};
+    // auto mesh = meshImporter.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
+    auto mesh = meshImporter.load("models/african_head/african_head.obj", true);
+    // auto mesh = meshImporter.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
+    // auto mesh = minity::getSingleFaceMesh();
+    // auto mesh = minity::getSquareMesh();
+    // auto mesh = minity::getCubeMesh();
+
     minity::model model{*mesh, material};
-    // single face parameters
+    // single face / square / cube parameters
     // model.scale = vec3{1.0f, 1.0f, 1.0f};
     // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
     // model.position = vec3{0.0f, 0.0f, -2.0f};
-    // teapot parameters
+    // african head parameters
+    model.scale = vec3{2.0f, 2.0f, 2.0f};
+    model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    model.position = vec3{0.0f, 0.0f, 0.0f};
+    // head parameters
+    // model.scale = vec3{0.1f, 0.1f, 0.1f};
+    // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    // model.position = vec3{0.0f, -5.0f, -14.0f};
+    // sphere parameters
     // model.scale = vec3{1.0f, 1.0f, 1.0f};
     // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    // model.position = vec3{0.0f, -0.5f, -4.0f};
-    // head parameters
-    model.scale = vec3{0.1f, 0.1f, 0.1f};
-    model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    model.position = vec3{0.0f, -5.0f, -14.0f};
-
+    // model.position = vec3{0.0f, 0.0f, -2.0f};
 
     auto updateFactory = [](minity::model *self)
     {
@@ -239,27 +252,27 @@ void newApi()
 
             if (input.isKeyDown(minity::KEY_LEFT))
             {
-                speed.x = -0.1f;
+                speed.x = -0.5f;
             }
             if (input.isKeyDown(minity::KEY_RIGHT))
             {
-                speed.x = 0.1f;
+                speed.x = 0.5f;
             }
             if (input.isKeyDown(minity::KEY_DOWN))
             {
-                speed.y = -0.1f;
+                speed.y = -0.5f;
             }
             if (input.isKeyDown(minity::KEY_UP))
             {
-                speed.y = 0.1f;
+                speed.y = 0.5f;
             }
             if (input.isKeyDown(minity::KEY_MINUS))
             {
-                speed.z = -0.1f;
+                speed.z = -0.5f;
             }
             if (input.isKeyDown(minity::KEY_PLUS))
             {
-                speed.z = 0.1f;
+                speed.z = 0.5f;
             }
             self->position.x += speed.x * timeDelta; // TODO: v3Mul()
             self->position.y += speed.y * timeDelta;
@@ -278,6 +291,7 @@ void newApi()
     minity::camera camera{};
     camera.fovDegrees = 50.0f;
     camera.translation = vec3{0.0f, 0.0f, 5.0f};
+    // camera.translation = vec3{0.0f, 0.0f, 2.0f}; // for cube mesh
     camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 
     // TODO: new light type
@@ -285,11 +299,8 @@ void newApi()
     minity::light light{};
     light.translation = vec3{-1.0f, 1.0f, 10.0f}; // top-left
 
-
     minity::scene scene{camera, light, model};
 
-    // minity.run(scene);
-    // minity.shutdown();
     minity->run(scene);
     minity->shutdown();
 }
@@ -300,9 +311,6 @@ int main()
     std::cout << banner << usage << std::endl;
 #ifdef OLD_MAIN_CODE
     newScenario();
-    // newRasterizer();
-    // newRasterizerScene();
-    // metalRendererScenario();
 #else
     newApi();
 #endif // OLD_MAIN_CODE
