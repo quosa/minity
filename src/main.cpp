@@ -208,11 +208,13 @@ void newApi()
     // auto texture = imgImporter.load("test/materials/wall_512_3_05.tga", true); // flip
     // auto texture = imgImporter.load("models/from_internet/GroundClay002/GroundClay002_COL_VAR1_1K.jpg", true); // flip
 
-
-
     minity::material material{minity::yellow, 1.0f, *texture};
 
+    // minity::texture blankTexture {};
+    // minity::material material{minity::yellow, 1.0f, blankTexture}; // no texture, just color
+
     minity::meshImporter meshImporter{};
+    // auto mesh = meshImporter.load("test/models/teapot.obj", true); // reverse winding
     // auto mesh = meshImporter.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
     auto mesh = meshImporter.load("models/african_head/african_head.obj", true);
     // auto mesh = meshImporter.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender

@@ -33,6 +33,15 @@ struct vec2
     float u = 0;
     float v = 0;
     friend std::ostream& operator<<(std::ostream& os, const vec2 &value);
+    bool operator==(const vec2 &other) const
+    {
+        return are_relatively_equal(this->u, other.u)
+            && are_relatively_equal(this->v, other.v);
+    };
+    bool operator!=(const vec2 &other) const
+    {
+        return !(*this == other);
+    };
 };
 
 struct vec3
@@ -117,6 +126,7 @@ vec3 v3Normalize(const vec3 &v);
 vec3 multiplyVec3(const vec3 &i, const float f);
 vec3 multiplyVec3(const vec3 &i, const mat4 &m);
 mat4 multiplyMat4(const mat4 &m1, const mat4 &m2);
+mat4 scaleMatrix(const float x, const float y, const float z);
 mat4 rotateXMatrix(const float fAngleRad);
 mat4 rotateYMatrix(const float fAngleRad);
 mat4 rotateZMatrix(float fAngleRad);
@@ -290,7 +300,7 @@ mat4 translateMatrix(const float x, const float y, const float z)
 
 // perspective projection:
 // see: https://unspecified.wordpress.com/2012/06/21/calculating-the-gluperspective-matrix-and-other-opengl-matrix-maths/
-mat4 projectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
+mat4 perspectiveProjectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
 {
     assert(fNear >= 0.0f && fFar >= 0.0f && fNear <= fFar);
 

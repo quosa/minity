@@ -233,7 +233,16 @@ void processVerticesOLD(
     // Here triangles are all in screen space (0,0) -> (screenWidth, screenHeight)
 };
 
-// TODO: add new faces if clipped
+/**
+ * @brief clip a triangle to within the clip-space volume
+ *
+ * TODO: add new faces if clipped (and adjust the return value)
+ *
+ * @param ndcVertices
+ * @param stats
+ * @return true if the entire triangle is within the clip-space volume
+ * @return false if there are any vertices outside the clip-space volume
+ */
 bool clippingFunction(vec3 (&ndcVertices)[3], renderStats &stats)
 {
     // CLIPPING faces to within the clip-space volume
@@ -313,13 +322,13 @@ bool renderOLD(minity::old_scene scene, minity::rasterizer &rasterizer)
     // perspective
     float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
     // TODO: near and far field to camera structure
-    mat4 projector = projectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
+    mat4 projector = perspectiveProjectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
     mat4 inverseProjector = invertMat4(projector);
 
     mat4 viewMatrix = camera.getCameraMatrix();
     mat4 inverseViewMatrix = invertMat4(viewMatrix);
 
-    mat4 lightMatrix = light.getLightTranslationMatrix();
+    mat4 lightMatrix = light.getLightTransformationMatrix();
     (void)lightMatrix; // TODO: use the light for diffusion
 
     for (auto face : model.faces)
@@ -592,107 +601,22 @@ bool renderOLD(minity::old_scene scene, minity::rasterizer &rasterizer)
     return true;
 }
 
-
-bool render(minity::scene scene, minity::rasterizer &rasterizer)
+/**
+ * @brief back face culling
+ *
+ * @param viewVertices
+ * @param stats
+ * @return true if face is forwardfacing and should be drawn
+ * @return false if face is backwardfacing and should be culled
+ */
+bool cullingFunction(vec3 (&viewVertices)[3], renderStats &stats)
 {
-    renderStats stats{};
+        // SEE: https://en.wikipedia.org/wiki/Back-face_culling
+        // This is view space culling, we can also do (NDC) clip space culling later
 
-    minity::model &model = scene.model;
-    minity::camera &camera = scene.camera;
-    minity::light &light = scene.light;
-
-    // if (g_config->renderOnChange)
-    // {
-    //     std::cout << "rendering a model with " << model.numFaces << " faces, ";
-    //     std::cout << (model.hasNormals ? "" : "no ") << "normals and ";
-    //     std::cout << (model.hasTextureCoordinates ? "" : "no ") << "texture coordinates";
-    //     std::cout << "." << std::endl;
-    // }
-
-    rasterizer.clearBuffers();
-
-    mat4 scaler = scaleMatrix(model.scale.x, model.scale.y, model.scale.z);
-    mat4 xRotator = rotateXMatrix(model.rotation.x);
-    mat4 yRotator = rotateYMatrix(model.rotation.y);
-    mat4 zRotator = rotateZMatrix(model.rotation.z);
-    mat4 translator = translateMatrix(model.position.x, model.position.y, model.position.z);
-
-    // order matters: scale > rotate > move (=translate)
-    mat4 worldTransformations = multiplyMat4(xRotator, scaler);
-    worldTransformations = multiplyMat4(yRotator, worldTransformations);
-    worldTransformations = multiplyMat4(zRotator, worldTransformations);
-    worldTransformations = multiplyMat4(translator, worldTransformations);
-    mat4 inverseWorldTransformations = invertMat4(worldTransformations);
-
-    // perspective
-    float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
-    // TODO: near and far field to camera structure
-    mat4 projector = projectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
-    mat4 inverseProjector = invertMat4(projector);
-
-    mat4 viewMatrix = camera.getCameraMatrix();
-    mat4 inverseViewMatrix = invertMat4(viewMatrix);
-
-    mat4 lightMatrix = light.getLightTranslationMatrix();
-    (void)lightMatrix; // TODO: use the light for diffusion
-
-    // for (auto face : model.faces)
-    assert(model.mesh.indexData.size() % 3 == 0);
-    size_t numFaces = model.mesh.indexData.size() / 3;
-    size_t faceIndex = 0;
-    // std::cout << "numFaces: " << numFaces << std::endl;
-    while(faceIndex < numFaces)
-    {
-        // std::cout << "rendering face #" << faceIndex << std::endl;
-        // std::cout << "face indices: " << model.mesh.indexData[faceIndex * 3] << ", " << model.mesh.indexData[faceIndex * 3 + 1] << ", " << model.mesh.indexData[faceIndex * 3 + 2] << std::endl;
-        stats.faces++;
-
-        // TODO: move color to model and use minity::yellow
-        u_int32_t faceColor{0xffff00ff}; // simple fallback to yellow if no texture
-
-        // SEE: spaceType enum for indices
-        // 0 = world, 1 = view, 2 = clip/projected space
-        vec3 vects[5][3] = {};
-        vec3 norms[5][3] = {};
-        vec2 texc[3] = {}; // model u, v for each (model) vertice
-
-        // TODO: consider changing this to work on all vertices of a face
-        // instead of individual vertices. Enables us to perform
-        //  back-face culling earlier
-        //
-        // VERTEX PROCESSING (model to clip space)
-        for (int idx : {0, 1, 2})
-        {
-            processVertices(model, faceIndex, idx, vects, norms, texc,
-                worldTransformations, viewMatrix, projector,
-                inverseWorldTransformations, inverseViewMatrix, inverseProjector,
-                stats);
-        } // end of vertex shader (space transformations)
-
-        faceIndex++;
-
-        // vec3 v1 = vects[screenSpace][0];
-        // vec3 v2 = vects[screenSpace][1];
-        // vec3 v3 = vects[screenSpace][2];
-        vec3 n1{};
-        vec3 n2{};
-        vec3 n3{};
-        // if (model.hasNormals)
-        // {
-        n1 = norms[viewSpace][0];
-        n2 = norms[viewSpace][1];
-        n3 = norms[viewSpace][2];
-        // }
-
-        if (! clippingFunction(vects[ndcCoordinates], stats)) {
-            continue; // ditch this face
-        };
-
-        // TODO: if the model does not have texture and texture coordinates
-        // calculate a simple face normal
-
-        // Take the view-space as that is not
-        // perspective corrected
+        // back-face culling - polygons that face away from the camera can be culled
+        // we do it in view space (=camera coordinates)
+        // cannot do it in world space as we have to anyway adjust for possible camera rotation
 
         // faces are in clockwise winding order
         // i.e. left-hand rule (thumb faces front)
@@ -702,74 +626,123 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         // i.e. a = v2 - v0 and b = v1 - v0
         // so that the normal points front
         vec3 faceNormal = v3Normalize(v3CrossProduct(
-            v3Sub(vects[viewSpace][2], vects[viewSpace][0]),
-            v3Sub(vects[viewSpace][1], vects[viewSpace][0])));
+            v3Sub(viewVertices[2], viewVertices[0]),
+            v3Sub(viewVertices[1], viewVertices[0])));
 
-
-
-        // // Print rendering debug info from each face at each stage
-        // char n[4] = {'w', 'v', 'c', 's'};
-        // std::cout << "face #" << stats.faces << std::endl;
-        // for (spaceType s : {worldSpace, viewSpace, clipSpace, screenSpace})
-        // {
-        //     std::cout << n[s];
-        //     for (int i : {0, 1, 2})
-        //         std::cout << " v" << i << " " << std::setw(35)<< vects[s][i];
-        //     std::cout << " | ";
-        //     for (int i : {0, 1, 2})
-        //         std::cout << " n" << i << " " << std::setw(35) << norms[s][i];
-        //     std::cout << std::endl;
-        // }
-
-
-
-        // TODO: decide if we should take the view or clip space face normal
-        // if change: remember to adjust faceNormal and vCameraRay!
-        // if I take clip space, flat shading becomes really smooth?
-        // with viewSpace, I get the flat triangles as expected.
-
-        // back-face culling - polygons that face away from the camera can be culled
-        // we do it in view space (=camera coordinates)
-        // cannot do it in world space as we have to anyway adjust for possible camera rotation
-
-        auto vCameraRay = v3Normalize(v3Sub(vec3{0}, vects[viewSpace][0])); // in view space camera is at origin, so pick one vertice and calculate direction towards it
+        auto vCameraRay = v3Normalize(v3Sub(vec3{0}, viewVertices[0])); // in view space camera is at origin, so pick one vertice and calculate direction towards it
         auto faceDotCamera = v3DotProduct(faceNormal, vCameraRay);
 
         if (faceDotCamera <= 0.0f)
         {
-            // std::cout << "CULLING face normal: " << faceNormal << " camera:" << vCameraRay << " dot: " << std::to_string(faceDotCamera) << std::endl << std::endl;
-            // std::cout << "            face[0]: " << vects[viewSpace][0] << " [1]: " << vects[viewSpace][1] << " [2]: " << vects[viewSpace][2] << std::endl;
             stats.bfCulled++;
-            continue;
+            return false;
         }
+        return true;
+}
+
+bool render(minity::scene scene, minity::rasterizer &rasterizer)
+{
+    renderStats stats{};
+    vec3 zero3{};
+    vec2 zero2{};
+
+    minity::model &model = scene.model;
+    minity::camera &camera = scene.camera;
+    minity::light &light = scene.light;
+
+    rasterizer.clearBuffers();
+
+    // rough check if we have normals, texture coordinates and texture
+    bool hasNormals = model.mesh.vertexData[0].normal != zero3;
+    bool hasTextureCoordinates = model.mesh.vertexData[0].texcoord != zero2;
+    bool hasTexture = model.material.texture.width > 0 && model.material.texture.height > 0;
+
+    // all objects in same coordinates
+    // LOCAL/MODEL SPACE TO WORLD SPACE
+    mat4 modelMatrix = model.getModelTransformMatrix();
+    mat4 inverseModelMatrix = invertMat4(modelMatrix);
+
+    // look from camera
+    // WORLD SPACE TO VIEW SPACE
+    mat4 viewMatrix = camera.getCameraMatrix();
+    mat4 inverseViewMatrix = invertMat4(viewMatrix);
+
+    // apply perspective to camera view
+    // VIEW SPACE TO CLIP SPACE
+    float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
+    // TODO: near and far field to camera structure
+    // TODO: projection matrix should be pre-calculated as it changes only if camera fov changes
+    mat4 projectionMatrix = perspectiveProjectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
+    mat4 inverseProjectionMatrix = invertMat4(projectionMatrix);
+
+
+    mat4 lightMatrix = light.getLightTransformationMatrix();
+    (void)lightMatrix; // TODO: use the light for diffusion
+
+    // for (auto face : model.faces)
+    assert(model.mesh.indexData.size() % 3 == 0);
+    size_t numFaces = model.mesh.indexData.size() / 3;
+    size_t faceIndex = 0;
+    while(faceIndex < numFaces)
+    {
+        stats.faces++;
+
+        minity::color faceColor = model.material.color; // fallback if no texture
+
+        // SEE: spaceType enum for indices
+        // 0 = world, 1 = view, 2 = clip/projected space
+        vec3 vects[5][3] = {};
+        vec3 norms[5][3] = {};
+        vec2 texc[3] = {}; // model u, v for each (model) vertice
+
+        // VERTEX PROCESSING (model to clip space)
+        for (int idx : {0, 1, 2})
+        {
+            processVertices(model, faceIndex, idx, vects, norms, texc,
+                modelMatrix, viewMatrix, projectionMatrix,
+                inverseModelMatrix, inverseViewMatrix, inverseProjectionMatrix,
+                stats);
+        } // end of vertex shader (space transformations)
+
+        faceIndex++;
+
+
+        if (! clippingFunction(vects[ndcCoordinates], stats))
+        {
+            continue; // ditch this face
+        };
+
+        if (! cullingFunction(vects[viewSpace], stats))
+        {
+            continue; // ditch this face
+        };
 
         // super-simple global Illumination
         vec3 lightDirection = v3Normalize(light.translation);
 
-        // if (!model.hasNormals)
-        // {
-        //     // FLAT SHADING
-        //     float dp = std::max(0.1f, v3DotProduct(lightDirection, faceNormal));
-        //     faceColor = adjustColor(faceColor, dp);
-        //     // std::cout << "face normal " << faceNormal << " dp is " << dp << std::endl;
-        //     // printColor(faceColor);
-        // }
+        if (! hasNormals)
+        {
+            // FLAT SHADING
+            // SEE: https://computergraphics.stackexchange.com/questions/4031/programmatically-generating-vertex-normals
+            vec3 faceNormal = v3Normalize(v3CrossProduct(
+                v3Sub(vects[viewSpace][2], vects[viewSpace][0]),
+                v3Sub(vects[viewSpace][1], vects[viewSpace][0])));
+
+            float dp = std::max(0.1f, v3DotProduct(lightDirection, faceNormal));
+            faceColor = adjustColor(faceColor, dp);
+        }
 
         // RASTERIZATION, working in screen space
-
 
         // FRAGMENT SHADER (or pixel shader)
         // we capture the model and texture from this scope and
         // pass the shader as a lambda to the renderer
         auto fragmentShader = [&](float &u, float &v, float &w, minity::color color)
         {
-            // std::cout << "fragment shader with barycentric coordinates: " << u << ", " << v << ", " << w << std::endl;
-            u_int32_t adjustedColor = color;
-            // calculate normal at (x, y) and adjust face color
-            // Phong shading?
+            u_int32_t adjustedColor = color; // material color if no texture
 
-            // new api always has texture coordinates
-            // if (model.hasTextureCoordinates && model.hasTexture)
+
+            if (hasTexture && hasTextureCoordinates)
             {
                 // get u, v and the corresponding pixel
 
@@ -782,9 +755,6 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
                 // https://medium.com/@aminere/software-rendering-from-scratch-f60127a7cd58
                 // "Perspective correct interpolation"
 
-
-                // std::cout << "screen space calculated  barycentric coordinates: " << u << ", " << v << ", " << w << std::endl;
-                // assert(u >= 0 && v >= 0 && w >= 0 && u + v + w == 1);
                 assert(u >= 0 && v >= 0 && w >= 0);
                 assert(1.0f - (u + v + w) < 1.0e-4f);
 
@@ -792,12 +762,6 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
                 vec2 tc1 = texc[0];
                 vec2 tc2 = texc[1];
                 vec2 tc3 = texc[2];
-
-                // trivial affine texture maping (produces a dent in the texture)
-                // float uu = tc1.u * u + tc2.u * v + tc3.u * w;
-                // float vv = tc1.v * u + tc2.v * v + tc3.v * w;
-
-                // std::cout << "model texture coordinates: " << tc1 << ", " << tc2 << ", " << tc3 << std::endl;
 
                 /*
                 from: https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation
@@ -820,22 +784,18 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
                 float denominator = u / vects[clipSpace][0].w   +   v / vects[clipSpace][1].w  +   w / vects[clipSpace][2].w;
                 float uu = ( u * tc1.u / vects[clipSpace][0].w   +   v * tc2.u / vects[clipSpace][1].w  +   w * tc3.u / vects[clipSpace][2].w ) / denominator;
                 float vv = ( u * tc1.v / vects[clipSpace][0].w   +   v * tc2.v / vects[clipSpace][1].w  +   w * tc3.v / vects[clipSpace][2].w ) / denominator;
-                // std::cout << "texture coordinates: " << uu << ", " << vv << std::endl;
 
                 adjustedColor = model.material.texture.get(uu, vv);
-                // std::cout << "texture coordinates: " << uu << ", " << vv << " color: ";
-                // printColor(adjustedColor);
-                // std::cout << std::endl;
             }
 
-            // new api always has normals
-            // if (model.hasNormals)
+            if(hasNormals)
             {
+                auto n1 = norms[viewSpace][0];
+                auto n2 = norms[viewSpace][1];
+                auto n3 = norms[viewSpace][2];
                 vec3 vn =  v3Normalize(v3Add(v3Add(v3Mul(n1, u), v3Mul(n2, v)), v3Mul(n3, w)));
                 float dp = std::max(0.1f, v3DotProduct(lightDirection, vn));
                 adjustedColor = adjustColor(adjustedColor, dp);
-                // std::cout << "barycentric normal " << vn << " dp is " << dp << std::endl;
-                // printColor(adjustedColor);
             }
 
             return adjustedColor;
@@ -884,7 +844,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
     {
         auto transformWorldToScreenSpace = [&](vec3 point) {
             // no model, only world transforms
-            vec3 tmp = multiplyVec3(multiplyVec3(point, viewMatrix), projector);
+            vec3 tmp = multiplyVec3(multiplyVec3(point, viewMatrix), projectionMatrix);
             tmp = v3Div(tmp, tmp.w); // in clip space
             tmp = toScreenXY(tmp, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
             return tmp;
@@ -901,12 +861,6 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
 
     // show the drawn buffer
     SDLSwapBuffers(rasterizer);
-
-    if (g_config->renderOnChange)
-    {
-        std::cout << stats << std::endl;
-        std::cout << rasterizer.stats << std::endl;
-    }
 
     std::ostringstream stream;
     stream << stats

@@ -351,12 +351,12 @@ TEST_CASE("translate matrix")
     REQUIRE(multiplyVec3(v1, translate) == vec3{1.0f, -1.0f, 4.0f});
 }
 
-// projectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
+// perspectiveProjectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
 TEST_CASE("projection matrix - z at midpoint")
 {
     const vec3 vInViewFrustum{1.0f, 1.0f, -2.0f};
     printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     printVec3(projected);
@@ -372,7 +372,7 @@ TEST_CASE("projection matrix - z at far plane")
 {
     const vec3 vInViewFrustum{1.0f, 1.0f, -3.0f};
     printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     printVec3(projected);
@@ -389,7 +389,7 @@ TEST_CASE("projection matrix - max x and y values when z at near plane")
 {
     const vec3 vInViewFrustum{4.0f/3.0f, 1.0f, -1.0f};
     printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     printVec3(projected);
@@ -406,7 +406,7 @@ TEST_CASE("projection matrix - center with z at near plane")
 {
     const vec3 vInViewFrustum{0.0f, 0.0f, -1.0f};
     printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     printVec3(projected);
@@ -422,7 +422,7 @@ TEST_CASE("projection matrix - min x and y values when z at near plane")
 {
     const vec3 vInViewFrustum{-4.0f/3.0f, -1.0f, -1.0f};
     // printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     // printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     // printVec3(projected);
@@ -573,7 +573,7 @@ bool pipeline(const pipeline_config &conf, const vec3 &modelVertex, point &onScr
 
 
     // perspective projection
-    mat4 projector = projectionMatrix(conf.fovDegrees, conf.aspectRatio, conf.nearPlane, conf.farPlane);
+    mat4 projector = perspectiveProjectionMatrix(conf.fovDegrees, conf.aspectRatio, conf.nearPlane, conf.farPlane);
 
 
     // start in MODEL SPACE (local model coordinates from modeling software)

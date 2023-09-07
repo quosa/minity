@@ -33,7 +33,7 @@ struct light
 {
     vec3 rotation{0};
     vec3 translation{0};
-    mat4 getLightTranslationMatrix();
+    mat4 getLightTransformationMatrix();
 private:
     mat4 lightMatrix;
 };
@@ -102,6 +102,7 @@ struct model
     vec3 position{};
     vec3 rotation{};
     vec3 scale{};
+    mat4 getModelTransformMatrix();
     updateMethod update = nullUpdater;
     void setUpdate(updateMethodFactory updateMaker) { update = updateMaker(this); }
 };
@@ -158,7 +159,7 @@ mat4 camera::getFPSCameraMatrix()
     return cameraMatrix;
 }
 
-mat4 light::getLightTranslationMatrix()
+mat4 light::getLightTransformationMatrix()
 {
     // light transformations
     mat4 lightXRotator = rotateXMatrix(rotation.x);
@@ -175,6 +176,21 @@ mat4 light::getLightTranslationMatrix()
     return lightMatrix;
 }
 
+mat4 model::getModelTransformMatrix()
+{
+    mat4 scaler = scaleMatrix(scale.x, scale.y, scale.z);
+    mat4 xRotator = rotateXMatrix(rotation.x);
+    mat4 yRotator = rotateYMatrix(rotation.y);
+    mat4 zRotator = rotateZMatrix(rotation.z);
+    mat4 translator = translateMatrix(position.x, position.y, position.z);
+
+    // order matters: scale > rotate > move (=translate)
+    mat4 worldTransformations = multiplyMat4(xRotator, scaler);
+    worldTransformations = multiplyMat4(yRotator, worldTransformations);
+    worldTransformations = multiplyMat4(zRotator, worldTransformations);
+    worldTransformations = multiplyMat4(translator, worldTransformations);
+    return worldTransformations;
+}
 //    vec3 lightRay = v3Normalize(multiplyVec3(vec3{0.0f, -1.0f, 0.0f}, lightTransformations));
 //    lightRay.z = 1; // todo: use the light entity for real
 
