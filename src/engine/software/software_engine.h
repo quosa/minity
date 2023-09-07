@@ -886,9 +886,26 @@ void softwareEngine::run(scene scene)
     while(m_input.handleInput())
     {
         SDL_Delay(20); // some computation budget...
+
+        if (m_input.isKeyPressed(KEY_f))
+        {
+            g_config->fillTriangles = !g_config->fillTriangles;
+        }
         if (m_input.isKeyPressed(KEY_l))
         {
             g_config->drawWireframe = !g_config->drawWireframe;
+        }
+        if (m_input.isKeyPressed(KEY_n))
+        {
+            g_config->drawNormals = !g_config->drawNormals;
+        }
+        if (m_input.isKeyPressed(KEY_p))
+        {
+            g_config->drawPointCloud = !g_config->drawPointCloud;
+        }
+        if (m_input.isKeyPressed(KEY_x))
+        {
+            g_config->drawAxes = !g_config->drawAxes;
         }
         if (m_input.isKeyPressed(KEY_F1))
         {

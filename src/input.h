@@ -24,7 +24,11 @@ enum keyCode
     KEY_d = SDLK_d, // wasd right
     KEY_w = SDLK_w, // wasd up
     KEY_s = SDLK_s, // wasd down
-    KEY_l = SDLK_l, // l for draw wireframe "(l)ines"
+    KEY_f = SDLK_f, // shade faces "(f)ill"
+    KEY_l = SDLK_l, // draw wireframe "(l)ines"
+    KEY_n = SDLK_n, // draw normals "(n)ormals"
+    KEY_p = SDLK_p, // draw point cloud "(p)oints"
+    KEY_x = SDLK_x, // draw axes "a(x)es"
     KEY_F1 = SDLK_F1, // show stats window
 };
 
@@ -89,17 +93,19 @@ bool input::handleInput()
             case SDLK_s:
                 break;
             case SDLK_n:
+                pressedKeys.insert(KEY_n);
                 break;
             case SDLK_l:
                 pressedKeys.insert(KEY_l);
                 break;
             case SDLK_p:
+                pressedKeys.insert(KEY_p);
                 break;
             case SDLK_f:
-                break;
-            case SDLK_r:
+                pressedKeys.insert(KEY_f);
                 break;
             case SDLK_x:
+                pressedKeys.insert(KEY_x);
                 break;
             case SDLK_F1:
                 pressedKeys.insert(KEY_F1);
