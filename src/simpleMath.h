@@ -10,6 +10,8 @@
 // forward declarations
 float are_relatively_equal(const float a, const float b);
 
+// pipeline tests use point still but
+// should not be used for anything new
 struct point
 {
     int x = 0;      // top
@@ -73,21 +75,6 @@ struct vec3
     friend std::ostream& operator<<(std::ostream& os, const vec3 &value);
 };
 
-struct tri
-{
-    vec3 vertices[3];
-    u_int32_t color = 0xffffffff;
-};
-
-// struct mesh
-// {
-//     bool enabled = true;
-//     std::vector<tri> tris;
-//     vec3 scale{1.0f, 1.0f, 1.0f};
-//     vec3 rotation{};
-//     vec3 translation{};
-// };
-
 struct mat4
 {
     float m[4][4] = {{0}};
@@ -109,10 +96,6 @@ struct mat4
 // forward declarations:
 void printMat4(const mat4 &mat, std::ostream& os = std::cout);
 void printVec3(const vec3 &v);
-void printTri(const tri &t, std::string label);
-
-void printColor(u_int32_t color);
-u_int32_t adjustColor(u_int32_t color, float multiplier);
 
 vec3 v3Add(const vec3 &v1, const vec3 &v2);
 vec3 v3Sub(const vec3 &v1, const vec3 &v2);
@@ -181,14 +164,6 @@ float are_relatively_equal(const float a, const float b)
     // 2 multiplier is selected to get the 360/2*pi rotations to work
     return (std::fabs(a - b) <= 2 * std::numeric_limits<float>::epsilon() * std::max(1.0f, std::max(std::fabs(a), std::fabs(b))));
 };
-
-// TODO: use template
-void pSwap(point *a, point *b)
-{
-    point tmp = *a;
-    *a = *b;
-    *b = tmp;
-}
 
 vec3 v3Add(const vec3 &v1, const vec3 &v2)
 {
@@ -498,36 +473,4 @@ void printVec3(const vec3 &v)
     std::cout << "( " << v.x << " " << v.y << " " << v.z << " " << v.w << " )" << std::endl;
 }
 
-void printTri(const tri &t, std::string label = "")
-{
-    std::cout << "TRI (" << label << "):";
-    for (int i = 0; i < 3; i++)
-        std::cout << " (" << t.vertices[i].x << " " << t.vertices[i].y << " " << t.vertices[i].z << " " << t.vertices[i].w << ")";
-    std::cout << std::endl;
-}
-
-u_int32_t adjustColor(u_int32_t color, float multiplier)
-{
-    u_int8_t r = (u_int8_t)(color >> 24);
-    u_int8_t g = (u_int8_t)(color >> 16);
-    u_int8_t b = (u_int8_t)(color >> 8);
-    u_int8_t a = (u_int8_t)(color >> 0);
-
-    r *= multiplier;
-    g *= multiplier;
-    b *= multiplier;
-
-    return (r << 24) | (g << 16) | (b << 8) | a;
-}
-void printColor(u_int32_t color)
-{
-    u_int8_t r = (u_int8_t)(color >> 24);
-    u_int8_t g = (u_int8_t)(color >> 16);
-    u_int8_t b = (u_int8_t)(color >> 8);
-    u_int8_t a = (u_int8_t)(color >> 0);
-    std::cout << "color r:" << std::to_string(r)
-        << " color b:" << std::to_string(b)
-        << " color g:" << std::to_string(g)
-        << " color a:" << std::to_string(a) << std::endl;
-}
 #endif // MATH_TYPES_ONLY

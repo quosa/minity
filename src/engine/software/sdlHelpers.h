@@ -10,18 +10,6 @@
 #include "rasterizer.h"
 #include "../../config.h"
 
-// struct config
-// {
-//     bool drawNormals = false; // n key
-//     bool drawWireframe = false; // l key
-//     bool drawPointCloud = false; // p key
-//     bool drawAxes = false; // x key
-//     bool fillTriangles = true; // f key
-//     bool showStatsWindow = false; // F1 key
-//     bool renderOnChange = false; // r key
-// };
-// config *g_config = new config();
-
 SDL_Window *g_SDLWindow;
 SDL_Renderer *g_SDLRenderer;
 SDL_Texture *g_SDLTexture;
@@ -234,105 +222,6 @@ void SDLSwapBuffers(minity::rasterizer &rasterizer)
         ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
     }
     SDL_RenderPresent(g_SDLRenderer);
-}
-
-bool isRunning(vec3 *inputTranslation, vec3 *inputRotation, bool *inputChange)
-{
-    SDL_Event sEvent;
-
-    *inputChange = false;
-    while (SDL_PollEvent(&sEvent))
-    {
-        ImGui_ImplSDL2_ProcessEvent(&sEvent);
-
-        switch (sEvent.type)
-        {
-        case SDL_QUIT:
-            return false;
-            break;
-        case SDL_KEYDOWN:
-            *inputChange = true;
-            switch (sEvent.key.keysym.sym)
-            {
-            case SDLK_LEFT:
-                // std::cerr << " LEFT" << std::endl;
-                inputTranslation->x -= 0.5;
-                break;
-            case SDLK_RIGHT:
-                // std::cerr << " RIGHT" << std::endl;
-                inputTranslation->x += 0.5;
-                break;
-            case SDLK_UP:
-                // std::cerr << " UP" << std::endl;
-                inputTranslation->y += 0.5;
-                break;
-            case SDLK_DOWN:
-                // std::cerr << " DOWN" << std::endl;
-                inputTranslation->y -= 0.5;
-                break;
-            case SDLK_PLUS:
-                // std::cerr << " IN" << std::endl;
-                inputTranslation->z -= 0.5;
-                break;
-            case SDLK_MINUS:
-                // std::cerr << " OUT" << std::endl;
-                inputTranslation->z += 0.5;
-                break;
-            case SDLK_a:
-                // std::cerr << " LookLeft" << std::endl;
-                inputRotation->y += deg2rad(5);
-                break;
-            case SDLK_d:
-                // std::cerr << " LookRight" << std::endl;
-                inputRotation->y -= deg2rad(5);
-                break;
-            case SDLK_w:
-                // std::cerr << " LookUp" << std::endl;
-                inputRotation->x += deg2rad(5);
-                break;
-            case SDLK_s:
-                // std::cerr << " LookDown" << std::endl;
-                inputRotation->x -= deg2rad(5);
-                break;
-            case SDLK_n:
-                // std::cerr << " swap (n)ormals" << std::endl;
-                g_config->drawNormals = g_config->drawNormals ? false : true;
-                break;
-            case SDLK_l:
-                // std::cerr << " swap wireframe (l)ines" << std::endl;
-                g_config->drawWireframe = g_config->drawWireframe ? false : true;
-                break;
-            case SDLK_p:
-                // std::cerr << " swap (p)oint cloud" << std::endl;
-                g_config->drawPointCloud = g_config->drawPointCloud ? false : true;
-                break;
-            case SDLK_f:
-                // std::cerr << " swap triangle (f)illing" << std::endl;
-                g_config->fillTriangles = g_config->fillTriangles ? false : true;
-                break;
-            case SDLK_r:
-                // std::cerr << " (r)ender on change" << std::endl;
-                g_config->renderOnChange = g_config->renderOnChange ? false : true;
-                break;
-            case SDLK_x:
-                // std::cerr << " swap a(x)is" << std::endl;
-                g_config->drawAxes = g_config->drawAxes ? false : true;
-                break;
-            case SDLK_F1:
-                // std::cerr << " show/hide stats window" << std::endl;
-                g_config->showStatsWindow = g_config->showStatsWindow ? false : true;
-                break;
-            case SDLK_q:
-                return false;
-                break;
-            default:
-                break;
-            }
-            break;
-        }
-
-    }
-    return true;
 }
 
 void SDLEnd()

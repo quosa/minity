@@ -130,18 +130,18 @@ TEST_CASE("dot products - 45deg angles")
     REQUIRE(v3DotProduct(forwardright, backright) == 0.0f);
 }
 
-TEST_CASE("swap points (for sorting)")
-{
-    point a{1, 2, -3.0f};
-    point b{4, 5, 6.0f};
-    REQUIRE(a.x == 1);
-    REQUIRE(b.y == 5);
-    REQUIRE(a.z == -3.0f);
-    pSwap(&a, &b);
-    REQUIRE(b.x == 1);
-    REQUIRE(a.y == 5);
-    REQUIRE(b.z == -3.0f);
-}
+// TEST_CASE("swap points (for sorting)")
+// {
+//     point a{1, 2, -3.0f};
+//     point b{4, 5, 6.0f};
+//     REQUIRE(a.x == 1);
+//     REQUIRE(b.y == 5);
+//     REQUIRE(a.z == -3.0f);
+//     pSwap(&a, &b);
+//     REQUIRE(b.x == 1);
+//     REQUIRE(a.y == 5);
+//     REQUIRE(b.z == -3.0f);
+// }
 
 TEST_CASE("0-matrix * 0-matrix = 0-matrix")
 {
@@ -943,16 +943,4 @@ TEST_CASE("calculate face normal - facing down")
         v3Sub(back, v0) // v1 - v0
     ));
     REQUIRE(faceNormal == down);
-}
-
-TEST_CASE("adjust color by one")
-{
-    u_int32_t color{0x11223344};
-    REQUIRE(adjustColor(color, 1.0f) == color);
-}
-
-TEST_CASE("adjust color by zero")
-{
-    u_int32_t color{0x11223344};
-    REQUIRE(adjustColor(color, 0.0f) == 0x00000044); // alpha is not touched
 }

@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 
+#define MINITY_COLOR_TYPES_ONLY
  // full scene implementation in one file,
  // other tests #define MINITY_SCENE_TYPES_ONLY
 #include "scene.h"

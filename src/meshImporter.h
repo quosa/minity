@@ -61,7 +61,6 @@ std::shared_ptr<mesh> meshImporter::load(const std::string &path, bool reverseWi
         std::getline(f, line);
         handleLine(line, reverseWinding);
     }
-    // m_mesh->printModelInfo();
 
     std::cout << "loaded a model with " << meshVertices.size() << " vertices,";
     std::cout << " and " <<  meshIndices.size() / 3 << " faces." << std::endl;
@@ -85,7 +84,9 @@ std::shared_ptr<mesh> meshImporter::loadFromString(const std::string &meshString
         // std::cout << line << std::endl;
         handleLine(line, reverseWinding);
     }
-    // m_mesh->printModelInfo();
+
+    std::cout << "loaded a model with " << meshVertices.size() << " vertices,";
+    std::cout << " and " <<  meshIndices.size() / 3 << " faces." << std::endl;
 
     m_mesh->vertexData = meshVertices;
     m_mesh->indexData = meshIndices;
@@ -154,10 +155,6 @@ void meshImporter::handleLine(const std::string &line, bool reverseWinding)
             }
             indices.push_back(std::stoi(vertexDetails.substr(last)));
 
-            // std::cout << "indices: [";
-            // for (auto elem : indices) { std::cout << " " << elem; };
-            // std::cout << " ]" << std::endl;
-
             vec3 vert;
             vec3 nrm;
             vec2 tex;
@@ -175,17 +172,13 @@ void meshImporter::handleLine(const std::string &line, bool reverseWinding)
                 vert = indices.at(0) > 0 ? vertices[indices.at(0) - 1] : zero3;
                 nrm = zero3;
                 tex = indices.at(1) > 0 ? textureCoordinates[indices.at(1) - 1] : zero2;
-                // m_mesh->hasTextureCoordinates = true;
                 break;
             case 2: // vertex, texture coordinates and normals: f 1/7/12 2/8/13 3/9/14
                 vert =indices.at(0) > 0 ? vertices[indices.at(0) - 1] : zero3;
                 nrm = indices.at(2) > 0 ? normals[indices.at(2) - 1] : zero3;
                 tex = indices.at(1) > 0 ? textureCoordinates[indices.at(1) - 1] : zero2;
-                // m_mesh->hasNormals = true;
-                // m_mesh->hasTextureCoordinates = (textureCoordinateIndex[i] != 0);
                 break;
             default:
-                // std::cerr << "Trouble reading face vertex information: " << vertexDetails << std::endl;
                 throw std::runtime_error("Trouble reading face vertex information: " + vertexDetails); // we don't support anything else...
             }
 

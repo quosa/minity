@@ -2,11 +2,11 @@
 
 #define MATH_TYPES_ONLY
 #include "simpleMath.h"
+#define MINITY_COLOR_TYPES_ONLY
+#include "color.h"
 #include "engine/software/rasterizer.h"
 
 const vec3 origin{0.0f, 0.0f, 0.0f};
-const minity::color yellow = 0xffff00ff;
-const minity::color black = 0x000000ff;
 
 void printFramebuffer(minity::color *fb, int width, int height)
 {
@@ -30,14 +30,14 @@ TEST_CASE("init and dimensions")
 TEST_CASE("can draw point to 0_0")
 {
     minity::rasterizer rasterizer(3,3);
-    rasterizer.drawPoint(origin, yellow);
+    rasterizer.drawPoint(origin, minity::yellow);
     auto fb = rasterizer.getFramebuffer();
     // for (int i = 0; i < 3 * 3; ++i)
     // {
     //     std::cout << " " << std::to_string(fb[i]) << std::endl;
     // }
-    REQUIRE(fb[0] == yellow);
-    REQUIRE(fb[1] == black);
+    REQUIRE(fb[0] == minity::yellow);
+    REQUIRE(fb[1] == minity::black);
     auto db = rasterizer.getDepthbuffer();
     REQUIRE(db[0] == 0.0f);
     REQUIRE(db[1] > 0.0f); // +inf
@@ -46,15 +46,15 @@ TEST_CASE("can draw point to 0_0")
 TEST_CASE("can draw point to width_height")
 {
     minity::rasterizer rasterizer(3,3);
-    rasterizer.drawPoint(vec3{2.0f, 2.0f, 0.0f}, yellow);
+    rasterizer.drawPoint(vec3{2.0f, 2.0f, 0.0f}, minity::yellow);
     auto fb = rasterizer.getFramebuffer();
     // for (int i = 0; i < 3 * 3; ++i)
     // {
     //     std::cout << " " << std::to_string(fb[i]) << std::endl;
     // }
-    REQUIRE(fb[3*3 - 1] == yellow);
-    REQUIRE(fb[0] == black);
-    REQUIRE(fb[3*3 - 2] == black);
+    REQUIRE(fb[3*3 - 1] == minity::yellow);
+    REQUIRE(fb[0] == minity::black);
+    REQUIRE(fb[3*3 - 2] == minity::black);
     auto db = rasterizer.getDepthbuffer();
     REQUIRE(db[3*3 - 1] == 0.0f);
     REQUIRE(db[3*3 - 2] > 0.0f); // +inf
@@ -66,9 +66,9 @@ TEST_CASE("z-buffer check")
     rasterizer.drawPoint(vec3{1.0f, 1.0f, 0.96f}, minity::blue);
     rasterizer.drawPoint(vec3{1.0f, 1.0f, 0.42f}, minity::yellow);
     auto fb = rasterizer.getFramebuffer();
-    // yellow and not blue because o NDC/viewport
+    // minity::yellow and not blue because o NDC/viewport
     // the camera looks at positive Z+ axis
-    // so 0.96 for blue is further away than 0.42 for yellow
+    // so 0.96 for blue is further away than 0.42 for minity::yellow
     REQUIRE(fb[1 + 1*3] == minity::yellow);
     auto db = rasterizer.getDepthbuffer();
     REQUIRE_THAT( db[1 + 1*3], Catch::Matchers::WithinRel(0.42f, 0.0000001f) );

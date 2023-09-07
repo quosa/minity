@@ -11,7 +11,7 @@ namespace minity
 
 enum backend {kSoftware, kMetal, kNull};
 
-// construct a concrete engine of type engineBackend
+// construct a concrete engine of type backend
 IEngine *getEngine(backend engineBackend)
 {
 

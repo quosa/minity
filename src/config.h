@@ -1,6 +1,5 @@
 #pragma once
 
-// todo: solve
 struct config
 {
     bool drawNormals = false; // n key
@@ -9,6 +8,5 @@ struct config
     bool drawAxes = false; // x key
     bool fillTriangles = true; // f key
     bool showStatsWindow = false; // F1 key
-    bool renderOnChange = false; // r key
 };
 config *g_config = new config();

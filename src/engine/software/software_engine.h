@@ -323,7 +323,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
                 v3Sub(vects[viewSpace][1], vects[viewSpace][0])));
 
             float dp = std::max(0.1f, v3DotProduct(lightDirection, faceNormal));
-            faceColor = adjustColor(faceColor, dp);
+            faceColor = minity::adjustColor(faceColor, dp);
         }
 
         // RASTERIZATION, working in screen space
@@ -333,7 +333,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         // pass the shader as a lambda to the renderer
         auto fragmentShader = [&](float &u, float &v, float &w, minity::color color)
         {
-            u_int32_t adjustedColor = color; // material color if no texture
+            auto adjustedColor = color; // material color if no texture
 
 
             if (hasTexture && hasTextureCoordinates)
@@ -389,7 +389,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
                 auto n3 = norms[viewSpace][2];
                 vec3 vn =  v3Normalize(v3Add(v3Add(v3Mul(n1, u), v3Mul(n2, v)), v3Mul(n3, w)));
                 float dp = std::max(0.1f, v3DotProduct(lightDirection, vn));
-                adjustedColor = adjustColor(adjustedColor, dp);
+                adjustedColor = minity::adjustColor(adjustedColor, dp);
             }
 
             return adjustedColor;
@@ -505,7 +505,7 @@ void softwareEngine::run(scene scene)
         {
             g_config->showStatsWindow = !g_config->showStatsWindow;
         }
-        // TODO: add, n, p, f, r, x
+
         scene.model.update(deltaTime);
 
         position = scene.model.position;
