@@ -5,7 +5,6 @@
 #include <functional>
 
 #define MINITY_SCENE_TYPES_ONLY
-#include "../../freezer/old_scene.h"
 #include "../../simpleMath.h"
 #include "stats.h"
 
