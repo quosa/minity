@@ -41,6 +41,7 @@ half4 fragment fragmentMain( v2f in [[stage_in]], texture2d< half, access::sampl
     half3 texel = tex.sample( s, in.texcoord ).rgb;
 
     // assume light coming from (front-top-right) - 1.0, 1.0, 0.8
+    // TODO: inject light position from minity light object(s) in scene
     float3 l = normalize(float3( 0.0, 0.0, 1.0 ));
     float3 n = normalize( in.normal );
 

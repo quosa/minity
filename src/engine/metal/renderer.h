@@ -385,6 +385,7 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     // pCameraData->perspectiveTransform = math::makePerspective( 45.f * M_PI / 180.f, 1.f, 0.03f, 500.0f ) ;
     auto drawableSize = layer->drawableSize();
     float aspectRatio = (float) (drawableSize.width / drawableSize.height);
+    // TODO: inject camera parameters from minity camera object(s)
     pCameraData->perspectiveTransform = math::makePerspective( 60.0f * M_PI / 180.f, aspectRatio, 0.1f, 500.0f ) ;
     pCameraData->worldTransform = math::makeIdentity();
     pCameraData->worldNormalTransform = math::discardTranslation( pCameraData->worldTransform );
