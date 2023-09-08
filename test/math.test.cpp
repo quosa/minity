@@ -130,19 +130,6 @@ TEST_CASE("dot products - 45deg angles")
     REQUIRE(v3DotProduct(forwardright, backright) == 0.0f);
 }
 
-// TEST_CASE("swap points (for sorting)")
-// {
-//     point a{1, 2, -3.0f};
-//     point b{4, 5, 6.0f};
-//     REQUIRE(a.x == 1);
-//     REQUIRE(b.y == 5);
-//     REQUIRE(a.z == -3.0f);
-//     pSwap(&a, &b);
-//     REQUIRE(b.x == 1);
-//     REQUIRE(a.y == 5);
-//     REQUIRE(b.z == -3.0f);
-// }
-
 TEST_CASE("0-matrix * 0-matrix = 0-matrix")
 {
     REQUIRE(multiplyMat4(m0, m0) == m0);
