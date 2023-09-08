@@ -3,6 +3,8 @@
 #include "../../scene.h"
 #include "../../config.h"
 #include "../../input.h"
+#include "../frameTimer.h"
+
 #include "../engine_interface.h" // IEngine
 #include "renderer.h"
 
@@ -79,16 +81,39 @@ void metalEngine::shutdown()
     SDL_Quit();
 }
 
-simd::float3 sf3(vec3 &v) {return simd::float3{v.x, v.y, v.z};};
-// TODO: color to float4
-// simd::float4 sf3(vec3 &v) {return simd::float3{v.x, v.y, v.z};};
+/**
+ * @brief convert minity::vec3 to simd::float3 for use in metal
+ *
+ * @param v vertices from model.mesh.vertices
+ * @return simd::float3
+ */
+simd::float3 sf3(const vec3 &v) {return simd::float3{v.x, v.y, v.z};};
+
+/**
+ * @brief convert minity::color to simd::float4 for use in metal
+ *
+ * @param c minity::color from model.material.color
+ * @return simd::float4
+ */
+simd::float4 sf4(const minity::color &c)
+{
+    float r = static_cast< float >((u_int8_t)(c >> 24)) / 255.0;
+    float g = static_cast< float >((u_int8_t)(c >> 16)) / 255.0;
+    float b = static_cast< float >((u_int8_t)(c >> 8)) / 255.0;
+    float a = static_cast< float >((u_int8_t)(c >> 0)) / 255.0;
+    // std::cout << "r: " << r << " g: " << g << " b: " << b << " a: " << a << std::endl;
+    return simd::float4{r, g, b, a};
+};
+
 void metalEngine::run(scene scene)
 {
+    float deltaTime = 0.0f;
+    auto ft = new minity::frameTimer();
+
     auto scale = sf3(scene.model.scale);
     auto position = sf3(scene.model.position);
     auto rotation = sf3(scene.model.rotation);
-    // auto colour = scene.model.material.color;
-    simd::float4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; // white base-color
+    auto color = sf4(scene.model.material.color);
     auto metalRenderer = Renderer(layer, scene.model.mesh, scene.model.material.texture);
     while(m_input.handleInput())
     {
@@ -101,11 +126,14 @@ void metalEngine::run(scene scene)
         {
             g_config->showStatsWindow = !g_config->showStatsWindow;
         }
-        scene.model.update(0.1f); // TODO: add frame timer
+        scene.model.update(deltaTime);
         position = sf3(scene.model.position);
         scale = sf3(scene.model.scale);
         rotation = sf3(scene.model.rotation);
         metalRenderer.renderModel(position, scale, rotation, color);
+
+        ft->delta(); // update delta time and ignore fps for now
+        deltaTime = ft->deltaTime();
     }
 }
 } // NS minity

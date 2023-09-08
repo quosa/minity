@@ -7,7 +7,7 @@
 
 #include "../../simpleMath.h"
 #include "sdlHelpers.h" // full math
-#include "frameTimer.h"
+#include "../frameTimer.h"
 #include "rasterizer.h"
 #include "stats.h"
 
@@ -281,6 +281,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
     {
         stats.faces++;
 
+        // TODO: Bug: the material base color has no effect in software renderer
         minity::color faceColor = model.material.color; // fallback if no texture
 
         // SEE: spaceType enum for indices
