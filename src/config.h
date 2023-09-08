@@ -8,5 +8,6 @@ struct config
     bool drawAxes = false; // x key
     bool fillTriangles = true; // f key
     bool showStatsWindow = false; // F1 key
+    bool autoRotate = false; // r key
 };
 config *g_config = new config();

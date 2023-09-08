@@ -118,14 +118,40 @@ void metalEngine::run(scene scene)
     while(m_input.handleInput())
     {
         SDL_Delay(20); // some computation budget...
+
+        // TODO: unnecessary duplication, move to input or config?
+        if (m_input.isKeyPressed(KEY_f))
+        {
+            g_config->fillTriangles = !g_config->fillTriangles;
+        }
         if (m_input.isKeyPressed(KEY_l))
         {
             g_config->drawWireframe = !g_config->drawWireframe;
+        }
+        if (m_input.isKeyPressed(KEY_n))
+        {
+            // TODO: not hooked up yet in metal
+            g_config->drawNormals = !g_config->drawNormals;
+        }
+        if (m_input.isKeyPressed(KEY_p))
+        {
+            // TODO: not hooked up yet in metal
+            g_config->drawPointCloud = !g_config->drawPointCloud;
+        }
+        if (m_input.isKeyPressed(KEY_x))
+        {
+            // TODO: not hooked up yet in metal
+            g_config->drawAxes = !g_config->drawAxes;
         }
         if (m_input.isKeyPressed(KEY_F1))
         {
             g_config->showStatsWindow = !g_config->showStatsWindow;
         }
+        if (m_input.isKeyPressed(KEY_r))
+        {
+            g_config->autoRotate = !g_config->autoRotate;
+        }
+
         scene.model.update(deltaTime);
         position = sf3(scene.model.position);
         scale = sf3(scene.model.scale);

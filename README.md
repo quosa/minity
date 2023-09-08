@@ -20,7 +20,10 @@ Working:
  * simple scene object with light, camera, and model (no entity hierarchy)
  * object loading from a simple obj file (vertices, faces, normals, and texture coordinates)
  * object scaling, rotation, and movement (translation)
- * rudimentary input handling for moving the target ([arrow-keys](https://en.wikipedia.org/wiki/Arrow_keys), +, -)
+ * rudimentary input handling for
+   * moving the target ([arrow-keys](https://en.wikipedia.org/wiki/Arrow_keys), +, -)
+   * rotate target with ([wasd](https://en.wikipedia.org/wiki/Arrow_keys#WASD_keys))
+     * no z-rotation as q is currently for quit
  * [orthographic](https://en.wikipedia.org/wiki/Orthographic_projection) perspective correction with fixed [FoV, field-of-view](https://en.wikipedia.org/wiki/Angle_of_view)
  * rudimentary clipping (TODO: proper clipping)
  * back-face culling: face normal check to discard hidden triangles
@@ -38,7 +41,7 @@ Working:
 TODO:
  * proper clipping (zoom in and the entire face is removed if clipped)
  * input handling:
-   * implement rotate target with ([wasd](https://en.wikipedia.org/wiki/Arrow_keys#WASD_keys))
+   * z-rotation with q/e but move quit
    * map all keys
    * re-implement fps camera movement (now we move the target)
    * camera movement is not good for exploration

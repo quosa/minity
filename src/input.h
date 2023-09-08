@@ -26,6 +26,7 @@ enum keyCode
     KEY_d = SDLK_d, // wasd right
     KEY_w = SDLK_w, // wasd up
     KEY_s = SDLK_s, // wasd down
+    KEY_r = SDLK_r, // auto rotate "(r)otate"
     KEY_f = SDLK_f, // shade faces "(f)ill"
     KEY_l = SDLK_l, // draw wireframe "(l)ines"
     KEY_n = SDLK_n, // draw normals "(n)ormals"
@@ -96,6 +97,9 @@ bool input::handleInput()
                 break;
             case SDLK_s:
                 break;
+            case SDLK_r:
+                pressedKeys.insert(KEY_r);
+                break;
             case SDLK_n:
                 pressedKeys.insert(KEY_n);
                 break;
@@ -132,56 +136,60 @@ bool input::handleInput()
 // basic arrow keys (x, y) and +/- for in/out (z)
 vec3 input::getMovementInput()
 {
-    vec3 movement{};
+    vec3 movementInput{}; // zero by default
 
     if (isKeyDown(KEY_LEFT))
     {
-        movement.x = -0.5f;
+        movementInput.x = -1.0f;
     }
     if (isKeyDown(KEY_RIGHT))
     {
-        movement.x = 0.5f;
+        movementInput.x = 1.0f;
     }
     if (isKeyDown(KEY_DOWN))
     {
-        movement.y = -0.5f;
+        movementInput.y = -1.0f;
     }
     if (isKeyDown(KEY_UP))
     {
-        movement.y = 0.5f;
+        movementInput.y = 1.0f;
     }
     if (isKeyDown(KEY_MINUS))
     {
-        movement.z = -0.5f;
+        movementInput.z = -1.0f;
     }
     if (isKeyDown(KEY_PLUS))
     {
-        movement.z = 0.5f;
+        movementInput.z = 1.0f;
     }
-    return movement;
+
+    return movementInput;
 }
 
 vec3 input::getRotationInput()
 {
-    vec3 rotation{};
+    vec3 rotationInput{}; // zero by default
 
     if (isKeyDown(KEY_a))
     {
-        rotation.y = 0.5f;
+        rotationInput.y = 1.0f;
     }
     if (isKeyDown(KEY_w))
     {
-        rotation.x = -0.5f;
+        rotationInput.x = -1.0f;
     }
     if (isKeyDown(KEY_s))
     {
-        rotation.x = 0.5f;
+        rotationInput.x = 1.0f;
     }
     if (isKeyDown(KEY_d))
     {
-        rotation.y = -0.5f;
+        rotationInput.y = -1.0f;
     }
-    return rotation;
+
+    // TODO: rotationInput.z - q is for quit and q/e are the obvious candidates
+
+    return rotationInput;
 }
 
 

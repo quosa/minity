@@ -507,6 +507,11 @@ void softwareEngine::run(scene scene)
         {
             g_config->showStatsWindow = !g_config->showStatsWindow;
         }
+        if (m_input.isKeyPressed(KEY_r))
+        {
+            g_config->autoRotate = !g_config->autoRotate;
+        }
+
 
         scene.model.update(deltaTime);
 

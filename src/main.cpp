@@ -95,16 +95,19 @@ void runScenario()
                 std::cout << "FIRE!" << std::endl;
             }
 
-            auto movementSpeed = input.getMovementInput();
-            self->position = v3Add(self->position, v3Mul(movementSpeed, timeDelta));
+            float movementSpeed = 1.0f;
+            auto movementInput = input.getMovementInput();
+            self->position = v3Add(self->position, v3Mul(v3Mul(movementInput, movementSpeed), timeDelta));
 
-            auto rotationSpeed = input.getRotationInput();
-            self->rotation = v3Add(self->rotation, v3Mul(rotationSpeed, timeDelta));
+            auto rotationSpeed = 1.0f;
+            auto rotationInput = input.getRotationInput();
+            self->rotation = v3Add(self->rotation, v3Mul(v3Mul(rotationInput, rotationSpeed), timeDelta));
 
-            // std::cout << "update(" << timeDelta << ") yRot: " << self->rotation.y << " isKeyPressed(minity::KEY_LEFT) " << input.isKeyPressed(minity::KEY_LEFT)<< std::endl;
-
-            // float autoRotationSpeed = 0.4f;
-            // self->rotation.y += timeDelta * autoRotationSpeed;
+            if (g_config->autoRotate)
+            {
+                float autoRotationSpeed = 0.4f;
+                self->rotation.y += timeDelta * autoRotationSpeed;
+            }
         };
     };
     model.setUpdate(updateFactory);
