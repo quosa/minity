@@ -287,6 +287,9 @@ void Renderer::initBuffers(minity::mesh &mesh)
 {
     ///////////////////////////////////////////////////////////////////////////////////////
     // mesh (vec2/3) conversion to metal (simd::float2/3)
+    //
+    // SEE: vertex.test.cpp - metal_mesh &convertMeshToMetal(mesh &mesh)
+    //
     size_t vertexDataSize = mesh.vertexData.size() * sizeof(VertexData);
     VertexData *vertexData = new VertexData[mesh.vertexData.size()];
 

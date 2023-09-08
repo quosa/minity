@@ -26,6 +26,11 @@ struct metal_mesh
     size_t indexDataSize;
 };
 
+///////////////////////////////////////////////////////////////////////////////////////
+// mesh (vec2/3) conversion to metal (simd::float2/3)
+//
+// SEE: renderer.h - void Renderer::initBuffers(minity::mesh &mesh)
+//
 metal_mesh &convertMeshToMetal(mesh &mesh)
 {
     auto mm = new metal_mesh();
