@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../scene.h"
-#include "../config.h"
 #include "engine_interface.h" // IEngine
 #include "metal/metal_engine.h"
 #include "software/software_engine.h"
