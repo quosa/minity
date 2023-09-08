@@ -35,11 +35,7 @@ namespace math
     simd::float4x4 makeTranslate( const simd::float3& v );
     simd::float4x4 makeScale( const simd::float3& v );
     simd::float3x3 discardTranslation( const simd::float4x4& m );
-// }
 
-
-// namespace math
-// {
     constexpr simd::float3 add( const simd::float3& a, const simd::float3& b )
     {
         return { a.x + b.x, a.y + b.y, a.z + b.z };
@@ -120,7 +116,7 @@ namespace math
         return simd_matrix( m.columns[0].xyz, m.columns[1].xyz, m.columns[2].xyz );
     }
 
-}
+} // NS math
 #pragma clang diagnostic pop
 
 
@@ -362,8 +358,6 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     });
 
     InstanceData* pInstanceData = reinterpret_cast< InstanceData *>( pInstanceDataBuffer->contents() );
-
-    //
 
     // Update instance positions:
     // Use the tiny math library to apply a 3D transformation to the instance.
