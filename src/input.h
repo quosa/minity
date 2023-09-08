@@ -11,6 +11,7 @@
 namespace minity
 {
 
+// TODO: add all keycodes
 enum keyCode
 {
     KEY_LEFT = SDLK_LEFT,

@@ -53,7 +53,7 @@ void runScenario()
     // auto texture = imgImporter.load("test/materials/wall_512_3_05.tga", true); // flip
     // auto texture = imgImporter.load("models/from_internet/GroundClay002/GroundClay002_COL_VAR1_1K.jpg", true); // flip
 
-    minity::material material{minity::yellow, 1.0f, *texture};
+    minity::material material{minity::white, 1.0f, *texture};
 
     // minity::texture blankTexture {};
     // minity::material material{minity::yellow, 1.0f, blankTexture}; // no texture, just color
@@ -121,19 +121,17 @@ void runScenario()
             {
                 speed.z = 0.5f;
             }
-            self->position.x += speed.x * timeDelta; // TODO: v3Mul()
-            self->position.y += speed.y * timeDelta;
-            self->position.z += speed.z * timeDelta;
+            self->position = v3Add(self->position, v3Mul(speed, timeDelta));
 
             // std::cout << "update(" << timeDelta << ") yRot: " << self->rotation.y << " isKeyPressed(minity::KEY_LEFT) " << input.isKeyPressed(minity::KEY_LEFT)<< std::endl;
 
-            float rotationSpeed = 0.1f;
+            float rotationSpeed = 0.4f;
             self->rotation.y += timeDelta * rotationSpeed;
         };
     };
     model.setUpdate(updateFactory);
 
-    // TODO: new camera type
+    // TODO: add a new camera type
     // minity::camera camera{minity::cameraType::lookAt};
     minity::camera camera{};
     camera.fovDegrees = 50.0f;
@@ -141,7 +139,7 @@ void runScenario()
     // camera.translation = vec3{0.0f, 0.0f, 2.0f}; // for cube mesh
     camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 
-    // TODO: new light type
+    // TODO: add a new light type
     // minity::light light{minity::lightType::directional};
     minity::light light{};
     light.translation = vec3{-1.0f, 1.0f, 10.0f}; // top-left

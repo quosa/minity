@@ -55,8 +55,8 @@ void processVertices(
     minity::model &model,
     const int faceIndex, const int idx,
     vec3 (&vects)[5][3], vec3 (&norms)[5][3], vec2 (&texc)[3],
-    const mat4 &worldTransformations, const mat4 &viewMatrix, const mat4 &projector,
-    const mat4 &inverseWorldTransformations, const mat4 &inverseViewMatrix, const mat4 &inverseProjector,
+    const mat4 &modelMatrix, const mat4 &viewMatrix, const mat4 &projectionMatrix,
+    const mat4 &inverseModelMatrix, const mat4 &inverseViewMatrix, const mat4 &inverseProjectionMatrix,
     renderStats &stats)
 {
     stats.vertices++;
@@ -67,13 +67,13 @@ void processVertices(
     auto modelIndex = model.mesh.indexData[faceIndex * 3 + idx];
     // std::cout << "index: " << modelIndex << " vertex: " << model.mesh.vertexData[modelIndex].position << std::endl;
 
-    vects[worldSpace][idx % 3] = multiplyVec3(model.mesh.vertexData[modelIndex].position, worldTransformations);
+    vects[worldSpace][idx % 3] = multiplyVec3(model.mesh.vertexData[modelIndex].position, modelMatrix);
     // if (model.hasNormals)
     // {
     // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
     auto mn = model.mesh.vertexData[modelIndex].normal;
     mn.w = 0;
-    norms[worldSpace][idx % 3] = multiplyVec3(mn, transposeMat4(inverseWorldTransformations));
+    norms[worldSpace][idx % 3] = multiplyVec3(mn, transposeMat4(inverseModelMatrix));
     // }
     // if (model.hasTextureCoordinates)
     // {
@@ -95,15 +95,19 @@ void processVertices(
     // i.e. coordinates looking from camera
     // so a point at world space camera coordinates is (0,0,0)
 
-    vects[clipSpace][idx % 3] = multiplyVec3(vects[viewSpace][idx % 3], projector);
+    vects[clipSpace][idx % 3] = multiplyVec3(vects[viewSpace][idx % 3], projectionMatrix);
     // if (model.hasNormals)
     // {
     // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
-    norms[clipSpace][idx % 3] = multiplyVec3(norms[viewSpace][idx % 3], transposeMat4(inverseProjector));
+    norms[clipSpace][idx % 3] = multiplyVec3(norms[viewSpace][idx % 3], transposeMat4(inverseProjectionMatrix));
     // }
 
     // Here triangles are in CLIP SPACE in homogeneous coordinates
     // https://en.wikipedia.org/wiki/Homogeneous_coordinates
+
+    // TODO: maybe we should move the ndc and screen conversion to the rasterizer
+    // as that would align better with the normal rendering pipeline where
+    // the vertex shader moves vertices from model to clip space?
 
     // normalise into cartesian space
     vec3 vClip = vects[clipSpace][idx % 3];
@@ -125,9 +129,6 @@ void processVertices(
     // (x=1, y=-1) -> (sWidth, sHeight)
     // z=-1 -> 0 and z=1 -> 1
 
-    // TODO: FIGURE OUT WHY THIS VIEW MATRIX WAS HERE???
-    // vec3 v = multiplyVec3(vects[ndcCoordinates][idx % 3], viewMatrix);
-    // TODO: THIS NOW LEAVES A GAP TO CENTER???
     vec3 v = vects[ndcCoordinates][idx % 3];
     v.x = (v.x + 1.0f) * static_cast<float>(g_SDLWidth) / 2.0f;
     v.y = (1.0f - ((v.y + 1.0f) / 2.0f)) * static_cast<float>(g_SDLHeight);
@@ -264,7 +265,7 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
     // apply perspective to camera view
     // VIEW SPACE TO CLIP SPACE
     float aspectRatio = (float)g_SDLWidth / (float)g_SDLHeight;
-    // TODO: near and far field to camera structure
+    // TODO: add near and far field to minity camera structure
     // TODO: projection matrix should be pre-calculated as it changes only if camera fov changes
     mat4 projectionMatrix = perspectiveProjectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
     mat4 inverseProjectionMatrix = invertMat4(projectionMatrix);

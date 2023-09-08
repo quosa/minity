@@ -388,7 +388,7 @@ void Renderer::renderModel(const simd::float3 &position, const simd::float3 &sca
     // TODO: inject camera parameters from minity camera object(s)
     // pCameraData->perspectiveTransform = math::makePerspective( 60.0f * M_PI / 180.f, aspectRatio, 0.1f, 500.0f ) ;
     pCameraData->perspectiveTransform = math::makePerspective( 50.0f * M_PI / 180.f, aspectRatio, 0.1f, 400.0f ) ; // copy main/software for now
-    // TODO: note that minity software is using right-hand coordinate system (camera looking at negative z-axis)
+    // note that minity software is using right-hand coordinate system (camera looking at negative z-axis)
     // while metal is using the left-hand coordinate system (camera looking at positive z-axis)
     pCameraData->worldTransform = math::makeTranslate( float3{ 0.0f, 0.0f, -5.0f }); // copy main/software for now, note the negation
     // TODO: proper camera scale/rotation/transform from minity scene camera

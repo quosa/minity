@@ -86,6 +86,7 @@ struct scene
 {
     // TODO: consider re-using these generic fields
     // std::string name{};
+    // TODO: turn to vectors?
     camera &camera;
     light &light;
     model &model;
@@ -115,7 +116,7 @@ mat4 light::getLightTransformationMatrix()
     mat4 lightTranslator = translateMatrix(translation.x, translation.y, translation.z);
 
     // order matters: scale > rotate > move (=translate)
-    // TODO: THINK IF WE NEED SCALE
+    // TODO: think if we need a scale component in light?
     mat4 lightTransformations = multiplyMat4(lightYRotator, lightXRotator);
     lightTransformations = multiplyMat4(lightZRotator, lightTransformations);
     lightTransformations = multiplyMat4(lightTranslator, lightTransformations);
