@@ -47,6 +47,7 @@ TODO:
    * camera movement is not good for exploration
    * cannot change the target between mesh/camera/light
  * re-implement a simple util for generating a sphere
+ * split scene header to smaller parts and have corresponding tests
  * wire-frame line color (done) > painting (done) > texturing (done) > anti-aliasing
  * vertex/face color from model
  * jump from classic make to CMake
