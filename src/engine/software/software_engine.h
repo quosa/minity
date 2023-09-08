@@ -4,10 +4,9 @@
 
 #include "../engine_interface.h" // IEngine
 #include "../../input.h"
-
 #include "../../simpleMath.h"
-#include "sdlHelpers.h" // full math
 #include "../frameTimer.h"
+#include "sdlHelpers.h"
 #include "rasterizer.h"
 #include "stats.h"
 
@@ -45,12 +44,16 @@ enum spaceType
     worldSpace = 0,
     viewSpace = 1,
     clipSpace = 2,
-    screenSpace = 3,
-    ndcCoordinates = 4
+    ndcCoordinates = 3,
+    screenSpace = 4
 };
 
+// ~vertex shader function
+// calculates vertices all the way to screen space (typically only to clip space)
 // TODO: make matrices come from model getters
 // TODO: figure out if we need to add some encapsulation for vects/norms/texc
+// TODO: we don't need the intermediate steps, so combine transforms like in metal shader
+// NOTE: normals and texture coordinates are converted even if missing
 void processVertices(
     minity::model &model,
     const int faceIndex, const int idx,
@@ -65,42 +68,31 @@ void processVertices(
     // i.e. coordinates coming from the modeling software (and .obj file)
 
     auto modelIndex = model.mesh.indexData[faceIndex * 3 + idx];
-    // std::cout << "index: " << modelIndex << " vertex: " << model.mesh.vertexData[modelIndex].position << std::endl;
 
     vects[worldSpace][idx % 3] = multiplyVec3(model.mesh.vertexData[modelIndex].position, modelMatrix);
-    // if (model.hasNormals)
-    // {
     // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
     auto mn = model.mesh.vertexData[modelIndex].normal;
     mn.w = 0;
     norms[worldSpace][idx % 3] = multiplyVec3(mn, transposeMat4(inverseModelMatrix));
-    // }
-    // if (model.hasTextureCoordinates)
-    // {
+
+    // texture coordinates don't change with transformations
     texc[idx % 3] = model.mesh.vertexData[modelIndex].texcoord;
-    // }
 
     // Here triangles are in WORLD SPACE
     // i.e. common coordinates for all models in scene
     // only camera, no projection
 
     vects[viewSpace][idx % 3] = multiplyVec3(vects[worldSpace][idx % 3], viewMatrix);
-    // if (model.hasNormals)
-    // {
     // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
     norms[viewSpace][idx % 3] = multiplyVec3(norms[worldSpace][idx % 3], transposeMat4(inverseViewMatrix));
-    // }
 
     // Here triangles are in VIEW SPACE
     // i.e. coordinates looking from camera
     // so a point at world space camera coordinates is (0,0,0)
 
     vects[clipSpace][idx % 3] = multiplyVec3(vects[viewSpace][idx % 3], projectionMatrix);
-    // if (model.hasNormals)
-    // {
     // https://gamedev.stackexchange.com/questions/68387/how-to-modify-normal-vectors-with-a-tranformation-matrix
     norms[clipSpace][idx % 3] = multiplyVec3(norms[viewSpace][idx % 3], transposeMat4(inverseProjectionMatrix));
-    // }
 
     // Here triangles are in CLIP SPACE in homogeneous coordinates
     // https://en.wikipedia.org/wiki/Homogeneous_coordinates
@@ -112,11 +104,8 @@ void processVertices(
     // normalise into cartesian space
     vec3 vClip = vects[clipSpace][idx % 3];
     vects[ndcCoordinates][idx % 3] = v3Div(vClip, vClip.w);
-    // if (model.hasNormals)
-    // {
     vec3 nClip = norms[clipSpace][idx % 3]; // ???
     norms[ndcCoordinates][idx % 3] = v3Div(nClip, nClip.w); // ???
-    // }
 
     // Here triangles are in NDC SPACE x, y, z in [-1,1]
 
@@ -135,9 +124,8 @@ void processVertices(
     // z is retained as -1 .. 1 for z-buffering
     vects[screenSpace][idx % 3] = v;
 
-    // we don't need normals in screenspace???
-    // if (model.hasNormals)
-    //     norms[screenSpace][idx % 3] = multiplyVec3(norms[clipSpace][idx % 3], viewMatrix);
+    // we don't need normals in screenspace as lighting is done in view space
+    // norms[screenSpace][idx % 3] = multiplyVec3(norms[clipSpace][idx % 3], viewMatrix);
 
     // Here triangles are all in screen space (0,0) -> (screenWidth, screenHeight)
 };
@@ -235,6 +223,14 @@ bool cullingFunction(vec3 (&viewVertices)[3], renderStats &stats)
         return true;
 }
 
+/**
+ * @brief render a minity scene with the software rasterizer
+ *
+ * @param minity::scene containing model, camera and light
+ * @param minity::rasterizer
+ * @return true if there were no rendering issues
+ * @return false if rendering failed
+ */
 bool render(minity::scene scene, minity::rasterizer &rasterizer)
 {
     renderStats stats{};
@@ -270,11 +266,10 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
     mat4 projectionMatrix = perspectiveProjectionMatrix(camera.fovDegrees, aspectRatio, 0.1f, 400.0f);
     mat4 inverseProjectionMatrix = invertMat4(projectionMatrix);
 
-
     mat4 lightMatrix = light.getLightTransformationMatrix();
     (void)lightMatrix; // TODO: use the light for diffusion
 
-    // for (auto face : model.faces)
+    // TODO: this should be more like: for (auto face : model.faces)
     assert(model.mesh.indexData.size() % 3 == 0);
     size_t numFaces = model.mesh.indexData.size() / 3;
     size_t faceIndex = 0;
@@ -301,7 +296,6 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
         } // end of vertex shader (space transformations)
 
         faceIndex++;
-
 
         if (! clippingFunction(vects[ndcCoordinates], stats))
         {
@@ -540,4 +534,4 @@ void softwareEngine::shutdown()
 {
     SDLEnd();
 }
-} // minity
+} // NS minity

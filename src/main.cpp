@@ -42,8 +42,8 @@ const std::string banner = R"(
 
 void runScenario()
 {
-    // auto minity = minity::getEngine(minity::backend::kSoftware);
-    auto minity = minity::getEngine(minity::backend::kMetal);
+    auto minity = minity::getEngine(minity::backend::kSoftware);
+    // auto minity = minity::getEngine(minity::backend::kMetal);
 
     minity::imageImporter imgImporter{};
     // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
