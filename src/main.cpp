@@ -19,9 +19,9 @@
 
 const std::string usage = R"(
 key bindings:
-    wasd keys  - look up/left/down/right LATER!
-    arrow keys - move target
-    +/- keys   - zoom in /out
+    wasd keys  - rotate model down/left/up/right
+    arrow keys - move model up/left/down/right
+    +/- keys   - move model in/out
     f key      - fill/shade triangles
     l key      - draw wireframe
     n key      - draw normals
@@ -42,8 +42,8 @@ const std::string banner = R"(
 
 void runScenario()
 {
-    auto minity = minity::getEngine(minity::backend::kSoftware);
-    // auto minity = minity::getEngine(minity::backend::kMetal);
+    // auto minity = minity::getEngine(minity::backend::kSoftware);
+    auto minity = minity::getEngine(minity::backend::kMetal);
 
     minity::imageImporter imgImporter{};
     // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
