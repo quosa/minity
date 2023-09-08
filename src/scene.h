@@ -1,7 +1,7 @@
 #pragma once
 
 #define MATH_TYPES_ONLY
-#include "simpleMath.h" // mesh etc. for now
+#include "simpleMath.h" // vec3, mat4
 #include "mesh.h"
 #include "color.h"
 
