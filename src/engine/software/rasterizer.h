@@ -12,17 +12,7 @@
 namespace minity
 {
 
-// typedef uint32_t color;
-// // const color black{0x000000ff};
-// // const color white{0xffffffff};
-// const color red{0xff0000ff};
-// const color green{0x00ff00ff};
-// const color blue{0x0000ffff};
-// // const color yellow{0xffff00ff};
-// const color gray50{0x7f7f7fff};
-
 const bool debugRasterizer{false};
-
 
 typedef std::function< minity::color(float&, float&, float&, minity::color) > lambdaShader;
 auto nullShader = [](float &u, float &v, float &w, minity::color color) -> minity::color { (void)u; (void)v; (void)w; return color; };
@@ -370,4 +360,4 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
     }
 }
 
-} // minity
+} // NS minity
