@@ -1,0 +1,197 @@
+#pragma once
+
+#include "simpleMath.h" // vec3
+#include "engine/metal/metal_include.h"
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_metal.h"
+#include <SDL.h>
+#include <iostream>
+#include <set>
+
+namespace minity
+{
+
+// TODO: add all keycodes
+enum keyCode
+{
+    KEY_LEFT = SDLK_LEFT,
+    KEY_RIGHT = SDLK_RIGHT,
+    KEY_UP = SDLK_UP,
+    KEY_DOWN = SDLK_DOWN,
+    KEY_SPACE = SDLK_SPACE,
+    KEY_PLUS = SDLK_PLUS, // zoom in, z+
+    KEY_MINUS = SDLK_MINUS, // zoom out z-
+    KEY_a = SDLK_a, // wasd left
+    KEY_d = SDLK_d, // wasd right
+    KEY_w = SDLK_w, // wasd up
+    KEY_s = SDLK_s, // wasd down
+    KEY_r = SDLK_r, // auto rotate "(r)otate"
+    KEY_f = SDLK_f, // shade faces "(f)ill"
+    KEY_l = SDLK_l, // draw wireframe "(l)ines"
+    KEY_n = SDLK_n, // draw normals "(n)ormals"
+    KEY_p = SDLK_p, // draw point cloud "(p)oints"
+    KEY_x = SDLK_x, // draw axes "a(x)es"
+    KEY_F1 = SDLK_F1, // show stats window
+};
+
+class input
+{
+public:
+    bool handleInput();
+    bool isKeyPressed(keyCode key) {return pressedKeys.find(key) != pressedKeys.end();}
+    bool isKeyDown(keyCode key) {return m_keyState[SDL_GetScancodeFromKey(key)];}
+    bool isKeyUp(keyCode key) {return !m_keyState[SDL_GetScancodeFromKey(key)];} // needed?
+    vec3 getMovementInput();
+    vec3 getRotationInput();
+    static input& instance() {
+        static input instance;
+        return instance;
+    }
+private:
+    const Uint8 *m_keyState;
+    std::set<keyCode> pressedKeys{};
+
+    input() : m_keyState(SDL_GetKeyboardState(NULL)) {};
+    ~input() {};
+};
+
+// Use events for single-shot events (toggle wireframe)
+// Use key state map for continuous events (wasd/<>^./fire etc.)
+// return true unless it's time to quit the application
+bool input::handleInput()
+{
+    SDL_Event sEvent;
+    pressedKeys.clear();
+
+    while (SDL_PollEvent(&sEvent))
+    {
+        ImGui_ImplSDL2_ProcessEvent(&sEvent);
+
+        switch (sEvent.type)
+        {
+        case SDL_QUIT:
+            return false;
+            break;
+        case SDL_KEYDOWN:
+            // pressedKeys.insert(sEvent.key.keysym.sym);
+            switch (sEvent.key.keysym.sym)
+            {
+            case SDLK_LEFT:
+                break;
+            case SDLK_RIGHT:
+                break;
+            case SDLK_UP:
+                break;
+            case SDLK_DOWN:
+                break;
+            case SDLK_PLUS:
+                break;
+            case SDLK_MINUS:
+                break;
+            case SDLK_a:
+                break;
+            case SDLK_d:
+                break;
+            case SDLK_w:
+                break;
+            case SDLK_s:
+                break;
+            case SDLK_r:
+                pressedKeys.insert(KEY_r);
+                break;
+            case SDLK_n:
+                pressedKeys.insert(KEY_n);
+                break;
+            case SDLK_l:
+                pressedKeys.insert(KEY_l);
+                break;
+            case SDLK_p:
+                pressedKeys.insert(KEY_p);
+                break;
+            case SDLK_f:
+                pressedKeys.insert(KEY_f);
+                break;
+            case SDLK_x:
+                pressedKeys.insert(KEY_x);
+                break;
+            case SDLK_F1:
+                pressedKeys.insert(KEY_F1);
+                break;
+            case SDLK_q:
+                return false;
+                break;
+            default:
+                break;
+            }
+            break;
+        }
+    }
+
+    m_keyState = SDL_GetKeyboardState(NULL);
+
+    return true;
+}
+
+// basic arrow keys (x, y) and +/- for in/out (z)
+vec3 input::getMovementInput()
+{
+    vec3 movementInput{}; // zero by default
+
+    if (isKeyDown(KEY_LEFT))
+    {
+        movementInput.x = -1.0f;
+    }
+    if (isKeyDown(KEY_RIGHT))
+    {
+        movementInput.x = 1.0f;
+    }
+    if (isKeyDown(KEY_DOWN))
+    {
+        movementInput.y = -1.0f;
+    }
+    if (isKeyDown(KEY_UP))
+    {
+        movementInput.y = 1.0f;
+    }
+    if (isKeyDown(KEY_MINUS))
+    {
+        movementInput.z = -1.0f;
+    }
+    if (isKeyDown(KEY_PLUS))
+    {
+        movementInput.z = 1.0f;
+    }
+
+    return movementInput;
+}
+
+vec3 input::getRotationInput()
+{
+    vec3 rotationInput{}; // zero by default
+
+    if (isKeyDown(KEY_a))
+    {
+        rotationInput.y = 1.0f;
+    }
+    if (isKeyDown(KEY_w))
+    {
+        rotationInput.x = -1.0f;
+    }
+    if (isKeyDown(KEY_s))
+    {
+        rotationInput.x = 1.0f;
+    }
+    if (isKeyDown(KEY_d))
+    {
+        rotationInput.y = -1.0f;
+    }
+
+    // TODO: rotationInput.z - q is for quit and q/e are the obvious candidates
+
+    return rotationInput;
+}
+
+
+} // NS minity
+

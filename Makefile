@@ -3,10 +3,10 @@ RM = rm -f
 CC = clang
 CXX = clang++
 CFLAGS = -Wall -Wextra -pedantic-errors -Werror
-CXXFLAGS = -std=c++14 -Wall -Wextra -pedantic-errors -Werror `sdl2-config --cflags`
-CPPFLAGS = -I /usr/local/include/SDL2 -I include -I ${IMGUI_DIR}
+CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic-errors -Werror `sdl2-config --cflags`
+CPPFLAGS = -I /usr/local/include/SDL2 -I include -I ${IMGUI_DIR} -I external/metal-cpp
 LDFLAGS = -L /usr/local/lib
-LDLIBS = -l SDL2 -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo `sdl2-config --libs`
+LDLIBS = -l SDL2 -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -framework Foundation -framework QuartzCore -framework Metal `sdl2-config --libs`
 
 # call with mode=release make all
 ifeq ($(mode),release)
@@ -15,6 +15,10 @@ else
 	mode = debug
 
 	CXXFLAGS += -g -O0
+
+	# run with address sanitizer
+	# CXXFLAGS += -g -O0 -fsanitize=address -fno-omit-frame-pointer
+	# LDFLAGS += -fsanitize=address
 
 ifdef coverage
 	# coverage https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
@@ -63,16 +67,19 @@ IMGUI_DIR = external/imgui
 
 CXX_SRCS = $(wildcard ${SOURCE_DIR}/*.cpp)
 CXX_SRCS += $(wildcard ${IMGUI_DIR}/*.cpp)
+OBJC_SRCS = $(wildcard ${IMGUI_DIR}/*.mm)
 CXX_OBJS = $(patsubst ${IMGUI_DIR}/%, $(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${CXX_SRCS:.cpp=.o}))
+OBJC_OBJS = $(patsubst ${IMGUI_DIR}/%, $(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${OBJC_SRCS:.mm=.o}))
 CXX_DEPS := $(patsubst ${IMGUI_DIR}/%,$(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${CXX_SRCS:.cpp=.d}))
+OBJC_DEPS := $(patsubst ${IMGUI_DIR}/%,$(BUILD_DIR)/%, $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${OBJC_SRCS:.mm=.d}))
 
 C_SRCS = $(wildcard ${SOURCE_DIR}/*.c)
 C_OBJS = $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${C_SRCS:.c=.o})
 C_DEPS := $(patsubst $(SOURCE_DIR)/%, $(BUILD_DIR)/%, ${C_SRCS:.c=.d})
 
-SRCS = ${C_SRCS} ${CXX_SRCS}
-OBJS = ${C_OBJS} ${CXX_OBJS}
-DEPS = ${C_DEPS} ${CXX_DEPS}
+SRCS = ${C_SRCS} ${CXX_SRCS} ${OBJC_SRCS}
+OBJS = ${C_OBJS} ${CXX_OBJS} ${OBJC_OBJS}
+DEPS = ${C_DEPS} ${CXX_DEPS} ${OBJC_DEPS}
 
 TEST_INC = -I ${SOURCE_DIR}
 TEST_SRCS = $(wildcard ${TEST_DIR}/*.cpp)
@@ -103,6 +110,14 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.cpp
 
 $(BUILD_DIR)/%.o: $(IMGUI_DIR)/%.cpp
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -MMD -MP -c $< -o $@
+
+# metal c++ headers are not following strict coding
+# so disable -pedantic-errors -Werror as
+# external/imgui/imgui_impl_metal.mm includes
+# metal headers directly and we cannot silence
+# the include with pragma :-( (see main.cpp)
+$(BUILD_DIR)/%.o: $(IMGUI_DIR)/%.mm
+	${CXX} ${CPPFLAGS} -ObjC++ -fobjc-weak -fobjc-arc -std=c++17 -Wall -Wextra `sdl2-config --cflags` -MMD -MP -c $< -o $@
 
 #
 # Test Section

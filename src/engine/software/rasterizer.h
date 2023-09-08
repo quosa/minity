@@ -5,24 +5,14 @@
 #include <functional>
 
 #define MINITY_SCENE_TYPES_ONLY
-#include "scene.h"
-#include "simpleMath.h"
+#include "../../simpleMath.h"
+#include "../../color.h"
 #include "stats.h"
 
 namespace minity
 {
 
-typedef uint32_t color;
-const color black{0x000000ff};
-const color white{0xffffffff};
-const color red{0xff0000ff};
-const color green{0x00ff00ff};
-const color blue{0x0000ffff};
-const color yellow{0xffff00ff};
-const color gray50{0x7f7f7fff};
-
 const bool debugRasterizer{false};
-
 
 typedef std::function< minity::color(float&, float&, float&, minity::color) > lambdaShader;
 auto nullShader = [](float &u, float &v, float &w, minity::color color) -> minity::color { (void)u; (void)v; (void)w; return color; };
@@ -38,7 +28,7 @@ public:
         : viewportWidth(width), viewportHeight(height)
     {
         // both are addressed [x + y*viewportWidth]
-        frameBuffer = std::vector<color>(viewportWidth * viewportHeight, black);
+        frameBuffer = std::vector<color>(viewportWidth * viewportHeight, minity::black);
         depthBuffer = std::vector<float>(viewportWidth * viewportHeight, std::numeric_limits<float>::infinity());
     };
 
@@ -66,7 +56,7 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
 
 void rasterizer::clearBuffers()
 {
-    std::fill(frameBuffer.begin(), frameBuffer.end(), black);
+    std::fill(frameBuffer.begin(), frameBuffer.end(), minity::black);
     std::fill(depthBuffer.begin(), depthBuffer.end(), std::numeric_limits<float>::infinity());
     stats = rasterizerStats{};
 };
@@ -363,36 +353,6 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
             // get the z value for this point using the barymetric coordinates:
             float z = v1.z * u + v2.z * v + v3.z * w;
 
-            // TODO: use 1/z in depth check?
-            // we need to use 1/z because the depth cannot be interpolated linearly!
-            // see: https://gabrielgambetta.com/computer-graphics-from-scratch/12-hidden-surface-removal.html#why-1z-instead-of-z
-            // and https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/visibility-problem-depth-buffer-depth-interpolation.html
-            // float inv_z = u / v1.z + v / v2.z + w / v3.z;
-
-            // std::cout << "Z-buffer check: inv_z (bary) " << inv_z << " z-buffer(x,y) " << g_DepthBuffer[y * g_SDLWidth + x] << std::endl;
-
-
-            // std::cout << x << " " << y << " " << z << " vs (" << g_DepthBuffer[y * g_SDLWidth + x] << ")" << std::endl;
-            // TODO: < or <= here? Do we draw the new pixel if x, y, z are the same?
-            // camera looks at Z- so
-            // furthest away 1/z is 1/-inf = -0 and
-            // close 1/z is e.g. 1/-10 = -0.1
-            // so we need to compare with <=
-            // if (inv_z <= g_DepthBuffer[y * g_SDLWidth + x])
-
-            // std::cout << "z: " << z << " <= " << g_DepthBuffer[y * g_SDLWidth + x] << "?" << std::endl;
-
-            // TODO: pre-z-test to avoid fragment/pixel shader and stats.depth++; if dropped
-
-            // (void)fragmentShader;
-            // if(! (u >= 0.0f && v >= 0.0f && w >= 0.0f))
-            // {
-            //     std::cout << "WARNING: " << u << " " << v << " " << w << std::endl;
-            //     std::cout << " x, y: " << x << "," << y << std::endl;
-            //     std::cout << point << std::endl;
-            //     for (auto v : vertices)
-            //         std::cout << v << std::endl;
-            // }
             minity::color adjustedColor = fragmentShader(u, v, w, rgba_color);
 
             rasterizer->drawPoint(vec3{(float)x, (float)y, z}, adjustedColor);
@@ -400,4 +360,4 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
     }
 }
 
-} // minity
+} // NS minity

@@ -130,19 +130,6 @@ TEST_CASE("dot products - 45deg angles")
     REQUIRE(v3DotProduct(forwardright, backright) == 0.0f);
 }
 
-TEST_CASE("swap points (for sorting)")
-{
-    point a{1, 2, -3.0f};
-    point b{4, 5, 6.0f};
-    REQUIRE(a.x == 1);
-    REQUIRE(b.y == 5);
-    REQUIRE(a.z == -3.0f);
-    pSwap(&a, &b);
-    REQUIRE(b.x == 1);
-    REQUIRE(a.y == 5);
-    REQUIRE(b.z == -3.0f);
-}
-
 TEST_CASE("0-matrix * 0-matrix = 0-matrix")
 {
     REQUIRE(multiplyMat4(m0, m0) == m0);
@@ -351,12 +338,12 @@ TEST_CASE("translate matrix")
     REQUIRE(multiplyVec3(v1, translate) == vec3{1.0f, -1.0f, 4.0f});
 }
 
-// projectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
+// perspectiveProjectionMatrix(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
 TEST_CASE("projection matrix - z at midpoint")
 {
     const vec3 vInViewFrustum{1.0f, 1.0f, -2.0f};
     printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     printVec3(projected);
@@ -372,7 +359,7 @@ TEST_CASE("projection matrix - z at far plane")
 {
     const vec3 vInViewFrustum{1.0f, 1.0f, -3.0f};
     printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     printVec3(projected);
@@ -389,7 +376,7 @@ TEST_CASE("projection matrix - max x and y values when z at near plane")
 {
     const vec3 vInViewFrustum{4.0f/3.0f, 1.0f, -1.0f};
     printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     printVec3(projected);
@@ -406,7 +393,7 @@ TEST_CASE("projection matrix - center with z at near plane")
 {
     const vec3 vInViewFrustum{0.0f, 0.0f, -1.0f};
     printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     printVec3(projected);
@@ -422,7 +409,7 @@ TEST_CASE("projection matrix - min x and y values when z at near plane")
 {
     const vec3 vInViewFrustum{-4.0f/3.0f, -1.0f, -1.0f};
     // printVec3(vInViewFrustum);
-    const mat4 projection = projectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
+    const mat4 projection = perspectiveProjectionMatrix(90.0f, 4.0f/3.0f, 1.0f, 3.0f);
     // printMat4(projection);
     auto projected = multiplyVec3(vInViewFrustum, projection);
     // printVec3(projected);
@@ -573,7 +560,7 @@ bool pipeline(const pipeline_config &conf, const vec3 &modelVertex, point &onScr
 
 
     // perspective projection
-    mat4 projector = projectionMatrix(conf.fovDegrees, conf.aspectRatio, conf.nearPlane, conf.farPlane);
+    mat4 projector = perspectiveProjectionMatrix(conf.fovDegrees, conf.aspectRatio, conf.nearPlane, conf.farPlane);
 
 
     // start in MODEL SPACE (local model coordinates from modeling software)
@@ -943,16 +930,4 @@ TEST_CASE("calculate face normal - facing down")
         v3Sub(back, v0) // v1 - v0
     ));
     REQUIRE(faceNormal == down);
-}
-
-TEST_CASE("adjust color by one")
-{
-    u_int32_t color{0x11223344};
-    REQUIRE(adjustColor(color, 1.0f) == color);
-}
-
-TEST_CASE("adjust color by zero")
-{
-    u_int32_t color{0x11223344};
-    REQUIRE(adjustColor(color, 0.0f) == 0x00000044); // alpha is not touched
 }

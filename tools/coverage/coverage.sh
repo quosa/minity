@@ -6,6 +6,15 @@ pushd "${root}"
 rm test.prof* minity.prof*
 make clean
 
+# install if not already installed
+# https://github.com/hooddanielc/llvm-coverage-viewer
+# npm install -g llvm-coverage-viewer
+if ! command -v llvm-coverage-viewer &> /dev/null
+then
+    echo "llvm-coverage-viewer could not be found - installing"
+    npm install -g llvm-coverage-viewer
+fi
+
 # coverage https://clang.llvm.org/docs/SourceBasedCodeCoverage.html
 # export CXXFLAGS="-g -O0 -fprofile-instr-generate -fcoverage-mapping"
 # export LDFLAGS="-fprofile-instr-generate"

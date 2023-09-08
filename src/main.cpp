@@ -4,32 +4,30 @@
  * https://github.com/Kayzaks/StupidGL (gamasutra game engine from scratch)
  */
 
-#include <iostream> //cout
-#include <memory> // shared_ptr
-
-#include "simpleMath.h" // full implementation here
-#include "scene.h" // scene/camera/light/mesh
-#include "renderPipeline.h"
+#include "simpleMath.h"
+#define MESH_UTILS_IMPLEMENTATION
+#include "mesh.h"
+#include "scene.h"
+#include "engine/engine.h"
+#include "input.h"
 #define IMAGEIMPORTER_IMPLEMENTATION
 #include "imageImporter.h"
-#include "modelImporter.h"
+#include "meshImporter.h"
 
-#include <SDL2/SDL.h>
-#include "rasterizer.h"
-
-#include "utils.h" // box, sphere...
+#include <iostream> // cout
+#include <memory> // shared_ptr
 
 const std::string usage = R"(
 key bindings:
-    wasd keys  - look up/left/down/right
-    arrow keys - move camera
-    f key      - flat shade triangles
+    wasd keys  - rotate model down/left/up/right
+    arrow keys - move model up/left/down/right
+    +/- keys   - move model in/out
+    f key      - fill/shade triangles
     l key      - draw wireframe
     n key      - draw normals
     p key      - draw point cloud
     x key      - draw axes
     q key      - quit minity
-    r key      - render on change
     F1 key     - show stats window)";
 
 
@@ -41,285 +39,100 @@ const std::string banner = R"(
                         '
 )";
 
-void newScenario()
+
+void runScenario()
 {
+    auto minity = minity::getEngine(minity::backend::kSoftware);
+    // auto minity = minity::getEngine(minity::backend::kMetal);
+
     minity::imageImporter imgImporter{};
-    auto img = imgImporter.load("test/materials/newell_teapot.jpg");
+    // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
+    // auto texture = imgImporter.load("test/materials/test_image_100x100.png", false); // flip
+    // auto texture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
+    auto texture = imgImporter.load("models/african_head/african_head_diffuse.tga", true); // flip
+    // auto texture = imgImporter.load("test/materials/wall_512_3_05.tga", true); // flip
+    // auto texture = imgImporter.load("models/from_internet/GroundClay002/GroundClay002_COL_VAR1_1K.jpg", true); // flip
 
-    auto texture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
-    // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", true); // flip
+    minity::material material{minity::white, 1.0f, *texture};
 
-    // auto boxTexture = imgImporter.load("test/materials/test_image_10x10.png", false); // flip
-    // auto boxTexture = imgImporter.load("test/materials/test_image_blue_100x100.png", false); // flip
-    // auto boxTexture = imgImporter.load("test/materials/test_image_100x100.png", false); // flip
-    auto boxTexture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
-    // NOTE: fine grid suffers from aliasing / Moire pattern problems due to missing mipmap
-    // auto boxTexture = imgImporter.load("test/materials/grid.tga", false); // flip
+    // minity::texture blankTexture {};
+    // minity::material material{minity::yellow, 1.0f, blankTexture}; // no texture, just color
 
-    // auto tTexture = imgImporter.load("test/materials/grid.tga", true); // flip
-    auto tTexture = imgImporter.load("test/materials/test_image_10x10.png", false); // flip
-    // auto tTexture = imgImporter.load("test/materials/test_image_100x100.png", true); // flip
-    // auto tTexture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
+    minity::meshImporter meshImporter{};
+    // auto mesh = meshImporter.load("test/models/teapot.obj", true); // reverse winding
+    // auto mesh = meshImporter.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
+    auto mesh = meshImporter.load("models/african_head/african_head.obj", true);
+    // auto mesh = meshImporter.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
+    // auto mesh = minity::getSingleFaceMesh();
+    // auto mesh = minity::getSquareMesh();
+    // auto mesh = minity::getCubeMesh();
 
-    minity::modelImporter importer{};
+    minity::model model{*mesh, material};
+    // single face / square / cube parameters
+    // model.scale = vec3{1.0f, 1.0f, 1.0f};
+    // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    // model.position = vec3{0.0f, 0.0f, -2.0f};
+    // african head parameters
+    model.scale = vec3{2.0f, 2.0f, 2.0f};
+    model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    model.position = vec3{0.0f, 0.0f, 0.0f};
+    // head parameters
+    // model.scale = vec3{0.1f, 0.1f, 0.1f};
+    // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    // model.position = vec3{0.0f, -5.0f, -14.0f};
+    // sphere parameters
+    // model.scale = vec3{1.0f, 1.0f, 1.0f};
+    // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    // model.position = vec3{0.0f, 0.0f, -2.0f};
 
-    auto teapot = importer.load("test/models/teapot.obj", true); // reverse winding
-    teapot->scale = vec3{1.0f, 1.0f, 1.0f};
-    teapot->rotation = vec3{deg2rad(30), deg2rad(-30), deg2rad(0)};
-    teapot->translation = vec3{0.0f, -1.5f, 0.0f};
-
-    auto box = importer.load("models/box.obj");
-    box->scale = vec3{2.0f, 2.0f, 2.0f};
-    box->rotation = vec3{deg2rad(0), deg2rad(30), deg2rad(0)};
-    box->translation = vec3{0.0f, 0.0f, 1.0f};
-
-    auto bbox = importer.load("models/BlenderBoxZ.obj", true); // counter-clockwise winding from Blender
-    bbox->scale = vec3{2.0f, 2.0f, 2.0f};
-    bbox->rotation = vec3{deg2rad(0), deg2rad(30), deg2rad(0)};
-    bbox->translation = vec3{0.0f, 0.0f, -3.0f};
-    // bbox.hasNormals = false;
-    // bbox.printModelInfo(true);
-    // bbox.printModelInfo();
-    // bbox.dumpModel();
-    bbox->addTexture(boxTexture);
-
-    auto sphere = importer.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
-    sphere->scale = vec3{1.0f, 1.0f, 1.0f};
-    sphere->rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    sphere->translation = vec3{0.0f, 0.0f, 2.0f};
-    // sphere.hasNormals = false;
-    sphere->addTexture(boxTexture);
-
-    auto male = importer.load("test/models/MaleLow.obj");
-    male->scale = vec3{0.5f, 0.5f, 0.5f};
-    male->translation = vec3{0.0f, -5.0f, -6.0f};
-    male->rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-
-    auto head = importer.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
-    head->scale = vec3{0.05f, 0.05f, 0.05f};
-    head->translation = vec3{0.0f, -2.5f, -0.8f};
-    head->rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    head->addTexture(texture);
-    // head.addTexture(boxTexture);
-    // head.hasNormals = false;
-
-    std::cout << "image and model imports successful" << std::endl;
-
-    minity::model test{};
-    test.numFaces = 1;
-    test.hasNormals = true;
-    test.hasTextureCoordinates = true; // false to disable texture mapping
-    test.addTexture(boxTexture);
-    // clockwise winding order, i.e. center > up > right (left-hand rule!!!)
-    test.vertices = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}}; // x, y, z (w=1.0)
-    test.normals  = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}; // x, y, z (w=1.0)
-    test.textureCoordinates = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}}; // u, v (w ignored)
-    test.faces = {{0, 1, 2}, {3, 4, 5}}; // [[v1_idx, v2_idx, v3_idx], [...
-    test.scale = vec3{2.0f, 2.0f, 2.0f};
-    test.translation = vec3{-1.0f, -1.0f, 2.0f};
-    test.rotation = vec3{deg2rad(0), deg2rad(45), deg2rad(0)};
-    // test.printModelInfo();
-    // test.dumpModel();
-
-    minity::model t = minity::square();
-    t.addTexture(tTexture);
-    t.scale = vec3{2.0f, 2.0f, 2.0f};
-    // t.translation = vec3{0.0f, 0.0f, 0.0f};
-    // t.rotation = vec3{deg2rad(0), deg2rad(45), deg2rad(0)};
-    // t.printModelInfo();
-    // t.dumpModel();
-
-    minity::init();
-
-    minity::camera camera{};
-    minity::light light{};
-
-    camera.fovDegrees = 60.0f;
-    camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    camera.translation = vec3{0.0f, 0.0f, 5.0f};
-
-    // light direction is ignored for now (only global illumination)
-    // light.rotation = vec3{deg2rad(45), deg2rad(-45), deg2rad(0)};
-    // light is coming from positive z axis
-    light.translation = vec3{0.0f, 0.0f, 10.0f};
-
-    // minity::scene scene{"teapot", *teapot, camera, light};
-    // minity::scene scene{"box", *box, camera, light};
-    // minity::scene scene{"bbox", *bbox, camera, light};
-    // minity::scene scene{"sphere", *sphere, camera, light};
-    // minity::scene scene{"male", *male, camera, light};
-    minity::scene scene{"head", *head, camera, light};
-    // minity::scene scene{"test", test, camera, light};
-    // minity::scene scene{"test square", t, camera, light};
-
-    // g_config->renderOnChange = true;
-    minity::run(scene);
-
-    minity::shutdown();
-}
-
-void newRasterizerScene()
-{
-    const unsigned int width{640};
-    const unsigned int height{480};
-    minity::rasterizer rasterizer(width, height);
-
-    minity::init(); // todo: w, h ?
-
-    minity::modelImporter importer{};
-
-    auto teapot = importer.load("test/models/teapot.obj", true); // reverse winding
-    teapot->scale = vec3{1.0f, 1.0f, 1.0f};
-    teapot->rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    teapot->translation = vec3{0.0f, -1.5f, 0.0f};
-
-    minity::camera camera{};
-    minity::light light{};
-
-    camera.fovDegrees = 60.0f;
-    camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    camera.translation = vec3{0.0f, 0.0f, 5.0f};
-
-    // light direction is ignored for now (only global illumination)
-    // light.rotation = vec3{deg2rad(45), deg2rad(-45), deg2rad(0)};
-    // light is coming from positive z axis
-    light.translation = vec3{0.0f, 0.0f, 10.0f};
-
-    minity::scene scene{"teapot", *teapot, camera, light};
-
-    g_config->fillTriangles = true;
-    g_config->drawWireframe = false;
-    g_config->drawNormals = false;
-    bool ok = minity::render(scene, rasterizer);
-    if (!ok)
+    auto updateFactory = [](minity::model *self)
     {
-        std::cerr << "rendering failed!" << std::endl;
-    }
-
-    {
-        // SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
-        SDL_UpdateTexture(
-            g_SDLTexture,
-            NULL,
-            (void *)rasterizer.getFramebuffer(),
-            rasterizer.getViewportWidth() * sizeof(minity::color)
-        );
-        SDL_RenderClear(g_SDLRenderer);
-        SDL_RenderCopy(g_SDLRenderer, g_SDLTexture, NULL, NULL);
-        SDL_RenderPresent(g_SDLRenderer);
-    }
-
-    vec3 inputTranslation{};
-    vec3 inputRotation{};
-    // vec3 zeroVector{};
-
-    bool inputChange{false};
-    while (isRunning(&inputTranslation, &inputRotation, &inputChange))
-    {
-        SDL_Delay(20); // some computation budget...
-        inputTranslation = vec3{};
-        inputRotation = vec3{};
-    }
-    minity::shutdown();
-}
-
-void newRasterizer()
-{
-    const unsigned int width{640};
-    const unsigned int height{480};
-    minity::rasterizer rasterizer(width, height);
-    minity::init(); // todo: w, h ?
-
-
-    // SDLClearBuffers(); // todo: rasterizer.clearBuffers() etc.
-
-    // draw a snap-grid like point cloud
-    for (unsigned int x = 10; x < width; x += 10 )
-    {
-        for (unsigned int y = 10; y < height; y += 10 )
+        return [self](float timeDelta)
         {
-            rasterizer.drawPoint(vec3{(float)x, (float)y, 0.0f}, minity::yellow);
-        }
-    }
-    // rasterizer.drawLine(vec3{}, vec3{640.0f, 480.0f, 0.0f}, minity::red);
-    // rasterizer.drawLine(vec3{0.0f, 480.0f, 0.0f}, vec3{640.0f, 0.0f, 0.0f}, minity::green);
+            minity::input &input = minity::input::instance();
+            if (input.isKeyDown(minity::KEY_SPACE))
+            {
+                std::cout << "FIRE!" << std::endl;
+            }
 
-    vec3 blueVertices[3]{
-        {100.0f, 200.0f, 0.0f},
-        {100.0f, 100.0f, 0.0f},
-        {200.0f, 200.0f, 0.0f},
+            float movementSpeed = 1.0f;
+            auto movementInput = input.getMovementInput();
+            self->position = v3Add(self->position, v3Mul(v3Mul(movementInput, movementSpeed), timeDelta));
+
+            auto rotationSpeed = 1.0f;
+            auto rotationInput = input.getRotationInput();
+            self->rotation = v3Add(self->rotation, v3Mul(v3Mul(rotationInput, rotationSpeed), timeDelta));
+
+            if (g_config->autoRotate)
+            {
+                float autoRotationSpeed = 0.4f;
+                self->rotation.y += timeDelta * autoRotationSpeed;
+            }
+        };
     };
-    vec3 yellowVertices[3]{
-        {70.0f, 220.0f, 1.0f},
-        {70.0f, 120.0f, 1.0f},
-        {170.0f, 220.0f, 1.0f},
-    };
-    rasterizer.drawTriangle(blueVertices, minity::blue);
-    rasterizer.drawTriangle(yellowVertices, minity::yellow);
+    model.setUpdate(updateFactory);
 
+    // TODO: add a new camera type
+    // minity::camera camera{minity::cameraType::lookAt};
+    minity::camera camera{};
+    camera.fovDegrees = 50.0f;
+    camera.translation = vec3{0.0f, 0.0f, 5.0f};
+    // camera.translation = vec3{0.0f, 0.0f, 2.0f}; // for cube mesh
+    camera.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
 
-    vec3 whiteVertices[3]{
-        {400.0f, 400.0f, 1.0f},
-        {400.0f, 200.0f, 1.0f},
-        {600.0f, 400.0f, -1.0f},
-    };
-    vec3 greenVertices[3]{
-        {400.0f, 400.0f, -1.0f},
-        {600.0f, 200.0f, 1.0f},
-        {600.0f, 400.0f, 1.0f},
-    };
-    rasterizer.drawTriangle(whiteVertices, minity::white);
-    rasterizer.drawTriangle(greenVertices, minity::green);
+    // TODO: add a new light type
+    // minity::light light{minity::lightType::directional};
+    minity::light light{};
+    light.translation = vec3{-1.0f, 1.0f, 10.0f}; // top-left
 
-    rasterizer.drawLine(vec3{}, vec3{640.0f, 480.0f, 0.0f}, minity::red);
-    rasterizer.drawLine(vec3{0.0f, 480.0f, 0.0f}, vec3{640.0f, 0.0f, 0.0f}, minity::green);
+    minity::scene scene{camera, light, model};
 
-    vec3 whiteVertices2[3]{
-        {200.0f, 100.0f, 1.0f},
-        {400.0f, 100.0f, 1.0f},
-        {300.0f, 200.0f, 1.0f},
-    };
-    vec3 blackVertices[3]{
-        {200.0f, 100.0f, 1.00001f},
-        {400.0f, 100.0f, 1.00001f},
-        {300.0f, 200.0f, 1.00001f},
-    };
-    rasterizer.drawTriangle(whiteVertices2, minity::white);
-    rasterizer.drawTriangle(blackVertices, minity::black);
-
-    // show the drawn buffer
-    // SDLSwapBuffers();
-    {
-        // SDL_UpdateTexture(g_SDLTexture, NULL, g_SDLBackBuffer, g_SDLWidth * sizeof(Uint32));
-        SDL_UpdateTexture(
-            g_SDLTexture,
-            NULL,
-            (void *)rasterizer.getFramebuffer(),
-            rasterizer.getViewportWidth() * sizeof(minity::color)
-        );
-        SDL_RenderClear(g_SDLRenderer);
-        SDL_RenderCopy(g_SDLRenderer, g_SDLTexture, NULL, NULL);
-        SDL_RenderPresent(g_SDLRenderer);
-    }
-
-    vec3 inputTranslation{};
-    vec3 inputRotation{};
-    // vec3 zeroVector{};
-
-    bool inputChange{false};
-    while (isRunning(&inputTranslation, &inputRotation, &inputChange))
-    {
-        SDL_Delay(20); // some computation budget...
-        inputTranslation = vec3{};
-        inputRotation = vec3{};
-    }
-    minity::shutdown();
+    minity->run(scene);
+    minity->shutdown();
 }
 
 int main()
 {
     std::cout << banner << usage << std::endl;
-    newScenario();
-    // newRasterizer();
-    // newRasterizerScene();
+    runScenario();
 }
