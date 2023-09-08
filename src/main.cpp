@@ -95,38 +95,16 @@ void runScenario()
                 std::cout << "FIRE!" << std::endl;
             }
 
-            vec3 speed{};
+            auto movementSpeed = input.getMovementInput();
+            self->position = v3Add(self->position, v3Mul(movementSpeed, timeDelta));
 
-            if (input.isKeyDown(minity::KEY_LEFT))
-            {
-                speed.x = -0.5f;
-            }
-            if (input.isKeyDown(minity::KEY_RIGHT))
-            {
-                speed.x = 0.5f;
-            }
-            if (input.isKeyDown(minity::KEY_DOWN))
-            {
-                speed.y = -0.5f;
-            }
-            if (input.isKeyDown(minity::KEY_UP))
-            {
-                speed.y = 0.5f;
-            }
-            if (input.isKeyDown(minity::KEY_MINUS))
-            {
-                speed.z = -0.5f;
-            }
-            if (input.isKeyDown(minity::KEY_PLUS))
-            {
-                speed.z = 0.5f;
-            }
-            self->position = v3Add(self->position, v3Mul(speed, timeDelta));
+            auto rotationSpeed = input.getRotationInput();
+            self->rotation = v3Add(self->rotation, v3Mul(rotationSpeed, timeDelta));
 
             // std::cout << "update(" << timeDelta << ") yRot: " << self->rotation.y << " isKeyPressed(minity::KEY_LEFT) " << input.isKeyPressed(minity::KEY_LEFT)<< std::endl;
 
-            float rotationSpeed = 0.4f;
-            self->rotation.y += timeDelta * rotationSpeed;
+            // float autoRotationSpeed = 0.4f;
+            // self->rotation.y += timeDelta * autoRotationSpeed;
         };
     };
     model.setUpdate(updateFactory);

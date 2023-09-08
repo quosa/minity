@@ -1,5 +1,6 @@
 #pragma once
 
+#include "simpleMath.h" // vec3
 #include "engine/metal/metal_include.h"
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -40,6 +41,8 @@ public:
     bool isKeyPressed(keyCode key) {return pressedKeys.find(key) != pressedKeys.end();}
     bool isKeyDown(keyCode key) {return m_keyState[SDL_GetScancodeFromKey(key)];}
     bool isKeyUp(keyCode key) {return !m_keyState[SDL_GetScancodeFromKey(key)];} // needed?
+    vec3 getMovementInput();
+    vec3 getRotationInput();
     static input& instance() {
         static input instance;
         return instance;
@@ -125,5 +128,62 @@ bool input::handleInput()
 
     return true;
 }
+
+// basic arrow keys (x, y) and +/- for in/out (z)
+vec3 input::getMovementInput()
+{
+    vec3 movement{};
+
+    if (isKeyDown(KEY_LEFT))
+    {
+        movement.x = -0.5f;
+    }
+    if (isKeyDown(KEY_RIGHT))
+    {
+        movement.x = 0.5f;
+    }
+    if (isKeyDown(KEY_DOWN))
+    {
+        movement.y = -0.5f;
+    }
+    if (isKeyDown(KEY_UP))
+    {
+        movement.y = 0.5f;
+    }
+    if (isKeyDown(KEY_MINUS))
+    {
+        movement.z = -0.5f;
+    }
+    if (isKeyDown(KEY_PLUS))
+    {
+        movement.z = 0.5f;
+    }
+    return movement;
+}
+
+vec3 input::getRotationInput()
+{
+    vec3 rotation{};
+
+    if (isKeyDown(KEY_a))
+    {
+        rotation.y = 0.5f;
+    }
+    if (isKeyDown(KEY_w))
+    {
+        rotation.x = -0.5f;
+    }
+    if (isKeyDown(KEY_s))
+    {
+        rotation.x = 0.5f;
+    }
+    if (isKeyDown(KEY_d))
+    {
+        rotation.y = -0.5f;
+    }
+    return rotation;
+}
+
+
 } // NS minity
 
