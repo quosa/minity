@@ -931,3 +931,18 @@ TEST_CASE("calculate face normal - facing down")
     ));
     REQUIRE(faceNormal == down);
 }
+
+TEST_CASE("failing normal calculation")
+{
+    // caught while doing the sphere generation
+    vec3 v0 = vec3{0.000000, 0.714836, 0.933817};
+    vec3 v1 = vec3{0.055937, 0.713518, 0.933573};
+    vec3 v2 = vec3{0.000000, 0.714836, 0.933817}; // same as v0
+    vec3 normal = v3Div(v3Normalize(v3CrossProduct(
+                v3Sub(v1, v0),
+                v3Sub(v2, v0))),
+                10.0f);
+    REQUIRE(std::isnan(normal.x));
+    REQUIRE(std::isnan(normal.y));
+    REQUIRE(std::isnan(normal.z));
+}
