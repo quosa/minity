@@ -46,10 +46,10 @@ void runScenario()
     // auto minity = minity::getEngine(minity::backend::kMetal);
 
     minity::imageImporter imgImporter{};
-    // auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
+    auto texture = imgImporter.load("test/materials/texture_uvgrid01.jpg", false); // flip
     // auto texture = imgImporter.load("test/materials/test_image_100x100.png", false); // flip
     // auto texture = imgImporter.load("test/models/Model_D0606058/CS.JPG", true); // flip
-    auto texture = imgImporter.load("models/african_head/african_head_diffuse.tga", true); // flip
+    // auto texture = imgImporter.load("models/african_head/african_head_diffuse.tga", true); // flip
     // auto texture = imgImporter.load("test/materials/wall_512_3_05.tga", true); // flip
     // auto texture = imgImporter.load("models/from_internet/GroundClay002/GroundClay002_COL_VAR1_1K.jpg", true); // flip
 
@@ -61,21 +61,27 @@ void runScenario()
     minity::meshImporter meshImporter{};
     // auto mesh = meshImporter.load("test/models/teapot.obj", true); // reverse winding
     // auto mesh = meshImporter.load("test/models/Model_D0606058/head.obj", true); // counter-clockwise winding from 3ds max
-    auto mesh = meshImporter.load("models/african_head/african_head.obj", true);
+    // auto mesh = meshImporter.load("models/african_head/african_head.obj", true);
     // auto mesh = meshImporter.load("models/BlenderSmoothSphere.obj", true);  // counter-clockwise winding from Blender
     // auto mesh = minity::getSingleFaceMesh();
     // auto mesh = minity::getSquareMesh();
     // auto mesh = minity::getCubeMesh();
+    // size_t meridians = 4;
+    // size_t parallels = 3;
+    size_t meridians = 60;
+    size_t parallels = 30;
+    auto mesh = minity::getSphereMesh(meridians, parallels);
 
     minity::model model{*mesh, material};
     // single face / square / cube parameters
-    // model.scale = vec3{1.0f, 1.0f, 1.0f};
-    // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    // model.position = vec3{0.0f, 0.0f, -2.0f};
-    // african head parameters
-    model.scale = vec3{2.0f, 2.0f, 2.0f};
+    model.scale = vec3{1.0f, 1.0f, 1.0f};
     model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
-    model.position = vec3{0.0f, 0.0f, 0.0f};
+    // model.position = vec3{0.0f, 0.0f, -2.0f};
+    model.position = vec3{0.0f, 0.0f, 2.0f};
+    // african head parameters
+    // model.scale = vec3{2.0f, 2.0f, 2.0f};
+    // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
+    // model.position = vec3{0.0f, 0.0f, 0.0f};
     // head parameters
     // model.scale = vec3{0.1f, 0.1f, 0.1f};
     // model.rotation = vec3{deg2rad(0), deg2rad(0), deg2rad(0)};
