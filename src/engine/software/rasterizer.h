@@ -320,10 +320,11 @@ void plotTriangle(const vec3 (&vertices)[3], const color rgba_color, rasterizer 
         for (int y = minY; y <= maxY; y++)
         {
 
-            // TODO: many implementations move the inspection point to center of pixel
-            //       need to compare the output and see if this helps with tears etc.
-            // vec3 point  = {static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f, 0};
-            vec3 point = {static_cast<float>(x), static_cast<float>(y), 0}; // IS THIS 0 CORRECT ???
+            // move the inspection point to the center of the pixel
+            // see: https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
+            vec3 point  = {static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f, 0}; // IS THIS 0 CORRECT ???
+            // taking the pixel corner produces tears e.g. in sphere:
+            // vec3 point = {static_cast<float>(x), static_cast<float>(y), 0}; // IS THIS 0 CORRECT ???
             bc.barycentricCoordinatesAt(vertices, point, u, v, w);
 
             // likely a degenerate triangle (due to rounding the denominator becomes zero)
