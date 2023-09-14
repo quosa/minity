@@ -416,16 +416,20 @@ bool render(minity::scene scene, minity::rasterizer &rasterizer)
                 v3Sub(vects[ndcCoordinates][2], vects[ndcCoordinates][0]))),
                 10.0f);
 
-            vec3 middle = v3Div(
-                v3Add(vects[ndcCoordinates][2], v3Add(vects[ndcCoordinates][1], vects[ndcCoordinates][0])),
-                3);
+            // if v2 or v1 are the same as v0, this will be nan
+            if (!std::isnan(normal.x) && !std::isnan(normal.y) && !std::isnan(normal.z))
+            {
+                vec3 middle = v3Div(
+                    v3Add(vects[ndcCoordinates][2], v3Add(vects[ndcCoordinates][1], vects[ndcCoordinates][0])),
+                    3);
 
-            vec3 tip = v3Add(middle, normal);
+                vec3 tip = v3Add(middle, normal);
 
-            middle = toScreenXY(middle, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
-            tip = toScreenXY(tip, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
+                middle = toScreenXY(middle, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
+                tip = toScreenXY(tip, rasterizer.getViewportWidth(), rasterizer.getViewportHeight());
 
-            rasterizer.drawLine(middle, tip, minity::white);
+                rasterizer.drawLine(middle, tip, minity::white);
+            }
         }
         stats.drawnFaces++;
     }
